@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Quiniela.Data.Entities;
 
 namespace Quiniela.Data;
 
-public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options) : DbContext(options)
+public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
+    : IdentityDbContext<User, IdentityRole<int>, int>(options)
 {
-    public DbSet<User> Users => Set<User>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Pool> Pools => Set<Pool>();
@@ -14,17 +16,17 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options) : Db
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder); // required: configures all Identity tables
+
         modelBuilder.Entity<User>(e =>
         {
-            e.Property(u => u.Username).HasMaxLength(50);
-            e.HasIndex(u => u.Username).IsUnique();
-            e.Property(u => u.PasswordHash).HasMaxLength(500);
             e.Property(u => u.DisplayName).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Team>(e =>
         {
             e.Property(t => t.Name).HasMaxLength(100);
+            e.Property(t => t.FlagCode).HasMaxLength(10);
             e.Property(t => t.GroupCode).HasColumnType("char(1)");
         });
 

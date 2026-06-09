@@ -1,0 +1,84 @@
+@page "/login"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Quiniela.Data.Entities
+
+@inject SignInManager<User> SignInManager
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ILogger<Login> Logger
+
+<PageTitle>Iniciar sesión — Quiniela 2026</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4 col-sm-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Quiniela 2026</h3>
+
+                @if (errorMessage is not null)
+                {
+                    <div class="alert alert-danger" role="alert">@errorMessage</div>
+                }
+
+                <EditForm Model="Input" OnValidSubmit="HandleLogin" FormName="login" method="post">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario</label>
+                        <InputText id="username" @bind-Value="Input.Username"
+                                   class="form-control" autocomplete="username" />
+                        <ValidationMessage For="@(() => Input.Username)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <InputText id="password" type="password" @bind-Value="Input.Password"
+                                   class="form-control" autocomplete="current-password" />
+                        <ValidationMessage For="@(() => Input.Password)" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private LoginModel Input { get; set; } = new();
+
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        var ctx = HttpContextAccessor.HttpContext;
+        if (ctx is { Request.Method: "GET" } && ctx.User.Identity?.IsAuthenticated == true)
+            NavigationManager.NavigateTo("/");
+    }
+
+    private async Task HandleLogin()
+    {
+        var result = await SignInManager.PasswordSignInAsync(
+            Input.Username, Input.Password, isPersistent: true, lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User {Username} logged in.", Input.Username);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Usuario o contraseña inválidos.";
+        }
+    }
+
+    private sealed class LoginModel
+    {
+        [Required(ErrorMessage = "El usuario es requerido")]
+        public string Username { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseña es requerida")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

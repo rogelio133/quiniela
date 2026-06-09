@@ -26,14 +26,17 @@ Aplicación web para una quiniela entre amigos del Mundial FIFA 2026 (11 de juni
 Estas son las diferencias respecto al esquema original:
 
 ```sql
--- USERS: autenticación local con usuario y contraseña
-USERS (
-    Id              INT IDENTITY   PRIMARY KEY,
-    Username        NVARCHAR(50)   NOT NULL UNIQUE,
-    PasswordHash    NVARCHAR(500)  NOT NULL,        -- hash con algoritmo fuerte (PBKDF2/BCrypt)
-    DisplayName     NVARCHAR(100)  NOT NULL,
-    IsAdmin         BIT            NOT NULL DEFAULT 0,
-    CreatedAt       DATETIME2      NOT NULL
+-- USERS: gestionado por ASP.NET Core Identity (tabla AspNetUsers)
+-- IdentityUser<int> ya provee: Id, UserName, NormalizedUserName, PasswordHash, SecurityStamp, etc.
+-- Propiedades extra que se agregan a la entidad User:
+AspNetUsers (
+    Id              INT IDENTITY   PRIMARY KEY,   -- hereda de IdentityUser<int>
+    UserName        NVARCHAR(256)  NOT NULL UNIQUE,
+    PasswordHash    NVARCHAR(MAX)  NOT NULL,       -- PBKDF2 gestionado por Identity
+    DisplayName     NVARCHAR(100)  NOT NULL,       -- propiedad personalizada
+    IsAdmin         BIT            NOT NULL DEFAULT 0,  -- propiedad personalizada (sync con rol "Admin")
+    CreatedAt       DATETIME2      NOT NULL        -- propiedad personalizada
+    -- ...demás columnas estándar de Identity (NormalizedUserName, SecurityStamp, etc.)
 )
 
 -- PREDICTIONS: sin marcador, solo el resultado
@@ -96,33 +99,51 @@ MATCHES (
 
 ## Módulo 1 — Autenticación con usuario y contraseña
 
-**Objetivo:** Permitir el inicio de sesión con credenciales locales (usuario y contraseña). No existe registro público: las cuentas se siembran desde una migración (ver módulo 2).
+**Objetivo:** Permitir el inicio de sesión con credenciales locales (usuario y contraseña) usando ASP.NET Core Identity. No existe registro público: las cuentas se siembran desde una migración (ver módulo 2).
+
+**Implicaciones sobre el esquema:**
+- La entidad `User` hereda de `IdentityUser<int>` para mantener `int` como tipo de PK.
+- `QuinielaDbContext` hereda de `IdentityDbContext<User, IdentityRole<int>, int>` en lugar de `DbContext`.
+- Identity crea sus propias tablas (`AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, etc.) vía migración. La columna `PasswordHash` y el campo `UserName` ya los provee `IdentityUser`; sólo hay que agregar `DisplayName` e `IsAdmin` como propiedades extras.
+- El campo `IsAdmin` se mantiene en `User` como conveniencia, pero el control de acceso real se delega a Identity Roles: al crear el usuario en seed se le asigna el rol `"Admin"` si corresponde. Esto permite usar `[Authorize(Roles = "Admin")]` de forma nativa.
 
 **Tareas:**
-- Instalar `Microsoft.AspNetCore.Authentication.Cookies`.
-- Definir un servicio `IPasswordHasher<User>` (puedes usar el de ASP.NET Core o `BCrypt.Net-Next`) para verificar contraseñas.
-- Configurar autenticación en `Program.cs` con esquema de cookies:
-  - Tiempo de expiración razonable (ej. 30 días con *sliding expiration*).
+- Instalar `Microsoft.AspNetCore.Identity.EntityFrameworkCore`.
+- Definir la entidad `User : IdentityUser<int>` con las propiedades extra `DisplayName` y `IsAdmin`.
+- Actualizar `QuinielaDbContext` para heredar de `IdentityDbContext<User, IdentityRole<int>, int>`.
+- Registrar Identity en `Program.cs`:
+  ```csharp
+  builder.Services.AddIdentity<User, IdentityRole<int>>(options => {
+      options.Password.RequireNonAlphanumeric = false;
+      options.Password.RequireUppercase = false;
+      options.User.RequireUniqueEmail = false;
+  })
+  .AddEntityFrameworkStores<QuinielaDbContext>()
+  .AddDefaultTokenProviders();
+  ```
+- Configurar la cookie de Identity en `Program.cs`:
+  - Tiempo de expiración de 30 días con *sliding expiration*.
+  - `LoginPath = "/login"`, `LogoutPath = "/logout"`.
   - Cookie `HttpOnly`, `Secure` y `SameSite=Lax`.
+- Generar y aplicar la migración que crea las tablas de Identity.
 - Crear página `/login` con formulario: campo *Usuario*, campo *Contraseña*, botón *Entrar*.
-- Endpoint/handler de login que:
-  1. Busca el usuario por `Username` (case-insensitive).
-  2. Verifica el `PasswordHash` con el `PasswordHasher`.
-  3. Si es correcto, emite la cookie con claims: `NameIdentifier` (Id), `Name` (DisplayName), y un claim de rol `Admin` si `IsAdmin = 1`.
-  4. Si falla, muestra error genérico ("Usuario o contraseña inválidos") sin filtrar si existe el usuario.
-- Endpoint de logout que invalida la cookie y redirige a la página de inicio.
-- Layout con nombre del usuario y botón de cerrar sesión.
+- Handler de login que usa `SignInManager<User>`:
+  1. Llama a `SignInManager.PasswordSignInAsync(username, password, isPersistent: true, lockoutOnFailure: false)`.
+  2. Si el resultado es `Succeeded`, redirige al home.
+  3. Si falla (cualquier resultado), muestra error genérico ("Usuario o contraseña inválidos") sin distinguir si el usuario existe.
+- Handler de logout que llama a `SignInManager.SignOutAsync()` y redirige a `/login`.
+- Layout con `DisplayName` del usuario (desde `UserManager.GetUserAsync(User)`) y botón de cerrar sesión.
 - Atributo `[Authorize]` en todas las rutas que requieran login.
-- Atributo `[Authorize(Roles = "Admin")]` (o policy equivalente) en las rutas administrativas.
+- Atributo `[Authorize(Roles = "Admin")]` en las rutas administrativas.
 - **No se implementa pantalla de registro, recuperación de contraseña, ni cambio de contraseña** en esta versión.
 
-**Criterio de aceptación:** Un usuario con cuenta pre-cargada puede iniciar sesión; usuarios inexistentes o con contraseña incorrecta reciben el mismo mensaje de error; las rutas protegidas redirigen a `/login` si no hay sesión activa.
+**Criterio de aceptación:** Un usuario con cuenta pre-cargada puede iniciar sesión; usuarios inexistentes o con contraseña incorrecta reciben el mismo mensaje de error; las rutas protegidas redirigen a `/login` si no hay sesión activa; las rutas de admin devuelven 403 a usuarios sin rol `Admin`.
 
 **Estimación:** 5–7 horas.
 
 **Riesgos:**
-- Almacenar contraseñas en texto plano o con un hash débil es un riesgo crítico: usar siempre PBKDF2 (default de ASP.NET) o BCrypt con suficientes iteraciones.
-- Sin "olvidé mi contraseña", si un usuario pierde su clave, el admin tendrá que regenerarla con un script o actualizando el `PasswordHash` directamente en la BD.
+- Identity deshabilita el lockout por defecto si `lockoutOnFailure: false`; para un login de amigos esto es aceptable, pero si se quiere añadir protección contra fuerza bruta hay que habilitar `lockoutOnFailure: true` y configurar `options.Lockout`.
+- Sin "olvidé mi contraseña", si un usuario pierde su clave, el admin deberá regenerarla usando `UserManager.ResetPasswordAsync()` con un token generado por consola, o actualizando el hash directamente mediante un script.
 
 ---
 

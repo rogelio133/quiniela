@@ -7,8 +7,9 @@ namespace Quiniela.Web.Components.Account;
 
 public sealed class AppUserClaimsPrincipalFactory(
     UserManager<User> userManager,
+    RoleManager<IdentityRole<int>> roleManager,
     IOptions<IdentityOptions> options)
-    : UserClaimsPrincipalFactory<User>(userManager, options)
+    : UserClaimsPrincipalFactory<User, IdentityRole<int>>(userManager, roleManager, options)
 {
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(User user)
     {

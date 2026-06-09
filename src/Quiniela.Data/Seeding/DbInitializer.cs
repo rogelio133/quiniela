@@ -247,7 +247,14 @@ public static class DbInitializer
 
         if (await userManager.Users.AnyAsync())
         {
-            logger.LogInformation("Users already seeded — skipping.");
+            // Users exist; make sure the admin user actually has the Admin role.
+            var existingAdmin = await userManager.FindByNameAsync("admin");
+            if (existingAdmin is not null && !await userManager.IsInRoleAsync(existingAdmin, "Admin"))
+            {
+                await userManager.AddToRoleAsync(existingAdmin, "Admin");
+                logger.LogInformation("Assigned 'Admin' role to existing admin user.");
+            }
+            logger.LogInformation("Users already seeded — skipping creation.");
             return;
         }
 

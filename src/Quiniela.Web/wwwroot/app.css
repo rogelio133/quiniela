@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Nunito', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 a, .btn-link {
@@ -57,4 +57,48 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+/* ── Match card (Module 4) ─────────────────────────────────────────── */
+
+.match-card {
+    max-width: 480px;
+}
+
+/* Circular flag badge */
+.flag-circle-lg {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50%;
+    background-size: cover !important;
+    display: inline-block;
+    border: 1.5px solid #d0d0d0;
+}
+
+/* Selection column — always reserves border space to prevent layout shift */
+.match-option {
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.match-option:not(.match-option-disabled):hover {
+    border-color: rgba(var(--bs-primary-rgb), 0.35);
+    cursor: pointer;
+}
+
+.match-option-selected {
+    border-color: var(--bs-primary) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.07);
+}
+
+.match-option-disabled {
+    cursor: default;
+}
+
+/* Dim the whole card when the match is locked (kickoff passed) */
+.match-locked .card-body {
+    opacity: 0.65;
 }

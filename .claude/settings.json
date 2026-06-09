@@ -18,7 +18,9 @@
       "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -E -d QuinielaDB -Q \"SELECT GroupCode, Name, FlagCode FROM Teams ORDER BY GroupCode, Name\")",
       "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -E -d QuinielaDB -Q \"SELECT Name, LEN\\(Name\\) AS Len FROM Teams WHERE FlagCode IN \\('mx','es','fr','gb-eng','kr'\\) ORDER BY FlagCode\")",
       "Read(//c/Users/rogel/.claude/projects/c--personalprojects-quiniela/memory/**)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Select-String -Pattern \"\\(error|warning RZ|warning CS|Build succeeded|Error\\)\")",
+      "Bash(Select-Object -First 30)"
     ],
     "additionalDirectories": [
       "c:\\Users\\rogel\\.claude\\projects\\c--personalprojects-quiniela\\memory"

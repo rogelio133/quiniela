@@ -27,6 +27,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
         {
             e.Property(t => t.Name).HasMaxLength(100);
             e.Property(t => t.FlagCode).HasMaxLength(10);
+            e.Property(t => t.ShortCode).HasMaxLength(3);
             e.Property(t => t.GroupCode).HasColumnType("char(1)");
         });
 
@@ -40,6 +41,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
                 .WithMany(t => t.AwayMatches)
                 .HasForeignKey(m => m.AwayTeamId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.Property(m => m.Venue).HasMaxLength(100);
             e.Property(m => m.GroupCode).HasColumnType("char(1)");
         });
 

@@ -8,183 +8,183 @@ namespace Quiniela.Data.Seeding;
 
 public static class DbInitializer
 {
-    private record TeamSeed(string Name, string FlagCode, char Group);
-    private record MatchSeed(string Home, string Away, DateTime KickoffUtc, char Group);
+    private record TeamSeed(string Name, string FlagCode, string ShortCode, char Group);
+    private record MatchSeed(string Home, string Away, DateTime KickoffUtc, char Group, string Venue);
 
     // 48 selecciones clasificadas — FIFA World Cup 2026
     private static readonly TeamSeed[] Teams =
     [
         // Grupo A (Ciudad de México / Guadalajara)
-        new("México",           "mx",     'A'),
-        new("Sudáfrica",        "za",     'A'),
-        new("Corea del Sur",    "kr",     'A'),
-        new("República Checa",  "cz",     'A'),
+        new("México",           "mx",     "MEX", 'A'),
+        new("Sudáfrica",        "za",     "RSA", 'A'),
+        new("Corea del Sur",    "kr",     "KOR", 'A'),
+        new("República Checa",  "cz",     "CZE", 'A'),
 
-        // Grupo B (Los Ángeles / San Francisco / Seattle)
-        new("Canadá",                   "ca", 'B'),
-        new("Bosnia y Herzegovina",     "ba", 'B'),
-        new("Catar",                    "qa", 'B'),
-        new("Suiza",                    "ch", 'B'),
+        // Grupo B (Toronto / Vancouver / Seattle)
+        new("Canadá",                   "ca", "CAN", 'B'),
+        new("Bosnia y Herzegovina",     "ba", "BIH", 'B'),
+        new("Catar",                    "qa", "QAT", 'B'),
+        new("Suiza",                    "ch", "SUI", 'B'),
 
         // Grupo C (Boston / Nueva York / Nueva Jersey)
-        new("Brasil",     "br",     'C'),
-        new("Marruecos",  "ma",     'C'),
-        new("Haití",      "ht",     'C'),
-        new("Escocia",    "gb-sct", 'C'),
+        new("Brasil",     "br",     "BRA", 'C'),
+        new("Marruecos",  "ma",     "MAR", 'C'),
+        new("Haití",      "ht",     "HAI", 'C'),
+        new("Escocia",    "gb-sct", "SCO", 'C'),
 
         // Grupo D (Dallas / Houston)
-        new("Estados Unidos",  "us", 'D'),
-        new("Paraguay",        "py", 'D'),
-        new("Australia",       "au", 'D'),
-        new("Turquía",         "tr", 'D'),
+        new("Estados Unidos",  "us", "USA", 'D'),
+        new("Paraguay",        "py", "PAR", 'D'),
+        new("Australia",       "au", "AUS", 'D'),
+        new("Turquía",         "tr", "TUR", 'D'),
 
         // Grupo E (Atlanta / Miami)
-        new("Alemania",        "de", 'E'),
-        new("Curazao",         "cw", 'E'),
-        new("Costa de Marfil", "ci", 'E'),
-        new("Ecuador",         "ec", 'E'),
+        new("Alemania",        "de", "GER", 'E'),
+        new("Curazao",         "cw", "CUW", 'E'),
+        new("Costa de Marfil", "ci", "CIV", 'E'),
+        new("Ecuador",         "ec", "ECU", 'E'),
 
-        // Grupo F (Kansas City / Chicago)
-        new("Países Bajos",  "nl", 'F'),
-        new("Japón",         "jp", 'F'),
-        new("Suecia",        "se", 'F'),
-        new("Túnez",         "tn", 'F'),
+        // Grupo F (Kansas City / Seattle)
+        new("Países Bajos",  "nl", "NED", 'F'),
+        new("Japón",         "jp", "JPN", 'F'),
+        new("Suecia",        "se", "SWE", 'F'),
+        new("Túnez",         "tn", "TUN", 'F'),
 
         // Grupo G (Los Ángeles / San Francisco)
-        new("Bélgica",       "be", 'G'),
-        new("Egipto",        "eg", 'G'),
-        new("Irán",          "ir", 'G'),
-        new("Nueva Zelanda", "nz", 'G'),
+        new("Bélgica",       "be", "BEL", 'G'),
+        new("Egipto",        "eg", "EGY", 'G'),
+        new("Irán",          "ir", "IRN", 'G'),
+        new("Nueva Zelanda", "nz", "NZL", 'G'),
 
         // Grupo H (Ciudad de México / Monterrey)
-        new("España",          "es", 'H'),
-        new("Cabo Verde",      "cv", 'H'),
-        new("Arabia Saudita",  "sa", 'H'),
-        new("Uruguay",         "uy", 'H'),
+        new("España",          "es", "ESP", 'H'),
+        new("Cabo Verde",      "cv", "CPV", 'H'),
+        new("Arabia Saudita",  "sa", "KSA", 'H'),
+        new("Uruguay",         "uy", "URU", 'H'),
 
-        // Grupo I (Boston / Nueva York / Nueva Jersey)
-        new("Francia",  "fr", 'I'),
-        new("Senegal",  "sn", 'I'),
-        new("Irak",     "iq", 'I'),
-        new("Noruega",  "no", 'I'),
+        // Grupo I (Nueva York / Boston / Filadelfia)
+        new("Francia",  "fr", "FRA", 'I'),
+        new("Senegal",  "sn", "SEN", 'I'),
+        new("Irak",     "iq", "IRQ", 'I'),
+        new("Noruega",  "no", "NOR", 'I'),
 
         // Grupo J (Dallas / Kansas City)
-        new("Argentina",  "ar", 'J'),
-        new("Argelia",    "dz", 'J'),
-        new("Austria",    "at", 'J'),
-        new("Jordania",   "jo", 'J'),
+        new("Argentina",  "ar", "ARG", 'J'),
+        new("Argelia",    "dz", "ALG", 'J'),
+        new("Austria",    "at", "AUT", 'J'),
+        new("Jordania",   "jo", "JOR", 'J'),
 
         // Grupo K (Vancouver / Toronto)
-        new("Portugal",    "pt", 'K'),
-        new("Congo RD",    "cd", 'K'),
-        new("Uzbekistán",  "uz", 'K'),
-        new("Colombia",    "co", 'K'),
+        new("Portugal",    "pt", "POR", 'K'),
+        new("Congo RD",    "cd", "COD", 'K'),
+        new("Uzbekistán",  "uz", "UZB", 'K'),
+        new("Colombia",    "co", "COL", 'K'),
 
         // Grupo L (Atlanta / Miami / Filadelfia)
-        new("Inglaterra",  "gb-eng", 'L'),
-        new("Croacia",     "hr",     'L'),
-        new("Ghana",       "gh",     'L'),
-        new("Panamá",      "pa",     'L'),
+        new("Inglaterra",  "gb-eng", "ENG", 'L'),
+        new("Croacia",     "hr",     "CRO", 'L'),
+        new("Ghana",       "gh",     "GHA", 'L'),
+        new("Panamá",      "pa",     "PAN", 'L'),
     ];
 
     // 72 partidos de fase de grupos — horarios en UTC (fuente: ESPN schedule, ET+4h)
     private static readonly MatchSeed[] GroupMatches =
     [
         // ── Grupo A ─────────────────────────────────────────────────
-        new("México",          "Sudáfrica",       new(2026, 6, 11, 19,  0, 0, DateTimeKind.Utc), 'A'),
-        new("Corea del Sur",   "República Checa", new(2026, 6, 12,  2,  0, 0, DateTimeKind.Utc), 'A'),
-        new("República Checa", "Sudáfrica",       new(2026, 6, 18, 16,  0, 0, DateTimeKind.Utc), 'A'),
-        new("México",          "Corea del Sur",   new(2026, 6, 19,  3,  0, 0, DateTimeKind.Utc), 'A'),
-        new("República Checa", "México",          new(2026, 6, 25,  1,  0, 0, DateTimeKind.Utc), 'A'),
-        new("Sudáfrica",       "Corea del Sur",   new(2026, 6, 25,  1,  0, 0, DateTimeKind.Utc), 'A'),
+        new("México",          "Sudáfrica",       new(2026, 6, 11, 19,  0, 0, DateTimeKind.Utc), 'A', "Estadio Azteca"),
+        new("Corea del Sur",   "República Checa", new(2026, 6, 12,  2,  0, 0, DateTimeKind.Utc), 'A', "Estadio Guadalajara"),
+        new("República Checa", "Sudáfrica",       new(2026, 6, 18, 16,  0, 0, DateTimeKind.Utc), 'A', "Estadio Guadalajara"),
+        new("México",          "Corea del Sur",   new(2026, 6, 19,  3,  0, 0, DateTimeKind.Utc), 'A', "Estadio Azteca"),
+        new("República Checa", "México",          new(2026, 6, 25,  1,  0, 0, DateTimeKind.Utc), 'A', "Estadio Guadalajara"),
+        new("Sudáfrica",       "Corea del Sur",   new(2026, 6, 25,  1,  0, 0, DateTimeKind.Utc), 'A', "Estadio Azteca"),
 
         // ── Grupo B ─────────────────────────────────────────────────
-        new("Canadá",                 "Bosnia y Herzegovina", new(2026, 6, 12, 19,  0, 0, DateTimeKind.Utc), 'B'),
-        new("Catar",                  "Suiza",                new(2026, 6, 13, 19,  0, 0, DateTimeKind.Utc), 'B'),
-        new("Suiza",                  "Bosnia y Herzegovina", new(2026, 6, 18, 19,  0, 0, DateTimeKind.Utc), 'B'),
-        new("Canadá",                 "Catar",                new(2026, 6, 18, 22,  0, 0, DateTimeKind.Utc), 'B'),
-        new("Suiza",                  "Canadá",               new(2026, 6, 24, 19,  0, 0, DateTimeKind.Utc), 'B'),
-        new("Bosnia y Herzegovina",   "Catar",                new(2026, 6, 24, 19,  0, 0, DateTimeKind.Utc), 'B'),
+        new("Canadá",                 "Bosnia y Herzegovina", new(2026, 6, 12, 19,  0, 0, DateTimeKind.Utc), 'B', "BMO Field"),
+        new("Catar",                  "Suiza",                new(2026, 6, 13, 19,  0, 0, DateTimeKind.Utc), 'B', "Lumen Field"),
+        new("Suiza",                  "Bosnia y Herzegovina", new(2026, 6, 18, 19,  0, 0, DateTimeKind.Utc), 'B', "BC Place"),
+        new("Canadá",                 "Catar",                new(2026, 6, 18, 22,  0, 0, DateTimeKind.Utc), 'B', "BMO Field"),
+        new("Suiza",                  "Canadá",               new(2026, 6, 24, 19,  0, 0, DateTimeKind.Utc), 'B', "Lumen Field"),
+        new("Bosnia y Herzegovina",   "Catar",                new(2026, 6, 24, 19,  0, 0, DateTimeKind.Utc), 'B', "BC Place"),
 
         // ── Grupo C ─────────────────────────────────────────────────
-        new("Brasil",    "Marruecos", new(2026, 6, 13, 22,  0, 0, DateTimeKind.Utc), 'C'),
-        new("Haití",     "Escocia",   new(2026, 6, 14,  1,  0, 0, DateTimeKind.Utc), 'C'),
-        new("Escocia",   "Marruecos", new(2026, 6, 19, 22,  0, 0, DateTimeKind.Utc), 'C'),
-        new("Brasil",    "Haití",     new(2026, 6, 20,  1,  0, 0, DateTimeKind.Utc), 'C'),
-        new("Escocia",   "Brasil",    new(2026, 6, 24, 22,  0, 0, DateTimeKind.Utc), 'C'),
-        new("Marruecos", "Haití",     new(2026, 6, 24, 22,  0, 0, DateTimeKind.Utc), 'C'),
+        new("Brasil",    "Marruecos", new(2026, 6, 13, 22,  0, 0, DateTimeKind.Utc), 'C', "MetLife Stadium"),
+        new("Haití",     "Escocia",   new(2026, 6, 14,  1,  0, 0, DateTimeKind.Utc), 'C', "Gillette Stadium"),
+        new("Escocia",   "Marruecos", new(2026, 6, 19, 22,  0, 0, DateTimeKind.Utc), 'C', "MetLife Stadium"),
+        new("Brasil",    "Haití",     new(2026, 6, 20,  1,  0, 0, DateTimeKind.Utc), 'C', "Gillette Stadium"),
+        new("Escocia",   "Brasil",    new(2026, 6, 24, 22,  0, 0, DateTimeKind.Utc), 'C', "MetLife Stadium"),
+        new("Marruecos", "Haití",     new(2026, 6, 24, 22,  0, 0, DateTimeKind.Utc), 'C', "Gillette Stadium"),
 
         // ── Grupo D ─────────────────────────────────────────────────
-        new("Estados Unidos", "Paraguay",       new(2026, 6, 13,  1,  0, 0, DateTimeKind.Utc), 'D'),
-        new("Australia",      "Turquía",        new(2026, 6, 14,  4,  0, 0, DateTimeKind.Utc), 'D'),
-        new("Estados Unidos", "Australia",      new(2026, 6, 19, 19,  0, 0, DateTimeKind.Utc), 'D'),
-        new("Turquía",        "Paraguay",       new(2026, 6, 20,  4,  0, 0, DateTimeKind.Utc), 'D'),
-        new("Turquía",        "Estados Unidos", new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D'),
-        new("Paraguay",       "Australia",      new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D'),
+        new("Estados Unidos", "Paraguay",       new(2026, 6, 13,  1,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
+        new("Australia",      "Turquía",        new(2026, 6, 14,  4,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
+        new("Estados Unidos", "Australia",      new(2026, 6, 19, 19,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
+        new("Turquía",        "Paraguay",       new(2026, 6, 20,  4,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
+        new("Turquía",        "Estados Unidos", new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
+        new("Paraguay",       "Australia",      new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
 
         // ── Grupo E ─────────────────────────────────────────────────
-        new("Alemania",        "Curazao",        new(2026, 6, 14, 17,  0, 0, DateTimeKind.Utc), 'E'),
-        new("Costa de Marfil", "Ecuador",        new(2026, 6, 14, 23,  0, 0, DateTimeKind.Utc), 'E'),
-        new("Alemania",        "Costa de Marfil", new(2026, 6, 20, 20,  0, 0, DateTimeKind.Utc), 'E'),
-        new("Ecuador",         "Curazao",        new(2026, 6, 21,  0,  0, 0, DateTimeKind.Utc), 'E'),
-        new("Ecuador",         "Alemania",       new(2026, 6, 25, 20,  0, 0, DateTimeKind.Utc), 'E'),
-        new("Curazao",         "Costa de Marfil", new(2026, 6, 25, 20,  0, 0, DateTimeKind.Utc), 'E'),
+        new("Alemania",        "Curazao",         new(2026, 6, 14, 17,  0, 0, DateTimeKind.Utc), 'E', "Mercedes-Benz Stadium"),
+        new("Costa de Marfil", "Ecuador",         new(2026, 6, 14, 23,  0, 0, DateTimeKind.Utc), 'E', "Hard Rock Stadium"),
+        new("Alemania",        "Costa de Marfil", new(2026, 6, 20, 20,  0, 0, DateTimeKind.Utc), 'E', "Mercedes-Benz Stadium"),
+        new("Ecuador",         "Curazao",         new(2026, 6, 21,  0,  0, 0, DateTimeKind.Utc), 'E', "Hard Rock Stadium"),
+        new("Ecuador",         "Alemania",        new(2026, 6, 25, 20,  0, 0, DateTimeKind.Utc), 'E', "Hard Rock Stadium"),
+        new("Curazao",         "Costa de Marfil", new(2026, 6, 25, 20,  0, 0, DateTimeKind.Utc), 'E', "Mercedes-Benz Stadium"),
 
         // ── Grupo F ─────────────────────────────────────────────────
-        new("Países Bajos", "Japón",        new(2026, 6, 14, 20,  0, 0, DateTimeKind.Utc), 'F'),
-        new("Suecia",       "Túnez",        new(2026, 6, 15,  2,  0, 0, DateTimeKind.Utc), 'F'),
-        new("Países Bajos", "Suecia",       new(2026, 6, 20, 17,  0, 0, DateTimeKind.Utc), 'F'),
-        new("Túnez",        "Japón",        new(2026, 6, 21,  4,  0, 0, DateTimeKind.Utc), 'F'),
-        new("Japón",        "Suecia",       new(2026, 6, 25, 23,  0, 0, DateTimeKind.Utc), 'F'),
-        new("Túnez",        "Países Bajos", new(2026, 6, 25, 23,  0, 0, DateTimeKind.Utc), 'F'),
+        new("Países Bajos", "Japón",        new(2026, 6, 14, 20,  0, 0, DateTimeKind.Utc), 'F', "Arrowhead Stadium"),
+        new("Suecia",       "Túnez",        new(2026, 6, 15,  2,  0, 0, DateTimeKind.Utc), 'F', "Lumen Field"),
+        new("Países Bajos", "Suecia",       new(2026, 6, 20, 17,  0, 0, DateTimeKind.Utc), 'F', "Arrowhead Stadium"),
+        new("Túnez",        "Japón",        new(2026, 6, 21,  4,  0, 0, DateTimeKind.Utc), 'F', "Lumen Field"),
+        new("Japón",        "Suecia",       new(2026, 6, 25, 23,  0, 0, DateTimeKind.Utc), 'F', "Lumen Field"),
+        new("Túnez",        "Países Bajos", new(2026, 6, 25, 23,  0, 0, DateTimeKind.Utc), 'F', "Arrowhead Stadium"),
 
         // ── Grupo G ─────────────────────────────────────────────────
-        new("Bélgica",      "Egipto",       new(2026, 6, 15, 22,  0, 0, DateTimeKind.Utc), 'G'),
-        new("Irán",         "Nueva Zelanda", new(2026, 6, 16,  4,  0, 0, DateTimeKind.Utc), 'G'),
-        new("Bélgica",      "Irán",         new(2026, 6, 21, 19,  0, 0, DateTimeKind.Utc), 'G'),
-        new("Nueva Zelanda", "Egipto",      new(2026, 6, 22,  1,  0, 0, DateTimeKind.Utc), 'G'),
-        new("Egipto",       "Irán",         new(2026, 6, 27,  3,  0, 0, DateTimeKind.Utc), 'G'),
-        new("Nueva Zelanda", "Bélgica",     new(2026, 6, 27,  3,  0, 0, DateTimeKind.Utc), 'G'),
+        new("Bélgica",       "Egipto",        new(2026, 6, 15, 22,  0, 0, DateTimeKind.Utc), 'G', "SoFi Stadium"),
+        new("Irán",          "Nueva Zelanda", new(2026, 6, 16,  4,  0, 0, DateTimeKind.Utc), 'G', "Levi's Stadium"),
+        new("Bélgica",       "Irán",          new(2026, 6, 21, 19,  0, 0, DateTimeKind.Utc), 'G', "SoFi Stadium"),
+        new("Nueva Zelanda", "Egipto",        new(2026, 6, 22,  1,  0, 0, DateTimeKind.Utc), 'G', "Levi's Stadium"),
+        new("Egipto",        "Irán",          new(2026, 6, 27,  3,  0, 0, DateTimeKind.Utc), 'G', "Levi's Stadium"),
+        new("Nueva Zelanda", "Bélgica",       new(2026, 6, 27,  3,  0, 0, DateTimeKind.Utc), 'G', "SoFi Stadium"),
 
         // ── Grupo H ─────────────────────────────────────────────────
-        new("España",         "Cabo Verde",    new(2026, 6, 15, 17,  0, 0, DateTimeKind.Utc), 'H'),
-        new("Arabia Saudita", "Uruguay",       new(2026, 6, 15, 22,  0, 0, DateTimeKind.Utc), 'H'),
-        new("España",         "Arabia Saudita", new(2026, 6, 21, 16,  0, 0, DateTimeKind.Utc), 'H'),
-        new("Uruguay",        "Cabo Verde",    new(2026, 6, 21, 22,  0, 0, DateTimeKind.Utc), 'H'),
-        new("Cabo Verde",     "Arabia Saudita", new(2026, 6, 27,  0,  0, 0, DateTimeKind.Utc), 'H'),
-        new("Uruguay",        "España",        new(2026, 6, 27,  0,  0, 0, DateTimeKind.Utc), 'H'),
+        new("España",         "Cabo Verde",     new(2026, 6, 15, 17,  0, 0, DateTimeKind.Utc), 'H', "Estadio Azteca"),
+        new("Arabia Saudita", "Uruguay",        new(2026, 6, 15, 22,  0, 0, DateTimeKind.Utc), 'H', "Estadio BBVA"),
+        new("España",         "Arabia Saudita", new(2026, 6, 21, 16,  0, 0, DateTimeKind.Utc), 'H', "Estadio Azteca"),
+        new("Uruguay",        "Cabo Verde",     new(2026, 6, 21, 22,  0, 0, DateTimeKind.Utc), 'H', "Estadio BBVA"),
+        new("Cabo Verde",     "Arabia Saudita", new(2026, 6, 27,  0,  0, 0, DateTimeKind.Utc), 'H', "Estadio BBVA"),
+        new("Uruguay",        "España",         new(2026, 6, 27,  0,  0, 0, DateTimeKind.Utc), 'H', "Estadio Azteca"),
 
         // ── Grupo I ─────────────────────────────────────────────────
-        new("Francia", "Senegal", new(2026, 6, 16, 19,  0, 0, DateTimeKind.Utc), 'I'),
-        new("Irak",    "Noruega", new(2026, 6, 16, 22,  0, 0, DateTimeKind.Utc), 'I'),
-        new("Francia", "Irak",    new(2026, 6, 22, 21,  0, 0, DateTimeKind.Utc), 'I'),
-        new("Noruega", "Senegal", new(2026, 6, 23,  0,  0, 0, DateTimeKind.Utc), 'I'),
-        new("Noruega", "Francia", new(2026, 6, 26, 19,  0, 0, DateTimeKind.Utc), 'I'),
-        new("Senegal", "Irak",    new(2026, 6, 26, 19,  0, 0, DateTimeKind.Utc), 'I'),
+        new("Francia", "Senegal", new(2026, 6, 16, 19,  0, 0, DateTimeKind.Utc), 'I', "MetLife Stadium"),
+        new("Irak",    "Noruega", new(2026, 6, 16, 22,  0, 0, DateTimeKind.Utc), 'I', "Lincoln Financial Field"),
+        new("Francia", "Irak",    new(2026, 6, 22, 21,  0, 0, DateTimeKind.Utc), 'I', "Gillette Stadium"),
+        new("Noruega", "Senegal", new(2026, 6, 23,  0,  0, 0, DateTimeKind.Utc), 'I', "Lincoln Financial Field"),
+        new("Noruega", "Francia", new(2026, 6, 26, 19,  0, 0, DateTimeKind.Utc), 'I', "MetLife Stadium"),
+        new("Senegal", "Irak",    new(2026, 6, 26, 19,  0, 0, DateTimeKind.Utc), 'I', "Gillette Stadium"),
 
         // ── Grupo J ─────────────────────────────────────────────────
-        new("Argentina", "Argelia",   new(2026, 6, 17,  1,  0, 0, DateTimeKind.Utc), 'J'),
-        new("Austria",   "Jordania",  new(2026, 6, 17,  4,  0, 0, DateTimeKind.Utc), 'J'),
-        new("Argentina", "Austria",   new(2026, 6, 22, 17,  0, 0, DateTimeKind.Utc), 'J'),
-        new("Jordania",  "Argelia",   new(2026, 6, 23,  3,  0, 0, DateTimeKind.Utc), 'J'),
-        new("Argelia",   "Austria",   new(2026, 6, 28,  2,  0, 0, DateTimeKind.Utc), 'J'),
-        new("Jordania",  "Argentina", new(2026, 6, 28,  2,  0, 0, DateTimeKind.Utc), 'J'),
+        new("Argentina", "Argelia",   new(2026, 6, 17,  1,  0, 0, DateTimeKind.Utc), 'J', "AT&T Stadium"),
+        new("Austria",   "Jordania",  new(2026, 6, 17,  4,  0, 0, DateTimeKind.Utc), 'J', "Arrowhead Stadium"),
+        new("Argentina", "Austria",   new(2026, 6, 22, 17,  0, 0, DateTimeKind.Utc), 'J', "AT&T Stadium"),
+        new("Jordania",  "Argelia",   new(2026, 6, 23,  3,  0, 0, DateTimeKind.Utc), 'J', "Arrowhead Stadium"),
+        new("Argelia",   "Austria",   new(2026, 6, 28,  2,  0, 0, DateTimeKind.Utc), 'J', "Arrowhead Stadium"),
+        new("Jordania",  "Argentina", new(2026, 6, 28,  2,  0, 0, DateTimeKind.Utc), 'J', "AT&T Stadium"),
 
         // ── Grupo K ─────────────────────────────────────────────────
-        new("Portugal",   "Congo RD",    new(2026, 6, 17, 17,  0, 0, DateTimeKind.Utc), 'K'),
-        new("Uzbekistán", "Colombia",    new(2026, 6, 18,  2,  0, 0, DateTimeKind.Utc), 'K'),
-        new("Portugal",   "Uzbekistán",  new(2026, 6, 23, 17,  0, 0, DateTimeKind.Utc), 'K'),
-        new("Colombia",   "Congo RD",    new(2026, 6, 24,  2,  0, 0, DateTimeKind.Utc), 'K'),
-        new("Colombia",   "Portugal",    new(2026, 6, 27, 23, 30, 0, DateTimeKind.Utc), 'K'),
-        new("Congo RD",   "Uzbekistán",  new(2026, 6, 27, 23, 30, 0, DateTimeKind.Utc), 'K'),
+        new("Portugal",   "Congo RD",   new(2026, 6, 17, 17,  0, 0, DateTimeKind.Utc), 'K', "BC Place"),
+        new("Uzbekistán", "Colombia",   new(2026, 6, 18,  2,  0, 0, DateTimeKind.Utc), 'K', "BMO Field"),
+        new("Portugal",   "Uzbekistán", new(2026, 6, 23, 17,  0, 0, DateTimeKind.Utc), 'K', "BC Place"),
+        new("Colombia",   "Congo RD",   new(2026, 6, 24,  2,  0, 0, DateTimeKind.Utc), 'K', "BMO Field"),
+        new("Colombia",   "Portugal",   new(2026, 6, 27, 23, 30, 0, DateTimeKind.Utc), 'K', "BMO Field"),
+        new("Congo RD",   "Uzbekistán", new(2026, 6, 27, 23, 30, 0, DateTimeKind.Utc), 'K', "BC Place"),
 
         // ── Grupo L ─────────────────────────────────────────────────
-        new("Inglaterra", "Croacia",    new(2026, 6, 17, 20,  0, 0, DateTimeKind.Utc), 'L'),
-        new("Ghana",      "Panamá",     new(2026, 6, 17, 23,  0, 0, DateTimeKind.Utc), 'L'),
-        new("Inglaterra", "Ghana",      new(2026, 6, 23, 20,  0, 0, DateTimeKind.Utc), 'L'),
-        new("Panamá",     "Croacia",    new(2026, 6, 23, 23,  0, 0, DateTimeKind.Utc), 'L'),
-        new("Panamá",     "Inglaterra", new(2026, 6, 27, 21,  0, 0, DateTimeKind.Utc), 'L'),
-        new("Croacia",    "Ghana",      new(2026, 6, 27, 21,  0, 0, DateTimeKind.Utc), 'L'),
+        new("Inglaterra", "Croacia",    new(2026, 6, 17, 20,  0, 0, DateTimeKind.Utc), 'L', "Hard Rock Stadium"),
+        new("Ghana",      "Panamá",     new(2026, 6, 17, 23,  0, 0, DateTimeKind.Utc), 'L', "Mercedes-Benz Stadium"),
+        new("Inglaterra", "Ghana",      new(2026, 6, 23, 20,  0, 0, DateTimeKind.Utc), 'L', "Lincoln Financial Field"),
+        new("Panamá",     "Croacia",    new(2026, 6, 23, 23,  0, 0, DateTimeKind.Utc), 'L', "Hard Rock Stadium"),
+        new("Panamá",     "Inglaterra", new(2026, 6, 27, 21,  0, 0, DateTimeKind.Utc), 'L', "Mercedes-Benz Stadium"),
+        new("Croacia",    "Ghana",      new(2026, 6, 27, 21,  0, 0, DateTimeKind.Utc), 'L', "Lincoln Financial Field"),
     ];
 
     public static async Task SeedAsync(
@@ -202,12 +202,13 @@ public static class DbInitializer
     {
         if (await context.Teams.AnyAsync())
         {
-            logger.LogInformation("Teams already seeded — skipping.");
+            await BackfillTeamShortCodesAsync(context, logger);
+            await BackfillMatchVenuesAsync(context, logger);
             return;
         }
 
         var teams = Teams
-            .Select(t => new Team { Name = t.Name, FlagCode = t.FlagCode, GroupCode = t.Group })
+            .Select(t => new Team { Name = t.Name, FlagCode = t.FlagCode, ShortCode = t.ShortCode, GroupCode = t.Group })
             .ToList();
 
         context.Teams.AddRange(teams);
@@ -222,6 +223,7 @@ public static class DbInitializer
                 HomeTeam   = byName[m.Home],
                 AwayTeam   = byName[m.Away],
                 KickoffUtc = m.KickoffUtc,
+                Venue      = m.Venue,
                 Stage      = MatchStage.Grupos,
                 GroupCode  = m.Group,
                 Status     = MatchStatus.Programado,
@@ -231,6 +233,49 @@ public static class DbInitializer
         context.Matches.AddRange(matches);
         await context.SaveChangesAsync();
         logger.LogInformation("Seeded {Count} group-stage matches.", matches.Count);
+    }
+
+    private static async Task BackfillTeamShortCodesAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var shortCodeBySeedName = Teams.ToDictionary(t => t.Name, t => t.ShortCode, StringComparer.OrdinalIgnoreCase);
+        var teamsToUpdate = await context.Teams
+            .Where(t => t.ShortCode == null)
+            .ToListAsync();
+
+        if (teamsToUpdate.Count == 0) return;
+
+        foreach (var team in teamsToUpdate)
+        {
+            if (shortCodeBySeedName.TryGetValue(team.Name, out var code))
+                team.ShortCode = code;
+        }
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("Backfilled ShortCode for {Count} teams.", teamsToUpdate.Count);
+    }
+
+    private static async Task BackfillMatchVenuesAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var venueBySeedKey = GroupMatches
+            .ToDictionary(m => (m.Home, m.Away, m.KickoffUtc), m => m.Venue);
+
+        var matchesToUpdate = await context.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .Where(m => m.Venue == null && m.Stage == MatchStage.Grupos)
+            .ToListAsync();
+
+        if (matchesToUpdate.Count == 0) return;
+
+        foreach (var match in matchesToUpdate)
+        {
+            var key = (match.HomeTeam!.Name, match.AwayTeam!.Name, match.KickoffUtc);
+            if (venueBySeedKey.TryGetValue(key, out var venue))
+                match.Venue = venue;
+        }
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("Backfilled Venue for {Count} group-stage matches.", matchesToUpdate.Count);
     }
 
     private static async Task SeedUsersAsync(

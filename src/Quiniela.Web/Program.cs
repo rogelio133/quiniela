@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Quiniela.Data;
 using Quiniela.Data.Entities;
+using Quiniela.Data.Seeding;
 using Quiniela.Web.Components;
 using Quiniela.Web.Components.Account;
 
@@ -58,5 +59,16 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var sp = scope.ServiceProvider;
+    await DbInitializer.SeedAsync(
+        sp.GetRequiredService<QuinielaDbContext>(),
+        sp.GetRequiredService<UserManager<User>>(),
+        sp.GetRequiredService<RoleManager<IdentityRole<int>>>(),
+        app.Configuration,
+        sp.GetRequiredService<ILoggerFactory>().CreateLogger("DbInitializer"));
+}
 
 app.Run();

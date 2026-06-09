@@ -39,6 +39,15 @@ AspNetUsers (
     -- ...demás columnas estándar de Identity (NormalizedUserName, SecurityStamp, etc.)
 )
 
+-- TEAMS: selecciones participantes
+TEAMS (
+    Id              INT IDENTITY   PRIMARY KEY,
+    Name            NVARCHAR(100)  NOT NULL,
+    FlagCode        CHAR(2)        NOT NULL,       -- ISO 3166-1 alpha-2 en minúsculas (ej. "mx", "us", "ar")
+    GroupCode       CHAR(1)        NULL            -- 'A'..'L', NULL para fases eliminatorias
+    -- Uso en frontend: <span class="fi fi-@team.FlagCode"></span>
+)
+
 -- PREDICTIONS: sin marcador, solo el resultado
 PREDICTIONS (
     Id              INT IDENTITY   PRIMARY KEY,
@@ -149,11 +158,34 @@ MATCHES (
 
 ## Módulo 2 — Datos base del torneo (seed)
 
-**Objetivo:** Cargar las 48 selecciones, los 72 partidos de fase de grupos y los usuarios iniciales en la BD.
+**Objetivo:** Cargar las 48 selecciones (con banderas), los 72 partidos de fase de grupos y los usuarios iniciales en la BD.
 
-**Tareas:**
+### Prerequisito: columna FlagCode en Teams
+
+Antes de crear el seed, la entidad `Team` incluye `FlagCode CHAR(2) NOT NULL` — el código ISO 3166-1 alpha-2 en minúsculas. Ya está incorporado en la entidad y configurado en `QuinielaDbContext`. Hay que generar la migración correspondiente:
+
+```bash
+dotnet ef migrations add AddTeamFlagCode --project src/Quiniela.Data --startup-project src/Quiniela.Web
+dotnet ef database update --project src/Quiniela.Data --startup-project src/Quiniela.Web
+```
+
+### Integración de banderas con flag-icons
+
+La librería `flag-icons` ya está referenciada vía CDN en `App.razor`. Uso en cualquier componente Razor:
+
+```razor
+<span class="fi fi-@team.FlagCode.ToLower()" title="@team.Name"></span>
+```
+
+El CDN apunta a `flag-icons@7.2.3` (jsdelivr). Si se prefiere sin dependencia de CDN, se puede instalar el paquete npm y copiar los assets a `wwwroot/lib/flag-icons/`.
+
+### Tareas
+
+- Generar y aplicar la migración `AddTeamFlagCode` (ver arriba).
 - Crear seeder en `OnModelCreating` o script de inicialización que solo corra si las tablas están vacías.
-- Cargar las 48 selecciones con su grupo asignado (A–L), conforme al sorteo oficial de la FIFA.
+- Cargar las 48 selecciones con su grupo asignado (A–L) y su `FlagCode` ISO alpha-2, conforme al sorteo oficial de la FIFA.
+  - Referencia rápida de códigos: `ar`=Argentina, `br`=Brasil, `mx`=México, `us`=EE.UU., `ca`=Canadá, `fr`=Francia, `de`=Alemania, `es`=España, `pt`=Portugal, `gb-eng`=Inglaterra, `nl`=Países Bajos, `hr`=Croacia, `ma`=Marruecos, `sn`=Senegal, `jp`=Japón, `au`=Australia, etc.
+  - Para selecciones con código especial en `flag-icons` (Gales=`gb-wls`, Inglaterra=`gb-eng`, Escocia=`gb-sct`), usar el código extendido IANA, que la librería soporta.
 - Cargar los 72 partidos de fase de grupos con `HomeTeamId`, `AwayTeamId`, `KickoffUtc` (en UTC), `Stage = Grupos`, `GroupCode`.
 - Los 32 partidos de eliminatorias se crearán dinámicamente al cerrar la fase de grupos (módulo 8).
 - Confirmar que las fechas en UTC son consistentes con los horarios oficiales de la FIFA.
@@ -165,10 +197,12 @@ MATCHES (
 
 **Criterio de aceptación:**
 - Una consulta `SELECT COUNT(*) FROM MATCHES WHERE Stage = 0` devuelve 72 y todos tienen ambos equipos asignados.
-- Una consulta `SELECT COUNT(*) FROM USERS` devuelve 3, y exactamente uno tiene `IsAdmin = 1`.
+- Una consulta `SELECT COUNT(*) FROM Teams` devuelve 48, y cada fila tiene `FlagCode` de 2 caracteres.
+- La bandera de cada selección se renderiza correctamente en el componente Razor (`<span class="fi fi-@team.FlagCode">`) sin errores 404 en la CDN.
+- Una consulta sobre la tabla de usuarios devuelve 3 registros, exactamente uno con `IsAdmin = 1`.
 - Los 3 usuarios pueden iniciar sesión con sus contraseñas iniciales.
 
-**Estimación:** 5–7 horas (la mayor parte es transcribir el fixture oficial; +1 hora por la generación segura de hashes y la migración de usuarios).
+**Estimación:** 6–8 horas (la mayor parte es transcribir el fixture oficial con los `FlagCode`; +1 hora por la generación segura de hashes y la migración de usuarios).
 
 ---
 

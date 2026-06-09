@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Quiniela.Data/Quiniela.Data.csproj" />
+    <Project Path="src/Quiniela.Web/Quiniela.Web.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,90 @@
+## .NET / C# ##
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+
+## ASP.NET Core ##
+# User Secrets are stored outside the project, but exclude local overrides
+appsettings.*.local.json
+
+## EF Core ##
+# Migrations snapshots are committed, but not temp files
+
+## Build outputs ##
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet ##
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/repositories.config
+
+## Visual Studio ##
+.vs/
+*.rsuser
+*.vspx
+*.sap
+*.vsk
+*.ncb
+*.sdf
+*.opensdf
+*.vcxproj.filters
+*.vcxproj.user
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+## Rider / JetBrains ##
+.idea/
+*.sln.iml
+
+## VS Code ##
+.vscode/
+
+## OS ##
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Secrets — never commit these ##
+*.pfx
+*.p12
+secrets.json
+**/secrets/

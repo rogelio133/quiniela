@@ -1,0 +1,186 @@
+@page "/profile"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject ProfileService ProfileService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Mi Perfil</PageTitle>
+
+<div class="container" style="max-width:480px;">
+
+    
+
+    <h2 class="fw-bold mb-4">👤 Mi Perfil</h2>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* ── Avatar ────────────────────────────────────────── *@
+        <div class="text-center mb-4">
+            @if (!string.IsNullOrEmpty(picturePath))
+            {
+                <img src="@picturePath?v=@picVersion"
+                     class="rounded-circle border shadow-sm"
+                     style="width:100px;height:100px;object-fit:cover;"
+                     alt="Foto de perfil" />
+            }
+            else
+            {
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border shadow-sm"
+                     style="width:100px;height:100px;font-size:3rem;">
+                    ⚽
+                </div>
+            }
+        </div>
+
+        @* ── Upload picture ─────────────────────────────────── *@
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6 class="card-title fw-semibold mb-3">Foto de perfil</h6>
+
+                <InputFile OnChange="OnFileSelectedAsync"
+                           accept=".jpg,.jpeg,.png,.webp,.gif"
+                           class="form-control mb-2"
+                           disabled="@isUploadingPic" />
+                <small class="text-muted d-block mb-2">JPG, PNG, WebP o GIF. Máximo 2 MB.</small>
+
+                @if (isUploadingPic)
+                {
+                    <div class="d-flex align-items-center gap-2 text-secondary">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="small">Guardando foto...</span>
+                    </div>
+                }
+                @if (picMessage is not null)
+                {
+                    <div class="alert @picMessageClass py-2 mb-0 mt-2" role="alert">
+                        <small>@picMessage</small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── Display name ───────────────────────────────────── *@
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6 class="card-title fw-semibold mb-3">Nombre para mostrar</h6>
+
+                <div class="input-group mb-2">
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Tu nombre"
+                           maxlength="50"
+                           @bind="displayName"
+                           @bind:event="oninput"
+                           disabled="@isSavingName" />
+                    <button class="btn btn-primary"
+                            type="button"
+                            @onclick="SaveDisplayNameAsync"
+                            disabled="@(isSavingName || string.IsNullOrWhiteSpace(displayName))">
+                        @if (isSavingName)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>Guardar</span>
+                        }
+                    </button>
+                </div>
+
+                @if (nameMessage is not null)
+                {
+                    <div class="alert @nameMessageClass py-2 mb-0" role="alert">
+                        <small>@nameMessage</small>
+                    </div>
+                }
+
+                <small class="text-muted">
+                    Este nombre aparece en la tabla de posiciones.
+                    El cambio se verá la próxima vez que inicies sesión.
+                </small>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int userId;
+    private string displayName = "";
+    private string? picturePath;
+    private long picVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+    private bool isLoading = true;
+    private bool isSavingName;
+    private bool isUploadingPic;
+
+    private string? nameMessage;
+    private string nameMessageClass = "alert-success";
+    private string? picMessage;
+    private string picMessageClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var user = await ProfileService.GetUserAsync(userId);
+        if (user is not null)
+        {
+            displayName = user.DisplayName;
+            picturePath = user.ProfilePicturePath;
+        }
+        isLoading = false;
+    }
+
+    private async Task SaveDisplayNameAsync()
+    {
+        isSavingName = true;
+        nameMessage = null;
+
+        var (success, error) = await ProfileService.UpdateDisplayNameAsync(userId, displayName);
+        if (success)
+        {
+            nameMessage = "Nombre guardado correctamente.";
+            nameMessageClass = "alert-success";
+        }
+        else
+        {
+            nameMessage = error;
+            nameMessageClass = "alert-danger";
+        }
+        isSavingName = false;
+    }
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        picMessage = null;
+        isUploadingPic = true;
+
+        var (success, error, path) = await ProfileService.SaveProfilePictureAsync(userId, e.File);
+        if (success)
+        {
+            picturePath = path;
+            picVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            picMessage = "Foto actualizada.";
+            picMessageClass = "alert-success";
+        }
+        else
+        {
+            picMessage = error;
+            picMessageClass = "alert-danger";
+        }
+        isUploadingPic = false;
+    }
+}

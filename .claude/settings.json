@@ -20,7 +20,9 @@
       "Read(//c/Users/rogel/.claude/projects/c--personalprojects-quiniela/memory/**)",
       "Bash(Select-Object FullName)",
       "Bash(Select-String -Pattern \"\\(error|warning RZ|warning CS|Build succeeded|Error\\)\")",
-      "Bash(Select-Object -First 30)"
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-ChildItem -Path . -Force)",
+      "Bash(Get-Location)"
     ],
     "additionalDirectories": [
       "c:\\Users\\rogel\\.claude\\projects\\c--personalprojects-quiniela\\memory"

@@ -1,0 +1,475 @@
+@page "/admin"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject AdminService AdminService
+@inject IJSRuntime JS
+
+<PageTitle>Panel Admin — Quiniela 2026</PageTitle>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h2 class="mb-0 fw-bold">Panel Admin</h2>
+    </div>
+
+    @* ── Stats summary ───────────────────────────────────────── *@
+    <div class="row g-3 mb-4">
+        <div class="col-6">
+            <div class="card h-100 border-0 shadow-sm bg-warning-subtle">
+                <div class="card-body text-center py-3 px-2">
+                    <div class="fw-bold text-warning-emphasis mb-1" style="font-size:2.4rem; line-height:1;">
+                        @pendingMatches.Count
+                    </div>
+                    <div class="text-warning-emphasis fw-semibold text-uppercase"
+                         style="font-size:0.65rem; letter-spacing:.06rem;">
+                        Por capturar
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card h-100 border-0 shadow-sm bg-success-subtle">
+                <div class="card-body text-center py-3 px-2">
+                    <div class="fw-bold text-success-emphasis mb-1" style="font-size:2.4rem; line-height:1;">
+                        @finalizedMatches.Count
+                    </div>
+                    <div class="text-success-emphasis fw-semibold text-uppercase"
+                         style="font-size:0.65rem; letter-spacing:.06rem;">
+                        Finalizados
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tabs ────────────────────────────────────────────────── *@
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == Tab.Pending ? "active" : "")"
+                    @onclick='() => activeTab = Tab.Pending'
+                    type="button" role="tab">
+                Por capturar
+                @if (pendingMatches.Count > 0)
+                {
+                    <span class="badge bg-danger ms-1 rounded-pill">@pendingMatches.Count</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == Tab.Finalized ? "active" : "")"
+                    @onclick='() => activeTab = Tab.Finalized'
+                    type="button" role="tab">
+                Finalizados
+                @if (finalizedMatches.Count > 0)
+                {
+                    <span class="badge bg-secondary ms-1 rounded-pill">@finalizedMatches.Count</span>
+                }
+            </button>
+        </li>
+    </ul>
+
+    @* ── Pending tab ─────────────────────────────────────────── *@
+    @if (activeTab == Tab.Pending)
+    {
+        @if (pendingMatches.Count == 0)
+        {
+            <div class="text-center py-5">
+                <div style="font-size:3rem;">✅</div>
+                <p class="text-muted mt-2 mb-1 fw-semibold">¡Todo al día!</p>
+                <p class="text-muted small">No hay partidos pendientes de captura.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var match in pendingMatches)
+            {
+                <div class="card mb-3 shadow-sm border-start border-4 border-warning" @key="match.Id">
+                    @* Header *@
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-white">
+                        <small class="text-muted fw-semibold text-uppercase"
+                               style="font-size:0.7rem; letter-spacing:.04rem;">
+                            @StageLabel(match)
+                            @if (!string.IsNullOrWhiteSpace(match.Venue))
+                            {
+                                <span> • @match.Venue</span>
+                            }
+                        </small>
+                        <span class="badge bg-warning text-dark" style="font-size:0.65rem;">PENDIENTE</span>
+                    </div>
+
+                    <div class="card-body px-3 py-3">
+                        @* Kickoff date *@
+                        <div class="text-center text-muted mb-3" style="font-size:0.78rem;">
+                            @FormatKickoff(match)
+                        </div>
+
+                        @* Teams + score inputs *@
+                        <div class="row align-items-center g-0 mb-3">
+                            @* Home team *@
+                            <div class="col text-center">
+                                <span class="fi fi-@match.HomeTeam!.FlagCode.ToLower() flag-circle-lg"
+                                      title="@match.HomeTeam.Name"></span>
+                                <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                    @TeamShort(match.HomeTeam)
+                                </div>
+                                <small class="text-muted text-truncate d-block"
+                                       style="font-size:0.62rem;">
+                                    @match.HomeTeam.Name.ToUpperInvariant()
+                                </small>
+                            </div>
+
+                            @* Score inputs *@
+                            <div class="col-auto text-center px-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="number"
+                                           class="form-control form-control-lg text-center fw-bold p-0"
+                                           style="width:62px; height:58px; font-size:1.6rem;"
+                                           min="0" max="99"
+                                           @bind="editModels[match.Id].HomeScore" />
+                                    <span class="text-muted fw-bold" style="font-size:1.1rem;">—</span>
+                                    <input type="number"
+                                           class="form-control form-control-lg text-center fw-bold p-0"
+                                           style="width:62px; height:58px; font-size:1.6rem;"
+                                           min="0" max="99"
+                                           @bind="editModels[match.Id].AwayScore" />
+                                </div>
+                            </div>
+
+                            @* Away team *@
+                            <div class="col text-center">
+                                <span class="fi fi-@match.AwayTeam!.FlagCode.ToLower() flag-circle-lg"
+                                      title="@match.AwayTeam.Name"></span>
+                                <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                    @TeamShort(match.AwayTeam)
+                                </div>
+                                <small class="text-muted text-truncate d-block"
+                                       style="font-size:0.62rem;">
+                                    @match.AwayTeam.Name.ToUpperInvariant()
+                                </small>
+                            </div>
+                        </div>
+
+                        @if (errors.TryGetValue(match.Id, out var errMsg))
+                        {
+                            <div class="alert alert-danger py-1 px-2 small mb-2" role="alert">@errMsg</div>
+                        }
+
+                        <button class="btn btn-primary w-100 fw-semibold py-2"
+                                @onclick="() => SaveResult(match.Id)"
+                                disabled="@savingIds.Contains(match.Id)">
+                            @if (savingIds.Contains(match.Id))
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"
+                                      aria-hidden="true"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>💾 Guardar resultado</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    }
+
+    @* ── Finalized tab ───────────────────────────────────────── *@
+    @if (activeTab == Tab.Finalized)
+    {
+        @if (finalizedMatches.Count == 0)
+        {
+            <div class="text-center py-5">
+                <div style="font-size:3rem;">📋</div>
+                <p class="text-muted mt-2">Aún no hay resultados capturados.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var match in finalizedMatches)
+            {
+                <div class="card mb-3 shadow-sm border-start border-4 border-success" @key="match.Id">
+                    @* Header *@
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-white">
+                        <small class="text-muted fw-semibold text-uppercase"
+                               style="font-size:0.7rem; letter-spacing:.04rem;">
+                            @StageLabel(match)
+                            @if (!string.IsNullOrWhiteSpace(match.Venue))
+                            {
+                                <span> • @match.Venue</span>
+                            }
+                        </small>
+                        <span class="badge bg-success" style="font-size:0.65rem;">FINALIZADO</span>
+                    </div>
+
+                    <div class="card-body px-3 py-3">
+                        <div class="text-center text-muted mb-3" style="font-size:0.78rem;">
+                            @FormatKickoff(match)
+                        </div>
+
+                        @if (editingIds.Contains(match.Id))
+                        {
+                            @* Edit form *@
+                            <div class="row align-items-center g-0 mb-3">
+                                <div class="col text-center">
+                                    <span class="fi fi-@match.HomeTeam!.FlagCode.ToLower() flag-circle-lg"
+                                          title="@match.HomeTeam.Name"></span>
+                                    <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                        @TeamShort(match.HomeTeam)
+                                    </div>
+                                    <small class="text-muted text-truncate d-block"
+                                           style="font-size:0.62rem;">
+                                        @match.HomeTeam.Name.ToUpperInvariant()
+                                    </small>
+                                </div>
+
+                                <div class="col-auto text-center px-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="number"
+                                               class="form-control form-control-lg text-center fw-bold p-0"
+                                               style="width:62px; height:58px; font-size:1.6rem;"
+                                               min="0" max="99"
+                                               @bind="editModels[match.Id].HomeScore" />
+                                        <span class="text-muted fw-bold" style="font-size:1.1rem;">—</span>
+                                        <input type="number"
+                                               class="form-control form-control-lg text-center fw-bold p-0"
+                                               style="width:62px; height:58px; font-size:1.6rem;"
+                                               min="0" max="99"
+                                               @bind="editModels[match.Id].AwayScore" />
+                                    </div>
+                                </div>
+
+                                <div class="col text-center">
+                                    <span class="fi fi-@match.AwayTeam!.FlagCode.ToLower() flag-circle-lg"
+                                          title="@match.AwayTeam.Name"></span>
+                                    <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                        @TeamShort(match.AwayTeam)
+                                    </div>
+                                    <small class="text-muted text-truncate d-block"
+                                           style="font-size:0.62rem;">
+                                        @match.AwayTeam.Name.ToUpperInvariant()
+                                    </small>
+                                </div>
+                            </div>
+
+                            @if (errors.TryGetValue(match.Id, out var editErr))
+                            {
+                                <div class="alert alert-danger py-1 px-2 small mb-2" role="alert">@editErr</div>
+                            }
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success flex-grow-1 fw-semibold"
+                                        @onclick="() => SaveResult(match.Id)"
+                                        disabled="@savingIds.Contains(match.Id)">
+                                    @if (savingIds.Contains(match.Id))
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1" role="status"
+                                              aria-hidden="true"></span>
+                                        <span>Guardando...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>✅ Confirmar corrección</span>
+                                    }
+                                </button>
+                                <button class="btn btn-outline-secondary"
+                                        @onclick="() => CancelEdit(match.Id)">
+                                    Cancelar
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Result display *@
+                            <div class="row align-items-center g-0 mb-3">
+                                <div class="col text-center">
+                                    <span class="fi fi-@match.HomeTeam!.FlagCode.ToLower() flag-circle-lg"
+                                          title="@match.HomeTeam.Name"></span>
+                                    <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                        @TeamShort(match.HomeTeam)
+                                    </div>
+                                    <small class="text-muted text-truncate d-block"
+                                           style="font-size:0.62rem;">
+                                        @match.HomeTeam.Name.ToUpperInvariant()
+                                    </small>
+                                </div>
+
+                                <div class="col-auto text-center px-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-success-emphasis"
+                                              style="font-size:2rem; line-height:1;">
+                                            @match.HomeScore
+                                        </span>
+                                        <span class="text-muted">—</span>
+                                        <span class="fw-bold text-success-emphasis"
+                                              style="font-size:2rem; line-height:1;">
+                                            @match.AwayScore
+                                        </span>
+                                    </div>
+                                    <small class="text-muted" style="font-size:0.65rem;">
+                                        @OutcomeLabel(match)
+                                    </small>
+                                </div>
+
+                                <div class="col text-center">
+                                    <span class="fi fi-@match.AwayTeam!.FlagCode.ToLower() flag-circle-lg"
+                                          title="@match.AwayTeam.Name"></span>
+                                    <div class="fw-bold mt-2" style="font-size:0.85rem;">
+                                        @TeamShort(match.AwayTeam)
+                                    </div>
+                                    <small class="text-muted text-truncate d-block"
+                                           style="font-size:0.62rem;">
+                                        @match.AwayTeam.Name.ToUpperInvariant()
+                                    </small>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-outline-secondary btn-sm w-100"
+                                    @onclick="() => StartEditFinalized(match.Id)">
+                                ✏️ Corregir resultado
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    }
+}
+
+@code {
+    private enum Tab { Pending, Finalized }
+
+    private bool isLoading = true;
+    private Tab activeTab = Tab.Pending;
+    private List<Match> pendingMatches = [];
+    private List<Match> finalizedMatches = [];
+    private Dictionary<int, MatchEditModel> editModels = [];
+    private HashSet<int> savingIds = [];
+    private HashSet<int> editingIds = [];
+    private Dictionary<int, string> errors = [];
+    private TimeZoneInfo clientTz = TimeZoneInfo.Utc;
+
+    private class MatchEditModel
+    {
+        public int HomeScore { get; set; }
+        public int AwayScore { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
+            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { clientTz = TimeZoneInfo.Utc; }
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        pendingMatches = await AdminService.GetPendingResultsAsync();
+        finalizedMatches = await AdminService.GetFinalizedMatchesAsync();
+
+        // Rebuild edit models: preserve any in-progress entries for pending matches,
+        // and keep models for finalized matches currently being edited.
+        var newModels = new Dictionary<int, MatchEditModel>();
+        foreach (var m in pendingMatches)
+            newModels[m.Id] = editModels.TryGetValue(m.Id, out var em) ? em : new MatchEditModel();
+        foreach (var id in editingIds)
+            if (editModels.TryGetValue(id, out var em))
+                newModels[id] = em;
+        editModels = newModels;
+    }
+
+    private async Task SaveResult(int matchId)
+    {
+        if (!editModels.TryGetValue(matchId, out var model))
+            return;
+
+        errors.Remove(matchId);
+        savingIds.Add(matchId);
+
+        var (success, error) = await AdminService.SaveResultAsync(
+            matchId, model.HomeScore, model.AwayScore);
+
+        savingIds.Remove(matchId);
+
+        if (success)
+        {
+            editingIds.Remove(matchId);
+            editModels.Remove(matchId);
+            await ReloadAsync();
+        }
+        else
+        {
+            errors[matchId] = error ?? "Error al guardar. Intenta de nuevo.";
+        }
+    }
+
+    private void StartEditFinalized(int matchId)
+    {
+        var match = finalizedMatches.First(m => m.Id == matchId);
+        editModels[matchId] = new MatchEditModel
+        {
+            HomeScore = match.HomeScore ?? 0,
+            AwayScore = match.AwayScore ?? 0
+        };
+        editingIds.Add(matchId);
+        errors.Remove(matchId);
+    }
+
+    private void CancelEdit(int matchId)
+    {
+        editingIds.Remove(matchId);
+        editModels.Remove(matchId);
+        errors.Remove(matchId);
+    }
+
+    private string FormatKickoff(Match match)
+    {
+        var local = TimeZoneInfo.ConvertTimeFromUtc(match.KickoffUtc, clientTz);
+        return local.ToString("dd MMM yyyy • HH:mm 'HRS'",
+            new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant();
+    }
+
+    private static string StageLabel(Match match) => match.Stage switch
+    {
+        MatchStage.Grupos        => $"GRUPO {match.GroupCode}",
+        MatchStage.Dieciseisavos => "DIECISEISAVOS",
+        MatchStage.Octavos       => "OCTAVOS DE FINAL",
+        MatchStage.Cuartos       => "CUARTOS DE FINAL",
+        MatchStage.Semifinal     => "SEMIFINAL",
+        MatchStage.TercerLugar   => "TERCER LUGAR",
+        MatchStage.Final         => "FINAL",
+        _                        => match.Stage.ToString().ToUpperInvariant()
+    };
+
+    private static string OutcomeLabel(Match match)
+    {
+        if (match.HomeScore is null || match.AwayScore is null) return "";
+        if (match.HomeScore > match.AwayScore) return "GANA LOCAL";
+        if (match.HomeScore < match.AwayScore) return "GANA VISITANTE";
+        return "EMPATE";
+    }
+
+    private static string TeamShort(Team team) =>
+        !string.IsNullOrWhiteSpace(team.ShortCode)
+            ? team.ShortCode
+            : team.Name[..Math.Min(3, team.Name.Length)].ToUpperInvariant();
+}

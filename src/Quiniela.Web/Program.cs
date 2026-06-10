@@ -40,6 +40,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>, AppUserClaimsPrincipalFactory>();
 builder.Services.AddScoped<PoolService>();
 builder.Services.AddScoped<PredictionService>();
+builder.Services.AddScoped<ScoringService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<StandingsService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

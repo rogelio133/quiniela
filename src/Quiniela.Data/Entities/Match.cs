@@ -23,6 +23,7 @@ public class Match
     public int? HomeTeamId { get; set; }
     public int? AwayTeamId { get; set; }
     public DateTime KickoffUtc { get; set; }
+    public string? Venue { get; set; }
     public MatchStage Stage { get; set; }
     public char? GroupCode { get; set; }
     public int? HomeScore { get; set; }

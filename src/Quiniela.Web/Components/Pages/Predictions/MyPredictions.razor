@@ -1,0 +1,133 @@
+@page "/pools/{poolId:int}/my-predictions"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PredictionService PredictionService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Mis pronósticos — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <p class="text-muted">Cargando...</p>
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Mis pronósticos</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Mis pronósticos</h2>
+        <a href="/pools/@PoolId/predictions" class="btn btn-primary btn-sm">
+            ⚽ Pronosticar
+        </a>
+    </div>
+
+    @if (totalPredictions == 0)
+    {
+        <div class="alert alert-info mt-3">
+            Aún no tienes pronósticos guardados en esta sala.
+            <a href="/pools/@PoolId/predictions" class="alert-link ms-1">¡Empieza a pronosticar!</a>
+        </div>
+    }
+
+    @if (!grouped.Any())
+    {
+        <p class="text-muted mt-4">No hay partidos disponibles.</p>
+    }
+    else
+    {
+        @foreach (var day in grouped)
+        {
+            <h6 class="text-muted text-uppercase mt-4 mb-2" style="font-size:0.75rem; letter-spacing:.05rem;">
+                @FormatDayHeader(day.Key)
+            </h6>
+            @foreach (var item in day)
+            {
+                <MatchCard Match="item.Match"
+                           ExistingPrediction="item.Prediction"
+                           PoolId="PoolId"
+                           UserId="currentUserId"
+                           ClientTz="clientTz"
+                           ReadOnly="true" />
+            }
+        }
+    }
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+    private TimeZoneInfo clientTz = TimeZoneInfo.Utc;
+    private int totalPredictions;
+
+    private IEnumerable<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var (p, member) = await PredictionService.GetPoolContextAsync(PoolId, currentUserId);
+        pool = p;
+        isMember = member;
+
+        if (pool is not null && isMember)
+            await LoadMatchesAsync();
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && pool is not null && isMember)
+        {
+            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
+            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { clientTz = TimeZoneInfo.Utc; }
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadMatchesAsync()
+    {
+        var items = await PredictionService.GetAllMatchesAsync(PoolId, currentUserId);
+        totalPredictions = items.Count(mp => mp.Prediction is not null);
+        grouped = items
+            .GroupBy(mp => DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTimeFromUtc(mp.Match.KickoffUtc, clientTz)))
+            .OrderBy(g => g.Key);
+    }
+
+    private string FormatDayHeader(DateOnly date)
+    {
+        var dt = date.ToDateTime(TimeOnly.MinValue);
+        return dt.ToString("dddd, dd 'de' MMMM", new System.Globalization.CultureInfo("es-MX"));
+    }
+}

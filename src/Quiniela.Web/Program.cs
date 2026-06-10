@@ -6,6 +6,7 @@ using Quiniela.Data.Entities;
 using Quiniela.Data.Seeding;
 using Quiniela.Web.Components;
 using Quiniela.Web.Components.Account;
+using Quiniela.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>, AppUserClaimsPrincipalFactory>();
+builder.Services.AddScoped<PoolService>();
+builder.Services.AddScoped<PredictionService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

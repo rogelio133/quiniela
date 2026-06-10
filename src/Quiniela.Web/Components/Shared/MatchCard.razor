@@ -1,0 +1,212 @@
+@inject PredictionService PredictionService
+
+<div class="card match-card mb-3 @(IsLocked ? "match-locked" : "")">
+
+    @* ── Header ─────────────────────────────────────────── *@
+    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3">
+        <div class="d-flex align-items-center gap-2 me-2 overflow-hidden">
+            <span style="font-size:1.2rem; line-height:1; flex-shrink:0;">⚽</span>
+            <div class="overflow-hidden" style="font-size:0.7rem; line-height:1.35;">
+                @if (Match.Stage == MatchStage.Grupos)
+                {
+                    <div class="text-muted fw-semibold">GRUPO @Match.GroupCode</div>
+                }
+                else
+                {
+                    <div class="text-muted fw-semibold">@StageName(Match.Stage)</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Match.Venue))
+                {
+                    <div class="text-muted text-truncate">@Match.Venue.ToUpperInvariant()</div>
+                }
+            </div>
+        </div>
+        <div class="text-end flex-shrink-0">
+            <small class="fw-bold d-block lh-1" style="font-size:0.72rem; color:#1a2a4a;">@LocalDate</small>
+            <small class="d-block lh-1 mt-1" style="font-size:0.72rem; color:#8a94a6;">@LocalTime HRS</small>
+            @if (ClosingInText is not null)
+            {
+                <span class="badge bg-warning text-dark d-block mt-1" style="font-size:0.65rem;">
+                    Cierra en @ClosingInText
+                </span>
+            }
+        </div>
+    </div>
+
+    @* ── Selection zone ──────────────────────────────────── *@
+    <div class="card-body py-3 px-2">
+        <div class="row g-1 text-center">
+
+            @* Local *@
+            <div class="col-4 match-option @OutcomeClass('H')"
+                 role="@(IsInteractive ? "button" : null)"
+                 @onclick="@(() => SelectOutcome('H'))">
+                <div class="d-flex flex-column align-items-center justify-content-center gap-1 py-2">
+                    <span class="fi fi-@Match.HomeTeam!.FlagCode flag-circle-lg"></span>
+                    <span class="fw-bold mt-1" style="font-size:0.8rem;">@TeamShort(Match.HomeTeam)</span>
+                    <span class="text-muted text-truncate w-100" style="font-size:0.62rem; padding: 0 4px;">@Match.HomeTeam.Name.ToUpperInvariant()</span>
+                </div>
+            </div>
+
+            @* Empate *@
+            <div class="col-4 match-option @OutcomeClass('D')"
+                 role="@(IsInteractive ? "button" : null)"
+                 @onclick="@(() => SelectOutcome('D'))">
+                <div class="d-flex align-items-center justify-content-center h-100">
+                    <span class="text-muted fw-semibold" style="font-size:0.75rem;">EMPATE</span>
+                </div>
+            </div>
+
+            @* Visitante *@
+            <div class="col-4 match-option @OutcomeClass('A')"
+                 role="@(IsInteractive ? "button" : null)"
+                 @onclick="@(() => SelectOutcome('A'))">
+                <div class="d-flex flex-column align-items-center justify-content-center gap-1 py-2">
+                    <span class="fi fi-@Match.AwayTeam!.FlagCode flag-circle-lg"></span>
+                    <span class="fw-bold mt-1" style="font-size:0.8rem;">@TeamShort(Match.AwayTeam)</span>
+                    <span class="text-muted text-truncate w-100" style="font-size:0.62rem; padding: 0 4px;">@Match.AwayTeam.Name.ToUpperInvariant()</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Result (shown when match is done) ───────────────── *@
+    @if (Match.Status == MatchStatus.Finalizado && Match.HomeScore.HasValue)
+    {
+        <div class="card-footer d-flex align-items-center justify-content-center gap-2 py-2">
+            <span class="fw-bold">@Match.HomeScore – @Match.AwayScore</span>
+            @if (selectedOutcome.HasValue)
+            {
+                var hit = ExistingPrediction?.Points > 0;
+                <span class="badge @(hit ? "bg-success" : "bg-secondary")">
+                    @(hit ? $"+{ExistingPrediction!.Points} pts ✓" : "0 pts ✗")
+                </span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Sin pronóstico</span>
+            }
+        </div>
+    }
+
+    @* ── Save button ─────────────────────────────────────── *@
+    @if (!ReadOnly)
+    {
+        <div class="card-footer py-2 px-3">
+            @if (saveError is not null)
+            {
+                <div class="alert alert-danger py-1 px-2 mb-2 small" role="alert">@saveError</div>
+            }
+            @if (IsLocked)
+            {
+                <button class="btn btn-secondary w-100" disabled>Partido iniciado</button>
+            }
+            else
+            {
+                <button class="btn @(savedOk ? "btn-success" : "btn-primary") w-100"
+                        @onclick="Save"
+                        disabled="@saving">
+                    @if (saving) { <span>Guardando...</span> }
+                    else if (savedOk) { <span>Guardado ✓</span> }
+                    else { <span>Guardar</span> }
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Match Match { get; set; } = null!;
+    [Parameter] public Prediction? ExistingPrediction { get; set; }
+    [Parameter, EditorRequired] public int PoolId { get; set; }
+    [Parameter, EditorRequired] public int UserId { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public TimeZoneInfo ClientTz { get; set; } = TimeZoneInfo.Utc;
+
+    private char? selectedOutcome;
+    private bool saving;
+    private bool savedOk;
+    private string? saveError;
+    private bool _initialized;
+
+    private bool IsLocked => Match.KickoffUtc <= DateTime.UtcNow;
+    private bool IsInteractive => !IsLocked && !ReadOnly;
+
+    private DateTime LocalKickoff => TimeZoneInfo.ConvertTimeFromUtc(Match.KickoffUtc, ClientTz);
+    private string LocalDate => LocalKickoff.ToString("MMM dd", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant();
+    private string LocalTime => LocalKickoff.ToString("HH:mm");
+
+    private string? ClosingInText
+    {
+        get
+        {
+            var diff = Match.KickoffUtc - DateTime.UtcNow;
+            if (diff <= TimeSpan.Zero || diff > TimeSpan.FromHours(6)) return null;
+            return diff.TotalHours >= 1
+                ? $"{(int)diff.TotalHours}h {diff.Minutes:D2}m"
+                : $"{(int)diff.TotalMinutes}m";
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!_initialized)
+        {
+            selectedOutcome = ExistingPrediction?.PredOutcome;
+            _initialized = true;
+        }
+    }
+
+    private void SelectOutcome(char outcome)
+    {
+        if (!IsInteractive) return;
+        selectedOutcome = outcome;
+        saveError = null;
+        savedOk = false;
+    }
+
+    private string OutcomeClass(char outcome)
+    {
+        var selected = selectedOutcome == outcome;
+        var disabled = !IsInteractive;
+        return $"{(selected ? "match-option-selected" : "")} {(disabled ? "match-option-disabled" : "")}";
+    }
+
+    private async Task Save()
+    {
+        if (!selectedOutcome.HasValue)
+        {
+            saveError = "Selecciona un resultado antes de guardar.";
+            return;
+        }
+        if (IsLocked)
+        {
+            saveError = "El partido ya inició.";
+            return;
+        }
+
+        saving = true;
+        saveError = null;
+        var (success, error) = await PredictionService.UpsertAsync(UserId, PoolId, Match.Id, selectedOutcome.Value);
+        saving = false;
+
+        if (success)
+            savedOk = true;
+        else
+            saveError = error;
+    }
+
+    private static string TeamShort(Team team) =>
+        !string.IsNullOrWhiteSpace(team.ShortCode) ? team.ShortCode : team.Name[..Math.Min(3, team.Name.Length)].ToUpperInvariant();
+
+    private static string StageName(MatchStage stage) => stage switch
+    {
+        MatchStage.Dieciseisavos => "DIECISEISAVOS",
+        MatchStage.Octavos       => "OCTAVOS",
+        MatchStage.Cuartos       => "CUARTOS",
+        MatchStage.Semifinal     => "SEMIFINAL",
+        MatchStage.TercerLugar   => "TERCER LUGAR",
+        MatchStage.Final         => "FINAL",
+        _                        => stage.ToString().ToUpperInvariant()
+    };
+}

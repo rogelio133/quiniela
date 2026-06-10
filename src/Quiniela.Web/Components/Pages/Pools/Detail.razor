@@ -1,0 +1,193 @@
+@page "/pools/{id:int}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>@(pool?.Name ?? "Sala") — Quiniela 2026</PageTitle>
+
+@if (isLoading)
+{
+    <p class="text-muted">Cargando...</p>
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item active">@pool.Name</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex gap-2 mb-4">
+        <a href="/pools/@Id/predictions" class="btn btn-primary btn-sm">
+            ⚽ Pronosticar
+        </a>
+        <a href="/pools/@Id/my-predictions" class="btn btn-outline-secondary btn-sm">
+            📋 Mis pronósticos
+        </a>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-1">
+        @if (isOwner && isEditing)
+        {
+            <input class="form-control"
+                   style="max-width: 320px;"
+                   @bind="editName"
+                   @bind:event="oninput"
+                   maxlength="100" />
+            <button class="btn btn-sm btn-success" @onclick="SaveName"
+                    disabled="@(string.IsNullOrWhiteSpace(editName))">
+                Guardar
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="CancelEdit">
+                Cancelar
+            </button>
+        }
+        else
+        {
+            <h1 class="mb-0">@pool.Name</h1>
+            @if (isOwner)
+            {
+                <button class="btn btn-sm btn-outline-secondary" @onclick="StartEdit"
+                        title="Editar nombre">
+                    ✏️
+                </button>
+            }
+        }
+    </div>
+
+    @if (saveError is not null)
+    {
+        <div class="alert alert-danger mt-2">@saveError</div>
+    }
+
+    @if (isOwner)
+    {
+        <div class="card mt-3 mb-4" style="max-width: 420px;">
+            <div class="card-body">
+                <h6 class="card-title">Código de invitación</h6>
+                <div class="input-group">
+                    <input class="form-control fw-bold fs-5 font-monospace letter-spacing-wide"
+                           value="@pool.JoinCode" readonly />
+                    <button class="btn btn-outline-secondary" @onclick="CopyCode">
+                        @(codeCopied ? "Copiado ✓" : "Copiar")
+                    </button>
+                </div>
+                <small class="text-muted">
+                    Comparte este código con otros participantes para que se unan.
+                </small>
+            </div>
+        </div>
+    }
+
+    <h4 class="mt-2">
+        Miembros
+        <span class="badge bg-secondary">@pool.Members.Count</span>
+    </h4>
+
+    <ul class="list-group" style="max-width: 420px;">
+        @foreach (var member in pool.Members.OrderBy(m => m.User.DisplayName))
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>@member.User.DisplayName</span>
+                @if (member.UserId == pool.OwnerId)
+                {
+                    <span class="badge bg-warning text-dark">Admin</span>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Pool? pool;
+    private bool isLoading = true;
+    private bool isMember;
+    private bool isOwner;
+    private bool isEditing;
+    private string editName = string.Empty;
+    private string? saveError;
+    private bool codeCopied;
+    private int currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(
+            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        pool = await PoolService.GetPoolWithMembersAsync(Id);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+        isOwner = pool?.OwnerId == currentUserId;
+        isLoading = false;
+    }
+
+    private void StartEdit()
+    {
+        editName = pool!.Name;
+        isEditing = true;
+        saveError = null;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        saveError = null;
+    }
+
+    private async Task SaveName()
+    {
+        if (string.IsNullOrWhiteSpace(editName))
+        {
+            saveError = "El nombre no puede estar vacío.";
+            return;
+        }
+
+        var success = await PoolService.UpdatePoolNameAsync(Id, currentUserId, editName.Trim());
+        if (success)
+        {
+            pool!.Name = editName.Trim();
+            isEditing = false;
+        }
+        else
+        {
+            saveError = "No se pudo actualizar el nombre.";
+        }
+    }
+
+    private async Task CopyCode()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", pool!.JoinCode);
+            codeCopied = true;
+            await Task.Delay(2000);
+            codeCopied = false;
+        }
+        catch
+        {
+            // clipboard API requires HTTPS or localhost; silently ignore in dev without HTTPS
+        }
+    }
+}

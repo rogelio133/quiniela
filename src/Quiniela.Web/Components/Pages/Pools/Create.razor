@@ -1,0 +1,76 @@
+@page "/pools/create"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Crear sala — Quiniela 2026</PageTitle>
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+        <li class="breadcrumb-item active">Crear sala</li>
+    </ol>
+</nav>
+
+<h1>Crear sala</h1>
+
+@if (error is not null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div style="max-width: 420px;">
+    <div class="mb-3">
+        <label for="poolName" class="form-label">Nombre de la sala</label>
+        <input id="poolName"
+               class="form-control"
+               @bind="poolName"
+               @bind:event="oninput"
+               maxlength="100"
+               placeholder="Ej. Los Amigos 2026" />
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-success" @onclick="HandleCreate"
+                disabled="@(isSaving || string.IsNullOrWhiteSpace(poolName))">
+            @(isSaving ? "Creando…" : "Crear sala")
+        </button>
+        <a href="/pools" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</div>
+
+@code {
+    private string poolName = string.Empty;
+    private string? error;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (!authState.User.IsInRole("Admin"))
+            NavigationManager.NavigateTo("/pools", forceLoad: true);
+    }
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(poolName))
+        {
+            error = "El nombre es requerido.";
+            return;
+        }
+
+        isSaving = true;
+        error = null;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = int.Parse(
+            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var pool = await PoolService.CreatePoolAsync(poolName.Trim(), userId);
+        NavigationManager.NavigateTo($"/pools/{pool.Id}");
+    }
+}

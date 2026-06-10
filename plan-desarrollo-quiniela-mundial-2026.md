@@ -43,9 +43,10 @@ AspNetUsers (
 TEAMS (
     Id              INT IDENTITY   PRIMARY KEY,
     Name            NVARCHAR(100)  NOT NULL,
-    FlagCode        CHAR(2)        NOT NULL,       -- ISO 3166-1 alpha-2 en minúsculas (ej. "mx", "us", "ar")
+    FlagCode        NVARCHAR(10)   NOT NULL,       -- ISO 3166-1 alpha-2 en minúsculas (ej. "mx", "us"); compuesto para GB: "gb-eng", "gb-sct"
+    ShortCode       NVARCHAR(3)    NULL,           -- código de 2-3 letras mostrado en la tarjeta (ej. "MEX", "ENG", "SCO")
     GroupCode       CHAR(1)        NULL            -- 'A'..'L', NULL para fases eliminatorias
-    -- Uso en frontend: <span class="fi fi-@team.FlagCode"></span>
+    -- Uso en frontend: <span class="fi fi-@team.FlagCode"></span> + <span>@team.ShortCode</span>
 )
 
 -- PREDICTIONS: sin marcador, solo el resultado
@@ -78,6 +79,7 @@ MATCHES (
     HomeTeamId      INT            NULL FK -> TEAMS,   -- NULL hasta sorteo eliminatorio
     AwayTeamId      INT            NULL FK -> TEAMS,
     KickoffUtc      DATETIME2      NOT NULL,
+    Venue           NVARCHAR(100)  NULL,               -- nombre del estadio (ej. "Estadio Guadalajara")
     Stage           INT            NOT NULL,            -- enum: Grupos, Dieciseisavos, etc.
     GroupCode       CHAR(1)        NULL,                -- 'A'..'L' solo en fase de grupos
     HomeScore       INT            NULL,
@@ -230,23 +232,67 @@ El CDN apunta a `flag-icons@7.2.3` (jsdelivr). Si se prefiere sin dependencia de
 
 ## Módulo 4 — Pronósticos (1X2)
 
-**Objetivo:** Captura simple del pronóstico para cada partido futuro.
+**Objetivo:** Captura simple del pronóstico para cada partido futuro, con diseño mobile-first atractivo usando Bootstrap.
 
-**Tareas:**
-- Vista "Próximos partidos" filtrada por sala, mostrando partidos no iniciados.
-- Por cada partido: nombre de los dos equipos, fecha/hora local del usuario, tres botones grandes: **Local**, **Empate**, **Visitante**.
-- Al pulsar un botón, se hace `upsert` de la predicción.
-- Validación en servidor: si `Kickoff <= UtcNow`, rechazar la operación.
-- Indicador visual del pronóstico ya guardado y del tiempo restante hasta el bloqueo.
-- Vista "Mis pronósticos" agrupada por jornada con el resultado real una vez finalizado el partido.
+### Framework de UI
 
-**Criterio de aceptación:** Un usuario puede registrar y cambiar su pronóstico tantas veces como quiera antes del kickoff; una vez iniciado el partido, el botón se desactiva y la BD rechaza cualquier escritura.
+- Usar **Bootstrap 5** como framework CSS principal. Referenciarlo vía CDN en `App.razor` junto con los estilos personalizados del proyecto.
+- Diseño orientado a pantallas móviles (≤ 430 px); adaptable en tabletas y escritorio mediante clases responsivas de Bootstrap.
 
-**Estimación:** 8–12 horas (la UI es donde se va más tiempo).
+### Tarjeta de partido (componente `MatchCard`)
+
+Cada partido se presenta como una tarjeta Bootstrap (`card`) con la siguiente distribución, en orden vertical:
+
+1. **Cabecera de la tarjeta**
+   - Fila superior izquierda: ícono de cancha + "GROUP X • ESTADIO NOMBRE" en mayúsculas, texto pequeño y tenue.
+   - Fila superior derecha: fecha abreviada (ej. "JUN 11") y hora local del usuario (ej. "20:00 HRS") en texto resaltado.
+
+2. **Zona de selección** — fila de tres columnas de igual ancho:
+   - **Columna izquierda (Local):** bandera circular del equipo local (`<span class="fi fi-@team.FlagCode">` estilizado como círculo grande), código de selección (ej. "KR") en negrita y nombre completo en mayúsculas pequeñas debajo (ej. "COREA DEL SUR").
+   - **Columna central (Empate):** texto "EMPATE" centrado verticalmente, mismo alto que las columnas de equipo, con tipografía mediana y color neutro.
+   - **Columna derecha (Visitante):** misma estructura que la columna local para el equipo visitante.
+
+3. **Botón "GUARDAR"** — botón Bootstrap `btn-primary` de ancho completo al pie de la tarjeta.
+
+### Interacción táctil y selección
+
+- **Tocar la bandera/columna del equipo local** → selecciona resultado `H` (gana local).
+- **Tocar la columna central "EMPATE"** → selecciona resultado `D`.
+- **Tocar la bandera/columna del equipo visitante** → selecciona resultado `A` (gana visitante).
+- La opción seleccionada se indica con un **borde resaltado** (ej. `border border-2 border-primary rounded`) alrededor de la columna correspondiente.
+- **Sin desplazamiento de layout:** el borde se implementa con `outline` o reservando el espacio del borde desde el inicio (p. ej. `border border-2 border-transparent` en estado sin selección, reemplazado por `border-primary` al seleccionar), de modo que el resto de la tarjeta no se mueve.
+- No se muestra el enlace ni ícono de "Ver ubicación".
+
+### Flujo de guardado
+
+- Al pulsar "GUARDAR", se hace `upsert` de la predicción (`PredOutcome = 'H' | 'D' | 'A'`) en el servidor.
+- Si no hay opción seleccionada al pulsar "GUARDAR", se muestra un mensaje de validación inline sin navegar.
+- Validación en servidor: si `Kickoff <= UtcNow`, rechazar con 400 y mostrar mensaje de error en la UI.
+- Tras guardar con éxito, la tarjeta muestra el pronóstico guardado con el borde de selección bloqueado (no interactivo) e indicación visual de "Guardado".
+
+### Estado bloqueado (partido iniciado)
+
+- Cuando `Kickoff <= UtcNow`, toda la zona de selección queda deshabilitada y se aplica una opacidad reducida.
+- El botón "GUARDAR" se oculta o desactiva con texto "Partido iniciado".
+- Si el partido ya tiene resultado, se muestra el outcome real con un indicador de acierto/fallo junto al pronóstico del usuario.
+
+### Vistas
+
+- **"Próximos partidos"**: lista de tarjetas de partidos no iniciados, filtrada por sala, agrupadas por jornada/fecha.
+- **"Mis pronósticos"**: lista de tarjetas (modo solo-lectura) agrupada por jornada, mostrando el pronóstico guardado y, una vez finalizado el partido, el resultado real con indicador de puntos obtenidos.
+- Indicador de tiempo restante hasta el cierre del pronóstico (ej. "Cierra en 2 h 30 min") visible en la cabecera de la tarjeta cuando faltan menos de 6 horas.
+
+**Criterio de aceptación:**
+- Un usuario puede tocar la bandera de un equipo o la sección "EMPATE", ver el borde de selección sin que la tarjeta cambie de tamaño, guardar el pronóstico y volver a cambiarlo antes del kickoff.
+- Una vez iniciado el partido, la tarjeta queda bloqueada visualmente y el servidor rechaza cualquier escritura.
+- Las tarjetas son legibles y operables en pantallas de 375 px de ancho sin scroll horizontal.
+
+**Estimación:** 10–14 horas (la mayor parte en la UI mobile-first y el componente `MatchCard`).
 
 **Notas técnicas:**
 - Mostrar fecha y hora con `TimeZoneInfo` y la zona del navegador (`Intl.DateTimeFormat().resolvedOptions().timeZone`).
 - En Blazor Server, usar `IJSRuntime` para obtener la zona horaria del cliente al cargar la página.
+- El truco de `border-transparent` para evitar el layout shift debe aplicarse tanto en la columna como en la tarjeta contenedora; verificar en Chrome DevTools móvil (iPhone SE / Pixel 7) antes de dar el módulo por cerrado.
 
 ---
 

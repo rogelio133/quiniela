@@ -1,0 +1,140 @@
+@page "/pools"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Mis Salas — Quiniela 2026</PageTitle>
+
+<h1>Mis Salas</h1>
+
+@if (isLoading)
+{
+    <p class="text-muted">Cargando...</p>
+}
+else
+{
+    <div class="d-flex gap-2 mb-4">
+        <AuthorizeView Roles="Admin">
+            <a href="/pools/create" class="btn btn-success">+ Crear sala</a>
+        </AuthorizeView>
+        <button class="btn btn-outline-primary" @onclick="ToggleJoinForm">
+            @(showJoinForm ? "Cancelar" : "Unirme a sala")
+        </button>
+    </div>
+
+    @if (showJoinForm)
+    {
+        <div class="card mb-4" style="max-width: 400px;">
+            <div class="card-body">
+                <h6 class="card-title">Unirme a sala</h6>
+                @if (joinError is not null)
+                {
+                    <div class="alert alert-danger py-2 mb-2">@joinError</div>
+                }
+                @if (joinSuccess is not null)
+                {
+                    <div class="alert alert-success py-2 mb-2">@joinSuccess</div>
+                }
+                <div class="input-group">
+                    <input class="form-control font-monospace text-uppercase"
+                           placeholder="Código (6 caracteres)"
+                           @bind="joinCode"
+                           @bind:event="oninput"
+                           maxlength="6" />
+                    <button class="btn btn-primary" @onclick="HandleJoin"
+                            disabled="@(joinCode.Trim().Length < 6)">
+                        Unirme
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (pools.Count == 0)
+    {
+        <p class="text-muted">No perteneces a ninguna sala todavía.</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var pool in pools)
+            {
+                <div class="col-md-4 col-sm-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">@pool.Name</h5>
+                            <p class="text-muted small mb-0">
+                                Creada el @pool.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="/pools/@pool.Id" class="btn btn-sm btn-outline-primary">
+                                Ver sala →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<Pool> pools = [];
+    private bool isLoading = true;
+    private bool showJoinForm;
+    private string joinCode = string.Empty;
+    private string? joinError;
+    private string? joinSuccess;
+    private int currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(
+            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        await LoadPoolsAsync();
+        isLoading = false;
+    }
+
+    private async Task LoadPoolsAsync() =>
+        pools = await PoolService.GetUserPoolsAsync(currentUserId);
+
+    private void ToggleJoinForm()
+    {
+        showJoinForm = !showJoinForm;
+        joinCode = string.Empty;
+        joinError = null;
+        joinSuccess = null;
+    }
+
+    private async Task HandleJoin()
+    {
+        joinError = null;
+        joinSuccess = null;
+
+        var (success, error) = await PoolService.JoinPoolAsync(joinCode, currentUserId);
+        if (success)
+        {
+            joinSuccess = "Te uniste a la sala exitosamente.";
+            joinCode = string.Empty;
+            await LoadPoolsAsync();
+        }
+        else
+        {
+            joinError = error;
+        }
+    }
+}

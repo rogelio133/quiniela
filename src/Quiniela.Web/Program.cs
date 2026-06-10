@@ -43,6 +43,7 @@ builder.Services.AddScoped<PredictionService>();
 builder.Services.AddScoped<ScoringService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<StandingsService>();
+builder.Services.AddScoped<ProfileService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
@@ -69,6 +70,7 @@ app.MapRazorComponents<App>()
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var sp = scope.ServiceProvider;
+    await sp.GetRequiredService<QuinielaDbContext>().Database.MigrateAsync();
     await DbInitializer.SeedAsync(
         sp.GetRequiredService<QuinielaDbContext>(),
         sp.GetRequiredService<UserManager<User>>(),

@@ -5,6 +5,7 @@ namespace Quiniela.Data.Entities;
 public class User : IdentityUser<int>
 {
     public required string DisplayName { get; set; }
+    public string? ProfilePicturePath { get; set; }
     public bool IsAdmin { get; set; }
     public DateTime CreatedAt { get; set; }
 

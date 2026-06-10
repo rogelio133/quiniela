@@ -9,6 +9,7 @@ public class StandingsService(QuinielaDbContext db)
     public record StandingEntry(
         int UserId,
         string DisplayName,
+        string? ProfilePicturePath,
         int TotalPoints,
         int CorrectPredictions,
         int TotalPredictions);
@@ -21,7 +22,7 @@ public class StandingsService(QuinielaDbContext db)
     {
         var members = await db.PoolMembers
             .Where(m => m.PoolId == poolId)
-            .Select(m => new { m.UserId, m.User.DisplayName })
+            .Select(m => new { m.UserId, m.User.DisplayName, m.User.ProfilePicturePath })
             .ToListAsync();
 
         // Aggregate in SQL: SUM(Points), COUNT(Points > 0), COUNT(*)
@@ -44,6 +45,7 @@ public class StandingsService(QuinielaDbContext db)
                 return new StandingEntry(
                     m.UserId,
                     m.DisplayName,
+                    m.ProfilePicturePath,
                     agg?.TotalPoints ?? 0,
                     agg?.CorrectPredictions ?? 0,
                     agg?.TotalPredictions ?? 0);

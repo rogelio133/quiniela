@@ -118,6 +118,22 @@ else
                             }
                         </div>
 
+                        @* Avatar *@
+                        @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+                        {
+                            <img src="@entry.ProfilePicturePath"
+                                 class="rounded-circle flex-shrink-0"
+                                 style="width:48px;height:48px;object-fit:cover;"
+                                 alt="@entry.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border flex-shrink-0"
+                                 style="width:48px;height:48px;font-size:1.5rem;">
+                                ⚽
+                            </div>
+                        }
+
                         @* Name + progress bar *@
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="d-flex align-items-center gap-1">

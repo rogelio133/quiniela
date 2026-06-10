@@ -1,0 +1,120 @@
+@page "/register"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<User> UserManager
+@inject SignInManager<User> SignInManager
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Registrarse — Quiniela 2026</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4 col-sm-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Crear cuenta</h3>
+
+                @if (errorMessage is not null)
+                {
+                    <div class="alert alert-danger" role="alert">@errorMessage</div>
+                }
+
+                <EditForm Model="Input" OnValidSubmit="HandleRegister" FormName="register" method="post">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario</label>
+                        <InputText id="username" @bind-Value="Input.Username"
+                                   class="form-control" autocomplete="username" />
+                        <ValidationMessage For="@(() => Input.Username)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="displayname" class="form-label">Nombre para mostrar</label>
+                        <InputText id="displayname" @bind-Value="Input.DisplayName"
+                                   class="form-control" />
+                        <ValidationMessage For="@(() => Input.DisplayName)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <InputText id="password" type="password" @bind-Value="Input.Password"
+                                   class="form-control" autocomplete="new-password" />
+                        <ValidationMessage For="@(() => Input.Password)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm" class="form-label">Confirmar contraseña</label>
+                        <InputText id="confirm" type="password" @bind-Value="Input.ConfirmPassword"
+                                   class="form-control" autocomplete="new-password" />
+                        <ValidationMessage For="@(() => Input.ConfirmPassword)" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Registrarse</button>
+                </EditForm>
+
+                <hr class="my-3" />
+                <p class="text-center mb-0 small">
+                    ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterModel Input { get; set; } = new();
+
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        var ctx = HttpContextAccessor.HttpContext;
+        if (ctx is { Request.Method: "GET" } && ctx.User.Identity?.IsAuthenticated == true)
+            NavigationManager.NavigateTo("/");
+    }
+
+    private async Task HandleRegister()
+    {
+        var user = new User
+        {
+            UserName = Input.Username.Trim(),
+            DisplayName = Input.DisplayName.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+        if (!result.Succeeded)
+        {
+            errorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: true);
+        NavigationManager.NavigateTo("/");
+    }
+
+    private sealed class RegisterModel
+    {
+        [Required(ErrorMessage = "El usuario es requerido")]
+        [MinLength(3, ErrorMessage = "Mínimo 3 caracteres")]
+        [MaxLength(30, ErrorMessage = "Máximo 30 caracteres")]
+        public string Username { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [MaxLength(50, ErrorMessage = "Máximo 50 caracteres")]
+        public string DisplayName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseña es requerida")]
+        [MinLength(6, ErrorMessage = "Mínimo 6 caracteres")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirma la contraseña")]
+        [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

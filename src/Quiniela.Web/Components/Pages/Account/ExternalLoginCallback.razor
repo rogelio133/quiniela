@@ -1,0 +1,115 @@
+@page "/account/external-login-callback"
+@attribute [AllowAnonymous]
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+@inject NavigationManager NavigationManager
+@inject ILogger<ExternalLoginCallback> Logger
+
+<PageTitle>Iniciando sesión…</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4 col-sm-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 text-center">
+                @if (errorMessage is null)
+                {
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Iniciando sesión…</span>
+                    </div>
+                    <p class="text-muted">Iniciando sesión con Google…</p>
+                }
+                else
+                {
+                    <div class="alert alert-danger" role="alert">@errorMessage</div>
+                    <a href="/login" class="btn btn-outline-secondary btn-sm">Volver al login</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var info = await SignInManager.GetExternalLoginInfoAsync();
+        if (info is null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        // 1. Already linked — sign in directly
+        var result = await SignInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in via {Provider}.", info.LoginProvider);
+            NavigationManager.NavigateTo(ReturnUrl ?? "/");
+            return;
+        }
+
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+
+        // 2. Existing user with same email — link and sign in
+        if (email is not null)
+        {
+            var existing = await UserManager.FindByEmailAsync(email);
+            if (existing is not null)
+            {
+                await UserManager.AddLoginAsync(existing, info);
+                await SignInManager.SignInAsync(existing, isPersistent: true);
+                Logger.LogInformation("Linked {Provider} to existing user {Email}.", info.LoginProvider, email);
+                NavigationManager.NavigateTo(ReturnUrl ?? "/");
+                return;
+            }
+        }
+
+        // 3. New user — create account automatically
+        var displayName = info.Principal.FindFirstValue(ClaimTypes.Name)
+                       ?? info.Principal.FindFirstValue(ClaimTypes.GivenName)
+                       ?? email?.Split('@')[0]
+                       ?? "Usuario";
+
+        var userName = await BuildUniqueUserNameAsync(email?.Split('@')[0] ?? "user");
+
+        var newUser = new User
+        {
+            UserName = userName,
+            Email = email,
+            EmailConfirmed = true,
+            DisplayName = displayName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var createResult = await UserManager.CreateAsync(newUser);
+        if (!createResult.Succeeded)
+        {
+            errorMessage = "No se pudo crear la cuenta: " +
+                string.Join(", ", createResult.Errors.Select(e => e.Description));
+            return;
+        }
+
+        await UserManager.AddLoginAsync(newUser, info);
+        await SignInManager.SignInAsync(newUser, isPersistent: true);
+        Logger.LogInformation("Created new account for {Email} via {Provider}.", email, info.LoginProvider);
+        NavigationManager.NavigateTo(ReturnUrl ?? "/");
+    }
+
+    private async Task<string> BuildUniqueUserNameAsync(string base_)
+    {
+        var candidate = base_;
+        var suffix = 1;
+        while (await UserManager.FindByNameAsync(candidate) is not null)
+            candidate = $"{base_}{suffix++}";
+        return candidate;
+    }
+}

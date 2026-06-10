@@ -37,6 +37,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
+            ?? throw new InvalidOperationException("Authentication:Google:ClientId not configured.");
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+            ?? throw new InvalidOperationException("Authentication:Google:ClientSecret not configured.");
+    });
+
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>, AppUserClaimsPrincipalFactory>();
 builder.Services.AddScoped<PoolService>();
 builder.Services.AddScoped<PredictionService>();
@@ -59,6 +68,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
@@ -66,6 +76,17 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapPost("/account/external-login", (
+    HttpContext ctx,
+    SignInManager<User> signInManager,
+    [Microsoft.AspNetCore.Mvc.FromForm] string provider,
+    [Microsoft.AspNetCore.Mvc.FromForm] string? returnUrl) =>
+{
+    var redirectUrl = $"/account/external-login-callback?returnUrl={Uri.EscapeDataString(returnUrl ?? "/")}";
+    var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+    return Results.Challenge(properties, [provider]);
+});
 
 await using (var scope = app.Services.CreateAsyncScope())
 {

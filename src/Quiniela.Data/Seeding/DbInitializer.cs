@@ -118,7 +118,7 @@ public static class DbInitializer
         new("Estados Unidos", "Paraguay",       new(2026, 6, 13,  1,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
         new("Australia",      "Turquía",        new(2026, 6, 14,  4,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
         new("Estados Unidos", "Australia",      new(2026, 6, 19, 19,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
-        new("Turquía",        "Paraguay",       new(2026, 6, 20,  4,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
+        new("Turquía",        "Paraguay",       new(2026, 6, 20,  3,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
         new("Turquía",        "Estados Unidos", new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D', "NRG Stadium"),
         new("Paraguay",       "Australia",      new(2026, 6, 26,  2,  0, 0, DateTimeKind.Utc), 'D', "AT&T Stadium"),
 

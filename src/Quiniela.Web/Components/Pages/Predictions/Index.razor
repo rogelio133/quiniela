@@ -44,21 +44,34 @@ else
     }
     else
     {
-        @foreach (var day in grouped)
-        {
-            <h6 class="text-muted text-uppercase mt-4 mb-2" style="font-size:0.75rem; letter-spacing:.05rem;">
-                @FormatDayHeader(day.Key)
-            </h6>
-            @foreach (var item in day)
+        <div class="accordion" id="accordion-predictions">
+            @foreach (var day in grouped)
             {
-                <MatchCard Match="item.Match"
-                           ExistingPrediction="item.Prediction"
-                           PoolId="PoolId"
-                           UserId="currentUserId"
-                           ClientTz="clientTz"
-                           ReadOnly="false" />
+                var isOpen = openDays.Contains(day.Key);
+                <div class="accordion-item" @key="day.Key">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button @(isOpen ? "" : "collapsed")"
+                                type="button"
+                                @onclick="() => ToggleDay(day.Key)">
+                            @FormatDayHeader(day.Key)
+                        </button>
+                    </h2>
+                    <div class="accordion-collapse collapse @(isOpen ? "show" : "")">
+                        <div class="accordion-body p-2">
+                            @foreach (var item in day)
+                            {
+                                <MatchCard Match="item.Match"
+                                           ExistingPrediction="item.Prediction"
+                                           PoolId="PoolId"
+                                           UserId="currentUserId"
+                                           ClientTz="clientTz"
+                                           ReadOnly="false" />
+                            }
+                        </div>
+                    </div>
+                </div>
             }
-        }
+        </div>
     }
 }
 
@@ -71,7 +84,8 @@ else
     private int currentUserId;
     private static readonly TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
 
-    private IEnumerable<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
+    private List<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
+    private HashSet<DateOnly> openDays = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,7 +114,18 @@ else
         grouped = items
             .GroupBy(mp => DateOnly.FromDateTime(
                 TimeZoneInfo.ConvertTimeFromUtc(mp.Match.KickoffUtc, clientTz)))
-            .OrderBy(g => g.Key);
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        openDays.Clear();
+        if (grouped.Count > 0)
+            openDays.Add(grouped[0].Key);
+    }
+
+    private void ToggleDay(DateOnly date)
+    {
+        if (!openDays.Remove(date))
+            openDays.Add(date);
     }
 
     private string FormatDayHeader(DateOnly date)

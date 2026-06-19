@@ -46,41 +46,131 @@ else
         </div>
     }
 
-    @if (!grouped.Any())
+    <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == Tab.Pending ? "active" : "")"
+                    @onclick='() => activeTab = Tab.Pending'
+                    type="button" role="tab">
+                Pendientes
+                @if (groupedPending.Count > 0)
+                {
+                    <span class="badge bg-primary ms-1 rounded-pill">
+                        @groupedPending.Sum(g => g.Count())
+                    </span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == Tab.Finalized ? "active" : "")"
+                    @onclick='() => activeTab = Tab.Finalized'
+                    type="button" role="tab">
+                Finalizados
+                @if (groupedFinalized.Count > 0)
+                {
+                    <span class="badge bg-secondary ms-1 rounded-pill">
+                        @groupedFinalized.Sum(g => g.Count())
+                    </span>
+                }
+            </button>
+        </li>
+    </ul>
+
+    @if (activeTab == Tab.Pending)
     {
-        <p class="text-muted mt-4">No hay partidos disponibles.</p>
-    }
-    else
-    {
-        @foreach (var day in grouped)
+        @if (!groupedPending.Any())
         {
-            <h6 class="text-muted text-uppercase mt-4 mb-2" style="font-size:0.75rem; letter-spacing:.05rem;">
-                @FormatDayHeader(day.Key)
-            </h6>
-            @foreach (var item in day)
-            {
-                <MatchCard Match="item.Match"
-                           ExistingPrediction="item.Prediction"
-                           PoolId="PoolId"
-                           UserId="currentUserId"
-                           ClientTz="clientTz"
-                           ReadOnly="true" />
-            }
+            <p class="text-muted mt-4">No hay partidos pendientes.</p>
+        }
+        else
+        {
+            <div class="accordion" id="accordion-pending">
+                @foreach (var day in groupedPending)
+                {
+                    var isOpen = openPendingDays.Contains(day.Key);
+                    <div class="accordion-item" @key="day.Key">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button @(isOpen ? "" : "collapsed")"
+                                    type="button"
+                                    @onclick="() => TogglePendingDay(day.Key)">
+                                @FormatDayHeader(day.Key)
+                            </button>
+                        </h2>
+                        <div class="accordion-collapse collapse @(isOpen ? "show" : "")">
+                            <div class="accordion-body p-2">
+                                @foreach (var item in day)
+                                {
+                                    <MatchCard Match="item.Match"
+                                               ExistingPrediction="item.Prediction"
+                                               PoolId="PoolId"
+                                               UserId="currentUserId"
+                                               ClientTz="clientTz"
+                                               ReadOnly="true" />
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @if (activeTab == Tab.Finalized)
+    {
+        @if (!groupedFinalized.Any())
+        {
+            <p class="text-muted mt-4">No hay partidos finalizados aún.</p>
+        }
+        else
+        {
+            <div class="accordion" id="accordion-finalized">
+                @foreach (var day in groupedFinalized)
+                {
+                    var isOpen = openFinalizedDays.Contains(day.Key);
+                    <div class="accordion-item" @key="day.Key">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button @(isOpen ? "" : "collapsed")"
+                                    type="button"
+                                    @onclick="() => ToggleFinalizedDay(day.Key)">
+                                @FormatDayHeader(day.Key)
+                            </button>
+                        </h2>
+                        <div class="accordion-collapse collapse @(isOpen ? "show" : "")">
+                            <div class="accordion-body p-2">
+                                @foreach (var item in day)
+                                {
+                                    <MatchCard Match="item.Match"
+                                               ExistingPrediction="item.Prediction"
+                                               PoolId="PoolId"
+                                               UserId="currentUserId"
+                                               ClientTz="clientTz"
+                                               ReadOnly="true" />
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
         }
     }
 }
 
 @code {
+    private enum Tab { Pending, Finalized }
+
     [Parameter] public int PoolId { get; set; }
 
     private Pool? pool;
     private bool isMember;
     private bool isLoading = true;
     private int currentUserId;
+    private Tab activeTab = Tab.Pending;
     private static readonly TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
     private int totalPredictions;
 
-    private IEnumerable<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
+    private List<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> groupedPending = [];
+    private List<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> groupedFinalized = [];
+    private HashSet<DateOnly> openPendingDays = [];
+    private HashSet<DateOnly> openFinalizedDays = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,10 +197,40 @@ else
     {
         var items = await PredictionService.GetAllMatchesAsync(PoolId, currentUserId);
         totalPredictions = items.Count(mp => mp.Prediction is not null);
-        grouped = items
+
+        groupedPending = items
+            .Where(mp => mp.Match.Status == MatchStatus.Programado)
             .GroupBy(mp => DateOnly.FromDateTime(
                 TimeZoneInfo.ConvertTimeFromUtc(mp.Match.KickoffUtc, clientTz)))
-            .OrderBy(g => g.Key);
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        groupedFinalized = items
+            .Where(mp => mp.Match.Status == MatchStatus.Finalizado)
+            .GroupBy(mp => DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTimeFromUtc(mp.Match.KickoffUtc, clientTz)))
+            .OrderByDescending(g => g.Key)
+            .ToList();
+
+        openPendingDays.Clear();
+        if (groupedPending.Count > 0)
+            openPendingDays.Add(groupedPending[0].Key);
+
+        openFinalizedDays.Clear();
+        if (groupedFinalized.Count > 0)
+            openFinalizedDays.Add(groupedFinalized[0].Key);
+    }
+
+    private void TogglePendingDay(DateOnly date)
+    {
+        if (!openPendingDays.Remove(date))
+            openPendingDays.Add(date);
+    }
+
+    private void ToggleFinalizedDay(DateOnly date)
+    {
+        if (!openFinalizedDays.Remove(date))
+            openFinalizedDays.Add(date);
     }
 
     private string FormatDayHeader(DateOnly date)

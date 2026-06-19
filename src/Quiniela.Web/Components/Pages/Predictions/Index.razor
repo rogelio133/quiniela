@@ -7,7 +7,6 @@
 @inject PredictionService PredictionService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 
 <PageTitle>Pronósticos — @(pool?.Name ?? "Sala")</PageTitle>
 
@@ -70,7 +69,7 @@ else
     private bool isMember;
     private bool isLoading = true;
     private int currentUserId;
-    private TimeZoneInfo clientTz = TimeZoneInfo.Utc;
+    private static readonly TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
 
     private IEnumerable<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
 
@@ -93,17 +92,6 @@ else
             await LoadMatchesAsync();
 
         isLoading = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && pool is not null && isMember)
-        {
-            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
-            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
-            catch { clientTz = TimeZoneInfo.Utc; }
-            StateHasChanged();
-        }
     }
 
     private async Task LoadMatchesAsync()

@@ -104,8 +104,22 @@ else
     <ul class="list-group" style="max-width: 420px;">
         @foreach (var member in pool.Members.OrderBy(m => m.User.DisplayName))
         {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>@member.User.DisplayName</span>
+            <li class="list-group-item d-flex align-items-center gap-2">
+                @if (!string.IsNullOrEmpty(member.User.ProfilePicturePath))
+                {
+                    <img src="@member.User.ProfilePicturePath"
+                         class="rounded-circle flex-shrink-0"
+                         style="width:36px;height:36px;object-fit:cover;"
+                         alt="@member.User.DisplayName" />
+                }
+                else
+                {
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border flex-shrink-0"
+                         style="width:36px;height:36px;font-size:1.1rem;">
+                        ⚽
+                    </div>
+                }
+                <span class="flex-grow-1">@member.User.DisplayName</span>
                 @if (member.UserId == pool.OwnerId)
                 {
                     <span class="badge bg-warning text-dark">Admin</span>

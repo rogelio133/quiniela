@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="c"><circle cx="256" cy="256" r="200"/></clipPath>
+  </defs>
+  <!-- Full blue background (no rounded corners — required for maskable) -->
+  <rect width="512" height="512" fill="#0d6efd"/>
+  <!-- White ball -->
+  <circle cx="256" cy="256" r="200" fill="#fff"/>
+  <!-- Black patches clipped to ball -->
+  <g fill="#111" clip-path="url(#c)">
+    <polygon points="256,176 332,231 303,321 209,321 180,231"/>
+    <polygon points="256,-24 332,31 303,121 209,121 180,31"/>
+    <polygon points="522,169 493,259 399,259 370,169 446,114"/>
+    <polygon points="421,484 327,484 298,394 374,339 450,394"/>
+    <polygon points="91,484 62,394 138,339 214,394 185,484"/>
+    <polygon points="-10,169 66,114 142,169 113,259 19,259"/>
+  </g>
+  <!-- Ball border -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#111" stroke-width="12"/>
+</svg>

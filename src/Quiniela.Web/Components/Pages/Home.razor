@@ -1,8 +1,164 @@
 @page "/"
 @attribute [Authorize]
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthStateProvider
+@inject PoolService PoolService
+@inject PredictionService PredictionService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <PageTitle>Inicio — Quiniela 2026</PageTitle>
 
-<h1>Quiniela 2026</h1>
+@if (isLoading)
+{
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 gap-2">
+        <ThreeBallLoader />
+        <small class="text-muted">Cargando...</small>
+    </div>
+}
+else
+{
+    <div class="home-welcome anim-fade-in-up">
+        <canvas id="stadium-canvas" class="home-stadium-canvas" width="800" height="140" aria-hidden="true"></canvas>
+        <div class="home-welcome-inner">
+            <span class="home-ball-icon">⚽</span>
+            <div>
+                <h2 class="home-greeting">¡Hola, @displayName!</h2>
+                <p class="home-sub">Copa del Mundo · @DateTime.UtcNow.ToString("MMM yyyy", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant()</p>
+            </div>
+        </div>
+    </div>
 
-<p>Bienvenido. Ve a <a href="/pools">Mis Salas</a> para ver o unirte a una sala.</p>
+    <div class="row g-3 mt-1">
+        <div class="col-6 anim-fade-in-up anim-d1">
+            <a href="/pools" class="home-stat-card home-stat-pools text-decoration-none d-block">
+                <div class="home-stat-row">
+                    <span class="home-stat-icon">🏟️</span>
+                    <div class="home-stat-text">
+                        <span class="home-stat-value">@poolCount</span>
+                        <span class="home-stat-label">@(poolCount == 1 ? "sala" : "salas")</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-6 anim-fade-in-up anim-d2">
+            @if (firstPoolId > 0)
+            {
+                <a href="/pools/@firstPoolId/predictions" class="home-stat-card home-stat-matches text-decoration-none d-block">
+                    <div class="home-stat-row">
+                        <span class="home-stat-icon">🎯</span>
+                        <div class="home-stat-text">
+                            <span class="home-stat-value">@upcomingCount</span>
+                            <span class="home-stat-label">@(upcomingCount == 1 ? "próximo" : "próximos")</span>
+                        </div>
+                    </div>
+                </a>
+            }
+            else
+            {
+                <div class="home-stat-card home-stat-matches-empty">
+                    <div class="home-stat-row">
+                        <span class="home-stat-icon">🎯</span>
+                        <div class="home-stat-text">
+                            <span class="home-stat-value">—</span>
+                            <span class="home-stat-label">próximos</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-12 anim-fade-in-up anim-d3">
+            @if (poolCount == 0)
+            {
+                <div class="home-cta">
+                    <p class="mb-1 fw-bold" style="font-size:1rem;">¡Únete a la quiniela!</p>
+                    <p class="text-muted small mb-3">Pide el código de sala al organizador para empezar a pronosticar.</p>
+                    <a href="/pools" class="btn btn-primary w-100">Ver Mis Salas →</a>
+                </div>
+            }
+            else
+            {
+                <div class="home-quick-actions">
+                    <p class="home-qa-title">Accesos rápidos</p>
+                    <div class="d-flex flex-column gap-2">
+                        @if (firstPoolId > 0)
+                        {
+                            <a href="/pools/@firstPoolId/predictions" class="home-qa-btn">
+                                <span>🎯</span>
+                                <span>Pronosticar próximos partidos</span>
+                                <span class="ms-auto">›</span>
+                            </a>
+                            <a href="/pools/@firstPoolId/standings" class="home-qa-btn">
+                                <span>🏆</span>
+                                <span>Tabla de posiciones</span>
+                                <span class="ms-auto">›</span>
+                            </a>
+                            <a href="/pools/@firstPoolId/my-predictions" class="home-qa-btn">
+                                <span>📋</span>
+                                <span>Mis pronósticos</span>
+                                <span class="ms-auto">›</span>
+                            </a>
+                        }
+                        <a href="/pools" class="home-qa-btn home-qa-btn-secondary">
+                            <span>🏟️</span>
+                            <span>Administrar mis salas</span>
+                            <span class="ms-auto">›</span>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string displayName  = string.Empty;
+    private int    poolCount;
+    private int    firstPoolId;
+    private int    upcomingCount;
+    private bool   isLoading    = true;
+    private bool   _stadiumInit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true) return;
+
+        displayName = authState.User.FindFirst("DisplayName")?.Value
+                   ?? authState.User.Identity?.Name
+                   ?? "jugador";
+
+        var userId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var pools  = await PoolService.GetUserPoolsAsync(userId);
+        poolCount  = pools.Count;
+
+        if (pools.Count > 0)
+        {
+            firstPoolId   = pools[0].Id;
+            var upcoming  = await PredictionService.GetUpcomingMatchesAsync(firstPoolId, userId);
+            upcomingCount = upcoming.Count;
+        }
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!isLoading && !_stadiumInit)
+        {
+            _stadiumInit = true;
+            await JS.InvokeVoidAsync("quiniela.initStadium", "stadium-canvas");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("quiniela.disposeStadium"); }
+        catch { }
+    }
+}

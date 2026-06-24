@@ -1,28 +1,11 @@
 @page "/account/logout"
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 
-@using Microsoft.AspNetCore.Identity
-@using Quiniela.Data.Entities
-
-@inject SignInManager<User> SignInManager
 @inject NavigationManager NavigationManager
-@inject IHttpContextAccessor HttpContextAccessor
-@inject ILogger<Logout> Logger
 
 @code {
-    [SupplyParameterFromForm]
-    private LogoutModel? Input { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        var ctx = HttpContextAccessor.HttpContext;
-        if (ctx?.Request.Method == "POST")
-        {
-            await SignInManager.SignOutAsync();
-            Logger.LogInformation("User logged out.");
-            NavigationManager.NavigateTo("/login");
-        }
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
-
-    private sealed class LogoutModel { }
 }

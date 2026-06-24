@@ -1,0 +1,72 @@
+/* ── Quiniela 2026 — Design Tokens ─────────────────────────── */
+:root {
+    --q-navy:     #0D1B2A;
+    --q-blue:     #1A56DB;
+    --q-blue-lt:  #3B82F6;
+    --q-gold:     #F59E0B;
+    --q-gold-lt:  #FCD34D;
+    --q-green:    #059669;
+    --q-red:      #DC2626;
+
+    --q-bg:      #EEF2F7;
+    --q-surface: #FFFFFF;
+    --q-border:  #E2E8F0;
+    --q-muted:   #64748B;
+    --q-text:    #0F172A;
+    --q-text-sm: #475569;
+
+    --q-sh-sm:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --q-sh-md:   0 4px 10px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+    --q-sh-lg:   0 12px 28px rgba(0,0,0,.13), 0 4px 8px rgba(0,0,0,.06);
+    --q-sh-blue: 0 4px 14px rgba(26,86,219,.32);
+    --q-sh-gold: 0 4px 14px rgba(245,158,11,.32);
+
+    --q-r-xs: 6px;
+    --q-r-sm: 10px;
+    --q-r:    14px;
+    --q-r-lg: 20px;
+    --q-r-xl: 28px;
+
+    --q-g-hero:    linear-gradient(150deg, #0A1628 0%, #162C55 52%, #0A1F10 100%);
+    --q-g-gold:    linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+    --q-g-blue:    linear-gradient(135deg, #1A56DB 0%, #3B82F6 100%);
+    --q-g-green:   linear-gradient(135deg, #059669 0%, #10B981 100%);
+    --q-g-sidebar: linear-gradient(180deg, #0D1B2A 0%, #1E0A3C 100%);
+    --q-g-header:  linear-gradient(135deg, #0D1B2A 0%, #1A2B40 100%);
+}
+
+/* Base overrides */
+body {
+    background-color: var(--q-bg);
+}
+
+.content {
+    padding-top: 1rem;
+}
+
+/* Branded primary button */
+.btn-primary {
+    background: var(--q-g-blue);
+    border: none;
+    border-radius: var(--q-r-sm);
+    font-weight: 700;
+    box-shadow: var(--q-sh-blue);
+    transition: transform 0.13s ease, box-shadow 0.13s ease;
+}
+.btn-primary:hover, .btn-primary:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(26,86,219,.4);
+    background: var(--q-g-blue);
+    border: none;
+}
+.btn-primary:active { transform: translateY(0); }
+
+/* Breadcrumbs */
+.breadcrumb { font-size: 0.82rem; }
+
+/* Cards */
+.card {
+    border-radius: var(--q-r);
+    border-color: var(--q-border);
+    box-shadow: var(--q-sh-sm);
+}

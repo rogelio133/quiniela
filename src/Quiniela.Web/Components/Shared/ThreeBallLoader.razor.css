@@ -1,0 +1,26 @@
+.three-ball-loader {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* CSS emoji fallback — visible until Three.js canvas paints */
+.three-ball-fallback {
+    position: absolute;
+    font-size: 2rem;
+    animation: ballRoll 1.2s linear infinite;
+    pointer-events: none;
+}
+
+/* Hide fallback once canvas has content (Three.js renders to it) */
+canvas + .three-ball-fallback {
+    display: block;
+}
+
+@keyframes ballRoll {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}

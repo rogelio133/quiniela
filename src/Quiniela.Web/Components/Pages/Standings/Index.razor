@@ -9,15 +9,13 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 
-<PageTitle>Tabla — @(pool?.Name ?? "Sala")</PageTitle>
+<PageTitle>Tabla de posiciones— @(pool?.Name ?? "Sala")</PageTitle>
 
 @if (isLoading)
 {
-    <div class="d-flex justify-content-center align-items-center py-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-    </div>
+    <SkeletonLoader ShowAvatar="true" Lines="3" />
+    <SkeletonLoader ShowAvatar="true" Lines="3" />
+    <SkeletonLoader ShowAvatar="true" Lines="3" />
 }
 else if (pool is null || !isMember)
 {
@@ -28,19 +26,19 @@ else if (pool is null || !isMember)
 }
 else
 {
-    @* ── Breadcrumb ──────────────────────────────────────── *@
+    @* ── Breadcrumb ─────────────────────────────────────────── *@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
             <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
-            <li class="breadcrumb-item active">Tabla</li>
+            <li class="breadcrumb-item active">Tabla de posiciones</li>
         </ol>
     </nav>
 
-    @* ── Header ──────────────────────────────────────────── *@
+    @* ── Header ─────────────────────────────────────────────── *@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h2 class="mb-0 fw-bold">🏆 Tabla</h2>
+            <h2 class="mb-0 fw-bold">🏆 Tabla de posiciones</h2>
             <small class="text-muted">@pool.Name</small>
         </div>
         <button class="btn btn-outline-secondary btn-sm"
@@ -50,38 +48,29 @@ else
             {
                 <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
             }
-            else
-            {
-                <span>🔄</span>
-            }
-            <span>Actualizar</span>
+            else { <span>🔄</span> }
+            Actualizar
         </button>
     </div>
 
-    @* ── Context strip ────────────────────────────────────── *@
-    <div class="d-flex gap-3 mb-4 flex-wrap">
+    @* ── Context strip ───────────────────────────────────────── *@
+    <div class="d-flex gap-2 mb-4 flex-wrap">
         <span class="badge rounded-pill bg-secondary fs-6 fw-normal px-3 py-2">
-            👥 @pool.Members.Count
-            @(pool.Members.Count == 1 ? "jugador" : "jugadores")
+            👥 @pool.Members.Count @(pool.Members.Count == 1 ? "jugador" : "jugadores")
         </span>
         <span class="badge rounded-pill @(finalizedCount > 0 ? "bg-success" : "bg-secondary") fs-6 fw-normal px-3 py-2">
-            ⚽ @finalizedCount
-            @(finalizedCount == 1 ? "partido finalizado" : "partidos finalizados")
+            ⚽ @finalizedCount @(finalizedCount == 1 ? "partido finalizado" : "partidos finalizados")
         </span>
     </div>
 
-    @* ── Empty state (tournament hasn't started scoring) ─── *@
     @if (finalizedCount == 0)
     {
         <div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert">
-            <span style="font-size:1.2rem;">ℹ️</span>
-            <span class="small">
-                Los puntos aparecerán aquí cuando el admin capture el primer resultado.
-            </span>
+            <span style="font-size:1.1rem;">ℹ️</span>
+            <span class="small">Los puntos aparecerán cuando el admin capture el primer resultado.</span>
         </div>
     }
 
-    @* ── Standings list ───────────────────────────────────── *@
     @if (standings.Count == 0)
     {
         <p class="text-muted text-center py-4">No hay jugadores en esta sala.</p>
@@ -91,102 +80,106 @@ else
         var positions = ComputePositions(standings);
         var maxPoints = standings[0].TotalPoints;
 
-        <div class="list-group shadow-sm">
-            @for (int i = 0; i < standings.Count; i++)
-            {
-                var entry = standings[i];
-                var pos = positions[i];
-                var isMe = entry.UserId == currentUserId;
-                var medal = MedalFor(pos);
-                var pct = PointsPct(entry.TotalPoints, maxPoints);
+        @* ── Podium (top 3) ─────────────────────────────────── *@
+        @for (int i = 0; i < Math.Min(3, standings.Count); i++)
+        {
+            var entry  = standings[i];
+            var pos    = positions[i];
+            var isMe   = entry.UserId == currentUserId;
+            var medal  = MedalFor(pos)!;
+            var delay  = $"anim-d{i + 1}";
 
-                <div class="list-group-item list-group-item-action py-3 px-3 @(isMe ? "border-start border-3 border-primary" : "")"
-                     style="@RowBg(pos)"
-                     @key="entry.UserId">
+            <div class="podium-card podium-@pos @delay anim-fade-in-up mb-2" @key="entry.UserId">
+                <div class="d-flex align-items-center gap-3">
 
-                    <div class="d-flex align-items-center gap-2">
+                    <span class="podium-medal">@medal</span>
 
-                        @* Position / medal *@
-                        <div class="text-center flex-shrink-0" style="width:26px;">
-                            @if (medal is not null)
+                    @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+                    {
+                        <img src="@entry.ProfilePicturePath"
+                             class="rounded-circle flex-shrink-0"
+                             style="width:44px;height:44px;object-fit:cover;"
+                             alt="@entry.DisplayName" />
+                    }
+                    else
+                    {
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border flex-shrink-0"
+                             style="width:44px;height:44px;font-size:1.4rem;">⚽</div>
+                    }
+
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="fw-bold text-truncate" style="font-size:0.95rem;">@entry.DisplayName</span>
+                            @if (isMe) { <span class="badge bg-primary flex-shrink-0" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                        </div>
+                        <small class="text-muted" style="font-size:.68rem;">@entry.CorrectPredictions ✓ / @entry.TotalPredictions pronósticos</small>
+                    </div>
+
+                    <div class="text-end flex-shrink-0">
+                        <div class="podium-pts">@entry.TotalPoints</div>
+                        <small class="text-muted" style="font-size:.62rem;">pts</small>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ── Rest of standings ──────────────────────────────── *@
+        @if (standings.Count > 3)
+        {
+            <div class="list-group shadow-sm mt-1">
+                @for (int i = 3; i < standings.Count; i++)
+                {
+                    var entry = standings[i];
+                    var pos   = positions[i];
+                    var isMe  = entry.UserId == currentUserId;
+                    var pct   = PointsPct(entry.TotalPoints, maxPoints);
+                    var delay = $"anim-d{Math.Min(i - 2, 6)}";
+
+                    <div class="list-group-item list-group-item-action py-3 px-3 @delay anim-fade-in-up @(isMe ? "border-start border-3 border-primary" : "")"
+                         @key="entry.UserId">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="text-center flex-shrink-0" style="width:26px;">
+                                <span class="text-muted fw-semibold" style="font-size:.88rem;">@pos</span>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
                             {
-                                <span style="font-size:1.25rem; line-height:1;">@medal</span>
+                                <img src="@entry.ProfilePicturePath"
+                                     class="rounded-circle flex-shrink-0"
+                                     style="width:40px;height:40px;object-fit:cover;"
+                                     alt="@entry.DisplayName" />
                             }
                             else
                             {
-                                <span class="text-muted fw-semibold" style="font-size:0.9rem;">@pos</span>
+                                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border flex-shrink-0"
+                                     style="width:40px;height:40px;font-size:1.2rem;">⚽</div>
                             }
-                        </div>
 
-                        @* Avatar *@
-                        @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
-                        {
-                            <img src="@entry.ProfilePicturePath"
-                                 class="rounded-circle flex-shrink-0"
-                                 style="width:48px;height:48px;object-fit:cover;"
-                                 alt="@entry.DisplayName" />
-                        }
-                        else
-                        {
-                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border flex-shrink-0"
-                                 style="width:48px;height:48px;font-size:1.5rem;">
-                                ⚽
-                            </div>
-                        }
-
-                        @* Name + progress bar *@
-                        <div class="flex-grow-1 overflow-hidden">
-                            <div class="d-flex align-items-center gap-1">
-                                <span class="fw-semibold text-truncate @(isMe ? "text-primary" : "")"
-                                      style="font-size:0.95rem;">
-                                    @entry.DisplayName
-                                </span>
-                                @if (isMe)
-                                {
-                                    <span class="badge bg-primary flex-shrink-0"
-                                          style="font-size:0.58rem; padding:2px 5px;">
-                                        TÚ
-                                    </span>
-                                }
-                            </div>
-                            @* Relative-points progress bar *@
-                            <div class="progress mt-1" style="height:3px; border-radius:2px;">
-                                <div class="progress-bar @BarClass(pos)"
-                                     role="progressbar"
-                                     style="width:@pct%;"
-                                     aria-valuenow="@entry.TotalPoints"
-                                     aria-valuemin="0"
-                                     aria-valuemax="@maxPoints">
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-semibold text-truncate @(isMe ? "text-primary" : "")" style="font-size:.9rem;">@entry.DisplayName</span>
+                                    @if (isMe) { <span class="badge bg-primary flex-shrink-0" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                                </div>
+                                <div class="progress mt-1" style="height:3px;border-radius:2px;">
+                                    <div class="progress-bar bg-primary"
+                                         role="progressbar"
+                                         style="width:@pct%;"
+                                         aria-valuenow="@entry.TotalPoints"
+                                         aria-valuemin="0"
+                                         aria-valuemax="@maxPoints"></div>
                                 </div>
                             </div>
-                        </div>
 
-                        @* Points + predictions *@
-                        <div class="text-end flex-shrink-0">
-                            <div class="fw-bold lh-1 @(pos == 1 ? "text-warning-emphasis" : isMe ? "text-primary" : "")"
-                                 style="font-size:1.3rem;">
-                                @entry.TotalPoints
+                            <div class="text-end flex-shrink-0">
+                                <div class="fw-bold @(isMe ? "text-primary" : "")" style="font-size:1.1rem;">@entry.TotalPoints</div>
+                                <small class="text-muted d-block" style="font-size:.62rem;">pts</small>
+                                <small class="text-muted d-block" style="font-size:.65rem;">@entry.CorrectPredictions✓&nbsp;/&nbsp;@entry.TotalPredictions</small>
                             </div>
-                            <small class="text-muted lh-1 d-block" style="font-size:0.65rem;">pts</small>
-                            <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
-                                @entry.CorrectPredictions✓&nbsp;/&nbsp;@entry.TotalPredictions
-                            </small>
                         </div>
-
                     </div>
-                </div>
-            }
-        </div>
-
-        @* ── Legend ───────────────────────────────────────── *@
-        <div class="d-flex justify-content-center gap-4 mt-3">
-            <small class="text-muted" style="font-size:0.68rem;">
-                <strong>✓</strong> pronósticos acertados
-            </small>
-            <small class="text-muted" style="font-size:0.68rem;">
-                <strong>/</strong> pronósticos enviados
-            </small>
-        </div>
+                }
+            </div>
+        }
     }
 }
 
@@ -195,10 +188,10 @@ else
 
     private Pool? pool;
     private bool isMember;
-    private bool isLoading = true;
+    private bool isLoading   = true;
     private bool isRefreshing;
-    private int currentUserId;
-    private int finalizedCount;
+    private int  currentUserId;
+    private int  finalizedCount;
     private List<StandingsService.StandingEntry> standings = [];
 
     protected override async Task OnInitializedAsync()
@@ -210,10 +203,8 @@ else
             return;
         }
 
-        currentUserId = int.Parse(
-            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-        pool = await PoolService.GetPoolWithMembersAsync(PoolId);
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        pool     = await PoolService.GetPoolWithMembersAsync(PoolId);
         isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
 
         if (pool is not null && isMember)
@@ -225,7 +216,7 @@ else
     private async Task LoadDataAsync()
     {
         finalizedCount = await StandingsService.GetFinalizedMatchCountAsync();
-        standings = await StandingsService.GetStandingsAsync(PoolId);
+        standings      = await StandingsService.GetStandingsAsync(PoolId);
     }
 
     private async Task RefreshAsync()
@@ -234,8 +225,6 @@ else
         await LoadDataAsync();
         isRefreshing = false;
     }
-
-    // ── Helpers ─────────────────────────────────────────────
 
     private static List<int> ComputePositions(IReadOnlyList<StandingsService.StandingEntry> list)
     {
@@ -250,24 +239,7 @@ else
         return [.. pos];
     }
 
-    private static string? MedalFor(int pos) => pos switch
-    {
-        1 => "🥇", 2 => "🥈", 3 => "🥉", _ => null
-    };
+    private static string? MedalFor(int pos) => pos switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => null };
 
-    private static string BarClass(int pos) => pos switch
-    {
-        1 => "bg-warning", 2 => "bg-secondary", 3 => "bg-danger", _ => "bg-primary"
-    };
-
-    private static int PointsPct(int pts, int max) =>
-        max > 0 ? (int)(pts * 100.0 / max) : 0;
-
-    private static string RowBg(int pos) => pos switch
-    {
-        1 => "background-color:rgba(255,215,0,0.10);",
-        2 => "background-color:rgba(192,192,192,0.12);",
-        3 => "background-color:rgba(205,127,50,0.10);",
-        _ => ""
-    };
+    private static int PointsPct(int pts, int max) => max > 0 ? (int)(pts * 100.0 / max) : 0;
 }

@@ -1,0 +1,23 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="three-ball-loader" role="status" aria-label="Cargando...">
+    <canvas id="@_id" width="56" height="56" aria-hidden="true"></canvas>
+    <span class="three-ball-fallback" aria-hidden="true">⚽</span>
+</div>
+
+@code {
+    private readonly string _id = "ball-" + Guid.NewGuid().ToString("N")[..8];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("quiniela.initBall", _id);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("quiniela.disposeBall", _id); }
+        catch { }
+    }
+}

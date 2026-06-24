@@ -12,7 +12,8 @@
 
 @if (isLoading)
 {
-    <p class="text-muted">Cargando...</p>
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
 }
 else if (pool is null || !isMember)
 {

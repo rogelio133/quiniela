@@ -14,7 +14,7 @@
 
 @if (isLoading)
 {
-    <p class="text-muted">Cargando...</p>
+    <SkeletonLoader ShowCard="true" />
 }
 else
 {
@@ -69,7 +69,7 @@ else
                         <div class="card-body">
                             <h5 class="card-title">@pool.Name</h5>
                             <p class="text-muted small mb-0">
-                                Creada el @pool.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                Creada el @pool.CreatedAt.ToString("dd/MM/yyyy")
                             </p>
                         </div>
                         <div class="card-footer bg-transparent">

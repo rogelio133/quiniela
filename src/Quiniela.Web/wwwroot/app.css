@@ -59,46 +59,233 @@ h1:focus {
     text-align: start;
 }
 
-/* ── Match card (Module 4) ─────────────────────────────────────────── */
-
-.match-card {
-    max-width: 480px;
+/* ── Nav ball spinning ─────────────────────────────────────────────── */
+@keyframes navBallSpin {
+    to { transform: rotate(360deg); }
 }
 
-/* Circular flag badge */
-.flag-circle-lg {
-    width: 56px !important;
-    height: 56px !important;
-    border-radius: 50%;
-    background-size: cover !important;
+.nav-ball {
     display: inline-block;
-    border: 1.5px solid #d0d0d0;
+    animation: navBallSpin 2.8s linear infinite;
 }
 
-/* Selection column — always reserves border space to prevent layout shift */
-.match-option {
-    border: 2px solid transparent;
-    border-radius: 0.5rem;
-    transition: border-color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-    user-select: none;
-    -webkit-user-select: none;
+/* ── Accordion animation (Blazor-controlled, no Bootstrap JS needed) ── */
+.accordion .accordion-collapse.collapse:not(.show) {
+    display: block !important;
+    max-height: 0 !important;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0, 1, 0, 1);
 }
 
-.match-option:not(.match-option-disabled):hover {
-    border-color: rgba(var(--bs-primary-rgb), 0.35);
-    cursor: pointer;
+.accordion .accordion-collapse.collapse.show {
+    max-height: 4000px;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
 }
 
-.match-option-selected {
-    border-color: var(--bs-primary) !important;
-    background-color: rgba(var(--bs-primary-rgb), 0.07);
+/* ── Home dashboard ────────────────────────────────────────────────── */
+.home-welcome {
+    background: linear-gradient(135deg, #0D1B2A 0%, #1A2B42 100%);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 4px;
+    color: white;
+    position: relative;
+    overflow: hidden;
 }
 
-.match-option-disabled {
-    cursor: default;
+.home-stadium-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.55;
 }
 
-/* Dim the whole card when the match is locked (kickoff passed) */
-.match-locked .card-body {
-    opacity: 0.65;
+.home-welcome-inner {
+    position: relative;
+    z-index: 1;
 }
+
+.home-welcome-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.home-ball-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.home-greeting {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0 0 2px;
+    color: white;
+}
+
+.home-sub {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.home-stat-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 16px;
+    border-radius: 14px;
+    min-height: 90px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.home-stat-pools {
+    background: linear-gradient(135deg, #1A56DB 0%, #3B82F6 100%);
+    color: white;
+}
+
+.home-stat-matches {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    color: white;
+}
+
+.home-stat-matches-empty {
+    background: #F1F5F9;
+    color: #64748B;
+}
+
+.home-stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.home-stat-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.home-stat-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.home-stat-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    display: block;
+}
+
+.home-stat-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+    display: block;
+}
+
+.home-cta {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.home-quick-actions {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.home-qa-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748B;
+    margin-bottom: 10px;
+}
+
+.home-qa-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #0F172A;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.13s, transform 0.13s;
+}
+
+.home-qa-btn:hover {
+    background: #EEF2F7;
+    transform: translateX(2px);
+    color: #0F172A;
+}
+
+.home-qa-btn-secondary {
+    background: #F1F5F9;
+    color: #475569;
+}
+
+/* ── Standings podium ──────────────────────────────────────────────── */
+.podium-card {
+    border-radius: 14px;
+    padding: 14px 16px;
+    border: 1px solid #E2E8F0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.podium-1 {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #FCD34D;
+    box-shadow: 0 4px 14px rgba(245,158,11,.2);
+}
+
+.podium-2 {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #CBD5E1;
+}
+
+.podium-3 {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 20%, #fff7ed 100%);
+    border-color: #FDBA74;
+}
+
+.podium-medal {
+    font-size: 1.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.podium-pts {
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #0F172A;
+}
+
+.podium-1 .podium-pts { color: #B45309; }

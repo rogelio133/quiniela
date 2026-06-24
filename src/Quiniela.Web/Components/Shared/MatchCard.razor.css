@@ -1,0 +1,223 @@
+/* ── Match Card — mobile-first redesign ──────────────────────── */
+
+.match-card {
+    border-radius: 14px;
+    border: 1px solid #E2E8F0;
+    overflow: hidden;
+    background: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    max-width: 480px;
+}
+
+/* Header */
+.mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #0D1B2A 0%, #1A2B42 100%);
+    gap: 8px;
+}
+
+.mc-header-info {
+    overflow: hidden;
+    flex: 1;
+}
+
+.mc-stage {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    color: rgba(255,255,255,0.55);
+    display: block;
+}
+
+.mc-venue {
+    font-size: 0.58rem;
+    color: rgba(255,255,255,0.32);
+    display: block;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mc-time-block {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.mc-date {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #FCD34D;
+    display: block;
+    letter-spacing: 0.04em;
+}
+
+.mc-time {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.48);
+    display: block;
+    margin-top: 1px;
+}
+
+.mc-closing-badge {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 600;
+    background: rgba(245,158,11,0.18);
+    color: #FCD34D;
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 4px;
+    padding: 2px 5px;
+    margin-top: 3px;
+    text-align: center;
+    animation: pulseGold 2s ease-in-out infinite;
+}
+
+/* Selection zone */
+.mc-body {
+    padding: 12px 8px 8px;
+}
+
+.mc-options {
+    display: grid;
+    grid-template-columns: 1fr 58px 1fr;
+    gap: 5px;
+    align-items: stretch;
+}
+
+.mc-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px 4px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: #F8FAFC;
+    transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.1s ease;
+    cursor: pointer;
+    min-height: 96px;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.mc-option:not(.mc-option-disabled):hover {
+    border-color: rgba(26,86,219,.22);
+    background: rgba(26,86,219,.04);
+}
+
+.mc-option:not(.mc-option-disabled):active {
+    transform: scale(0.97);
+}
+
+.mc-option-selected {
+    border-color: #1A56DB !important;
+    background: rgba(26,86,219,.07) !important;
+}
+
+.mc-option-disabled {
+    cursor: default;
+}
+
+/* Flag */
+.mc-flag {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50%;
+    background-size: cover !important;
+    border: 1.5px solid rgba(0,0,0,.08);
+    flex-shrink: 0;
+}
+
+/* Team text */
+.mc-code {
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.mc-name {
+    font-size: 0.52rem;
+    color: #64748B;
+    text-align: center;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    padding: 0 2px;
+}
+
+/* Draw column */
+.mc-draw-col {
+    background: #F1F5F9 !important;
+}
+
+.mc-draw-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.mc-draw-label {
+    font-size: 0.54rem;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.09em;
+}
+
+/* Selected checkmark */
+.mc-check {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #1A56DB;
+    animation: popIn 0.2s ease both;
+}
+
+/* Result footer */
+.mc-result-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 9px 14px;
+    background: #F8FAFC;
+    border-top: 1px solid #E2E8F0;
+}
+
+.mc-scoreboard {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: 0.06em;
+}
+
+/* Save button footer */
+.mc-save-footer {
+    padding: 9px 12px;
+    border-top: 1px solid #E2E8F0;
+}
+
+.mc-save-footer .btn {
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 10px;
+    letter-spacing: 0.02em;
+    transition: transform 0.13s, box-shadow 0.13s, background-color 0.25s;
+}
+
+/* Locked state */
+.match-locked {
+    opacity: 0.62;
+}

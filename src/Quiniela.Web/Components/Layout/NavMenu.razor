@@ -1,6 +1,8 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Quiniela 2026</a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="">
+            <span class="nav-ball">⚽</span> Quiniela 2026
+        </a>
     </div>
 </div>
 
@@ -43,7 +45,7 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3 mt-auto">
-                    <form method="post" action="/account/logout" @formname="nav-logout">
+                    <form method="post" action="/api/logout">
                         <AntiforgeryToken />
                         <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">
                             <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Cerrar sesión

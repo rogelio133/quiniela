@@ -77,6 +77,13 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+app.MapPost("/api/logout", async (SignInManager<User> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.LocalRedirect("/login");
+}).RequireAuthorization()
+  .DisableAntiforgery();
+
 app.MapPost("/account/external-login", (
     HttpContext ctx,
     SignInManager<User> signInManager,

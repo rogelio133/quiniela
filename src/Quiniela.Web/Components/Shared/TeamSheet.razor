@@ -25,7 +25,7 @@
                             <h5 class="ts-team-name">@data.Team.Name.ToUpperInvariant()</h5>
                             @if (data.Team.GroupCode.HasValue)
                             {
-                                <span class="ts-group-label">GRUPO @data.Team.GroupCode</span>
+                                <span class="ts-group-label">GRUPO @data.Team.Name</span>
                             }
                         </div>
                     </div>
@@ -162,7 +162,5 @@
     private async Task HandleClose() => await OnClose.InvokeAsync();
 
     private static string TeamCode(Team? team) =>
-        team is null ? "?" :
-        !string.IsNullOrWhiteSpace(team.ShortCode) ? team.ShortCode :
-        team.Name[..Math.Min(3, team.Name.Length)].ToUpperInvariant();
+        team is null ? "?" : team.Name;
 }

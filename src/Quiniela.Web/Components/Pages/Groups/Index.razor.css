@@ -1,0 +1,240 @@
+/* ── Group standings page ─────────────────────────────────── */
+
+/* Accordion card */
+.g-item {
+    border-radius: var(--q-r, 14px);
+    border: 1px solid var(--q-border, #E2E8F0);
+    overflow: hidden;
+    box-shadow: var(--q-sh-sm, 0 1px 4px rgba(0,0,0,.05));
+    background: var(--q-surface, #fff);
+}
+
+/* Accordion button */
+.g-btn {
+    font-size: 0.88rem;
+    padding: 13px 14px;
+    background: var(--q-surface, #fff);
+    border-radius: 0 !important;
+    gap: 0;
+    transition: background-color 0.2s ease;
+}
+
+.g-btn:not(.collapsed) {
+    background: #F0F5FF;
+    color: var(--q-blue, #1A56DB);
+    box-shadow: none;
+    border-bottom: 1px solid #DBEAFE;
+}
+
+.g-btn::after {
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+/* Group letter badge */
+.g-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--q-navy, #0D1B2A), var(--q-blue, #1A56DB));
+    color: white;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    letter-spacing: 0;
+}
+
+.g-btn:not(.collapsed) .g-badge {
+    background: linear-gradient(135deg, var(--q-blue, #1A56DB), #3B82F6);
+}
+
+/* Button body: title + leader */
+.g-btn-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.g-btn-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.g-btn:not(.collapsed) .g-btn-title {
+    color: var(--q-blue, #1A56DB);
+}
+
+.g-btn-leader {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    color: #64748B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+}
+
+.g-btn-flag {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50%;
+    background-size: cover !important;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,.08);
+}
+
+/* Progress chip (X/Y) */
+.g-prog-chip {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94A3B8;
+    background: #F1F5F9;
+    border-radius: 20px;
+    padding: 3px 8px;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+.g-prog-chip-done {
+    background: rgba(5,150,105,.1);
+    color: #059669;
+}
+
+.g-prog-sep { opacity: 0.5; margin: 0 1px; }
+
+/* Table header */
+.g-thead th {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 5px;
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--q-border, #E2E8F0);
+    white-space: nowrap;
+}
+
+/* Table cells */
+.g-table td {
+    padding: 10px 5px;
+    vertical-align: middle;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.g-table tbody tr:last-child td { border-bottom: none; }
+
+.g-stat {
+    font-size: 0.82rem;
+    color: #475569;
+}
+
+/* Row highlights — matches podium-1 / podium-2 from app.css */
+.g-row-q1 {
+    background: linear-gradient(90deg, rgba(245,158,11,.07) 0%, transparent 100%);
+}
+
+.g-row-q2 {
+    background: linear-gradient(90deg, rgba(203,213,225,.25) 0%, transparent 100%);
+}
+
+/* Position indicators */
+.g-medal { font-size: 1rem; line-height: 1; }
+
+.g-pos {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94A3B8;
+}
+
+/* Flag */
+.g-flag {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50%;
+    background-size: cover !important;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(0,0,0,.08);
+}
+
+/* Team name */
+.g-name {
+    font-size: 0.83rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+    color: #0F172A;
+}
+
+/* Points — mirrors podium-pts style */
+.g-pts {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0F172A;
+    line-height: 1;
+}
+
+.g-pts-gold   { color: #B45309; }
+.g-pts-silver { color: #475569; }
+
+/* Footer: progress bar */
+.g-footer {
+    padding: 10px 14px 12px;
+    border-top: 1px solid #F1F5F9;
+    background: #FAFBFD;
+}
+
+.g-footer-done {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #059669;
+}
+
+.g-footer-info {
+    font-size: 0.68rem;
+    color: #94A3B8;
+}
+
+.g-footer-pct {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #CBD5E1;
+}
+
+.g-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: #E2E8F0;
+}
+
+/* Qualification legend */
+.g-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: #64748B;
+}
+
+.g-legend-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background: rgba(245,158,11,.15);
+    border: 1.5px solid rgba(245,158,11,.5);
+    border-radius: 3px;
+    flex-shrink: 0;
+}

@@ -4,7 +4,7 @@
 <div class="match-card mb-3 @(IsLocked ? "match-locked" : "")">
 
     @* ── Header ──────────────────────────────────────────────── *@
-    <div class="mc-header">
+    <div class="mc-header @(IsInProgress ? "mc-header-live" : "")">
         <div class="mc-header-info">
             @if (Match.Stage == MatchStage.Grupos)
             {
@@ -17,6 +17,10 @@
             @if (!string.IsNullOrWhiteSpace(Match.Venue))
             {
                 <span class="mc-venue">@Match.Venue.ToUpperInvariant()</span>
+            }
+            @if (IsInProgress)
+            {
+                <span class="mc-live-badge"><span class="live-dot"></span> EN CURSO</span>
             }
         </div>
         <div class="mc-time-block">
@@ -37,7 +41,9 @@
             <div class="mc-option @OutcomeClass('H')"
                  role="@(IsInteractive ? "button" : null)"
                  @onclick="@(() => SelectOutcome('H'))">
-                <span class="fi fi-@Match.HomeTeam!.FlagCode mc-flag"></span>
+                <span class="fi fi-@Match.HomeTeam!.FlagCode mc-flag @(FlagsAreTappable || FlagsDblTappable ? "mc-flag-tappable" : "")"
+                      @onclick:stopPropagation="FlagsAreTappable"
+                      @onclick="TapHomeFlag"></span>
                 <span class="mc-code">@TeamShort(Match.HomeTeam)</span>
                 <span class="mc-name">@Match.HomeTeam.Name.ToUpperInvariant()</span>
                 @if (selectedOutcome == 'H') { <span class="mc-check">✓</span> }
@@ -56,7 +62,9 @@
             <div class="mc-option @OutcomeClass('A')"
                  role="@(IsInteractive ? "button" : null)"
                  @onclick="@(() => SelectOutcome('A'))">
-                <span class="fi fi-@Match.AwayTeam!.FlagCode mc-flag"></span>
+                <span class="fi fi-@Match.AwayTeam!.FlagCode mc-flag @(FlagsAreTappable || FlagsDblTappable ? "mc-flag-tappable" : "")"
+                      @onclick:stopPropagation="FlagsAreTappable"
+                      @onclick="TapAwayFlag"></span>
                 <span class="mc-code">@TeamShort(Match.AwayTeam)</span>
                 <span class="mc-name">@Match.AwayTeam.Name.ToUpperInvariant()</span>
                 @if (selectedOutcome == 'A') { <span class="mc-check">✓</span> }
@@ -116,6 +124,7 @@
     [Parameter, EditorRequired] public int UserId { get; set; }
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public TimeZoneInfo ClientTz { get; set; } = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+    [Parameter] public EventCallback<int> OnFlagTapped { get; set; }
 
     private char? selectedOutcome;
     private bool saving;
@@ -123,8 +132,15 @@
     private string? saveError;
     private bool _initialized;
 
-    private bool IsLocked     => Match.KickoffUtc <= DateTime.UtcNow;
-    private bool IsInteractive => !IsLocked && !ReadOnly;
+    private bool IsLocked         => Match.KickoffUtc <= DateTime.UtcNow;
+    private bool IsInteractive    => !IsLocked && !ReadOnly;
+    private bool IsInProgress     => IsLocked && Match.Status == MatchStatus.Programado;
+    private bool FlagsAreTappable => ReadOnly && Match.Status == MatchStatus.Finalizado;
+    private bool FlagsDblTappable => OnFlagTapped.HasDelegate && Match.Status == MatchStatus.Programado;
+
+    private DateTime? _homeFlagLastTap;
+    private DateTime? _awayFlagLastTap;
+    private const int DoubleTapMs = 400;
 
     private DateTime LocalKickoff => TimeZoneInfo.ConvertTimeFromUtc(Match.KickoffUtc, ClientTz);
     private string LocalDate => LocalKickoff.ToString("MMM dd", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant();
@@ -202,6 +218,50 @@
         else
         {
             saveError = error;
+        }
+    }
+
+    private async Task TapHomeFlag()
+    {
+        if (FlagsAreTappable && OnFlagTapped.HasDelegate)
+        {
+            await OnFlagTapped.InvokeAsync(Match.HomeTeam!.Id);
+            return;
+        }
+        if (FlagsDblTappable)
+        {
+            var now = DateTime.UtcNow;
+            if (_homeFlagLastTap.HasValue && (now - _homeFlagLastTap.Value).TotalMilliseconds <= DoubleTapMs)
+            {
+                _homeFlagLastTap = null;
+                await OnFlagTapped.InvokeAsync(Match.HomeTeam!.Id);
+            }
+            else
+            {
+                _homeFlagLastTap = now;
+            }
+        }
+    }
+
+    private async Task TapAwayFlag()
+    {
+        if (FlagsAreTappable && OnFlagTapped.HasDelegate)
+        {
+            await OnFlagTapped.InvokeAsync(Match.AwayTeam!.Id);
+            return;
+        }
+        if (FlagsDblTappable)
+        {
+            var now = DateTime.UtcNow;
+            if (_awayFlagLastTap.HasValue && (now - _awayFlagLastTap.Value).TotalMilliseconds <= DoubleTapMs)
+            {
+                _awayFlagLastTap = null;
+                await OnFlagTapped.InvokeAsync(Match.AwayTeam!.Id);
+            }
+            else
+            {
+                _awayFlagLastTap = now;
+            }
         }
     }
 

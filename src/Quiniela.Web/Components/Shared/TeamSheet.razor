@@ -1,0 +1,168 @@
+@inject TeamSheetService TeamSheetService
+
+@if (IsOpen)
+{
+    <div class="ts-overlay" @onclick="HandleClose">
+        <div class="ts-panel" @onclick:stopPropagation="true">
+
+            <div class="ts-handle"></div>
+
+            @if (data is null)
+            {
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @* ── Team header ─────────────────────────────── *@
+                <div class="ts-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fi fi-@data.Team.FlagCode.ToLower() ts-flag"></span>
+                        <div>
+                            <h5 class="ts-team-name">@data.Team.Name.ToUpperInvariant()</h5>
+                            @if (data.Team.GroupCode.HasValue)
+                            {
+                                <span class="ts-group-label">GRUPO @data.Team.GroupCode</span>
+                            }
+                        </div>
+                    </div>
+                    <button class="ts-close-btn" @onclick="HandleClose" aria-label="Cerrar">×</button>
+                </div>
+
+                @* ── Group position ───────────────────────────── *@
+                @if (data.GroupPosition is not null)
+                {
+                    <section class="ts-section">
+                        <h6 class="ts-section-title">Posición en grupo</h6>
+                        <div class="ts-position-row">
+                            <span class="ts-rank">@data.GroupPositionRank°</span>
+                            <div class="ts-stats">
+                                <span>@data.GroupPosition.Won G</span>
+                                <span>@data.GroupPosition.Drawn E</span>
+                                <span>@data.GroupPosition.Lost P</span>
+                                <span class="ts-stat-sep">·</span>
+                                <span>GF @data.GroupPosition.GoalsFor</span>
+                                <span>GC @data.GroupPosition.GoalsAgainst</span>
+                            </div>
+                            <span class="ts-pts-badge">@data.GroupPosition.Points pts</span>
+                        </div>
+                    </section>
+                }
+
+                @* ── Previous matches ─────────────────────────── *@
+                <section class="ts-section">
+                    <h6 class="ts-section-title">Partidos anteriores</h6>
+                    @if (!data.PreviousMatches.Any())
+                    {
+                        <p class="text-muted small mb-0">Sin partidos anteriores.</p>
+                    }
+                    else
+                    {
+                        @foreach (var entry in data.PreviousMatches)
+                        {
+                            var m      = entry.Match;
+                            var isHome = m.HomeTeamId == TeamId;
+                            var ourScore   = isHome ? m.HomeScore : m.AwayScore;
+                            var rivalScore = isHome ? m.AwayScore : m.HomeScore;
+                            var matchIcon  = ourScore > rivalScore ? "✅"
+                                           : ourScore == rivalScore ? "🤝" : "❌";
+                            var pred = entry.UserPrediction;
+
+                            <div class="ts-match-row">
+                                <div class="ts-match-info">
+                                    <span class="ts-result-icon">@matchIcon</span>
+                                    <div class="overflow-hidden">
+                                        <span class="ts-match-score">
+                                            @TeamCode(m.HomeTeam) @m.HomeScore–@m.AwayScore @TeamCode(m.AwayTeam)
+                                        </span>
+                                        <span class="ts-match-date">
+                                            @m.KickoffUtc.ToString("dd MMM", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant()
+                                        </span>
+                                    </div>
+                                </div>
+                                @if (pred is not null)
+                                {
+                                    var hit = pred.Points > 0;
+                                    <span class="ts-pred @(hit ? "ts-pred-hit" : "ts-pred-miss")">
+                                        @(hit ? $"✓ +{pred.Points} pts" : "✗ 0 pts")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="ts-pred ts-pred-none">—</span>
+                                }
+                            </div>
+                        }
+                    }
+                </section>
+
+                @* ── Upcoming matches ─────────────────────────── *@
+                <section class="ts-section ts-section-last">
+                    <h6 class="ts-section-title">Próximos partidos</h6>
+                    @if (!data.UpcomingMatches.Any())
+                    {
+                        <p class="text-muted small mb-0">Sin partidos próximos.</p>
+                    }
+                    else
+                    {
+                        @foreach (var m in data.UpcomingMatches)
+                        {
+                            var isHome = m.HomeTeamId == TeamId;
+                            var rival  = isHome ? m.AwayTeam : m.HomeTeam;
+                            var kt     = TimeZoneInfo.ConvertTimeFromUtc(
+                                             m.KickoffUtc,
+                                             TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City"));
+
+                            <div class="ts-upcoming-row">
+                                <span class="ts-upcoming-icon">⏳</span>
+                                <div>
+                                    <span class="ts-match-score">vs @(rival?.Name ?? "Por definir")</span>
+                                    <span class="ts-match-date">
+                                        @kt.ToString("dd MMM · HH:mm", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant()
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </section>
+            }
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int TeamId { get; set; }
+    [Parameter, EditorRequired] public int UserId { get; set; }
+    [Parameter, EditorRequired] public int PoolId { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private TeamSheetData? data;
+    private int _loadedForTeam;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && TeamId > 0 && TeamId != _loadedForTeam)
+        {
+            _loadedForTeam = TeamId;
+            data = null;
+            data = await TeamSheetService.GetTeamSheetAsync(TeamId, UserId, PoolId);
+        }
+        if (!IsOpen)
+        {
+            data = null;
+            _loadedForTeam = 0;
+        }
+    }
+
+    private async Task HandleClose() => await OnClose.InvokeAsync();
+
+    private static string TeamCode(Team? team) =>
+        team is null ? "?" :
+        !string.IsNullOrWhiteSpace(team.ShortCode) ? team.ShortCode :
+        team.Name[..Math.Min(3, team.Name.Length)].ToUpperInvariant();
+}

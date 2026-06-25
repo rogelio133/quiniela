@@ -1,0 +1,214 @@
+@page "/grupos"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@inject GroupStandingsService GroupStandingsService
+
+<PageTitle>Grupos — Quiniela 2026</PageTitle>
+
+@* ── Header ───────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <div>
+        <h2 class="fw-bold mb-0">⚽ Grupos</h2>
+        <small class="text-muted">Mundial 2026 · Fase de grupos</small>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm"
+            @onclick="RefreshAsync"
+            disabled="@isRefreshing">
+        @if (isRefreshing)
+        {
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        }
+        else
+        {
+            <span>🔄</span>
+        }
+        Actualizar
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+}
+else if (groups.Count == 0)
+{
+    <div class="alert alert-info mt-3">La información de grupos no está disponible aún.</div>
+}
+else
+{
+    @* ── Context strip ────────────────────────────────────────── *@
+    var totalPlayed  = groups.Values.Sum(g => g.Played);
+    var totalMatches = groups.Values.Sum(g => g.Total);
+
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <span class="badge rounded-pill @(totalPlayed > 0 ? "bg-success" : "bg-secondary") fs-6 fw-normal px-3 py-2">
+            ⚽ @totalPlayed @(totalPlayed == 1 ? "partido jugado" : "partidos jugados")
+        </span>
+        <span class="badge rounded-pill bg-secondary fs-6 fw-normal px-3 py-2">
+            🏆 @groups.Count grupos
+        </span>
+    </div>
+
+    @* ── Accordions ───────────────────────────────────────────── *@
+    <div class="accordion" id="accordion-groups">
+        @{ int gIdx = 0; }
+        @foreach (var (gc, data) in groups)
+        {
+            var isOpen   = openGroups.Contains(gc);
+            var pct      = data.Total > 0 ? (int)(data.Played * 100.0 / data.Total) : 0;
+            var leader   = data.Standings.Count > 0 ? data.Standings[0] : null;
+            var done     = data.Played == data.Total && data.Total > 0;
+            var delay    = $"anim-d{Math.Min(gIdx + 1, 6)}";
+            gIdx++;
+
+            <div class="accordion-item g-item mb-2 @delay anim-fade-in-up" @key="gc">
+                <h2 class="accordion-header">
+                    <button class="accordion-button g-btn @(isOpen ? "" : "collapsed")"
+                            type="button"
+                            @onclick="() => ToggleGroup(gc)">
+                        <span class="g-badge me-2">@gc</span>
+                        <div class="g-btn-body">
+                            <span class="g-btn-title">GRUPO @gc</span>
+                            @if (leader is not null && data.Played > 0)
+                            {
+                                <span class="g-btn-leader">
+                                    <span class="fi fi-@leader.Team.FlagCode.ToLower() g-btn-flag"></span>
+                                    @leader.Team.Name &nbsp;·&nbsp; @leader.Points pts
+                                </span>
+                            }
+                        </div>
+                        <span class="g-prog-chip @(done ? "g-prog-chip-done" : "")">
+                            @data.Played<span class="g-prog-sep">/</span>@data.Total
+                        </span>
+                    </button>
+                </h2>
+
+                <div class="accordion-collapse collapse @(isOpen ? "show" : "")">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm g-table mb-0">
+                                <thead>
+                                    <tr class="g-thead">
+                                        <th class="ps-3" style="width:40px;">#</th>
+                                        <th>Equipo</th>
+                                        <th class="text-center" title="Partidos jugados">PJ</th>
+                                        <th class="text-center" title="Ganados">G</th>
+                                        <th class="text-center" title="Empatados">E</th>
+                                        <th class="text-center" title="Perdidos">P</th>
+                                        <th class="text-center" title="Diferencia de goles">DG</th>
+                                        <th class="text-center pe-3" title="Puntos">Pts</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < data.Standings.Count; i++)
+                                    {
+                                        var s      = data.Standings[i];
+                                        var pos    = i + 1;
+                                        var rowCss = pos == 1 ? "g-row-q1" : pos == 2 ? "g-row-q2" : "";
+                                        var dgNum  = s.GoalDiff;
+                                        var dgText = dgNum > 0 ? $"+{dgNum}" : dgNum.ToString();
+                                        var dgCss  = dgNum > 0 ? "text-success fw-semibold" : dgNum < 0 ? "text-danger" : "text-muted";
+                                        var medal  = pos == 1 ? "🥇" : pos == 2 ? "🥈" : null;
+
+                                        <tr class="@rowCss" @key="s.Team.Id">
+                                            <td class="ps-3">
+                                                @if (medal is not null)
+                                                {
+                                                    <span class="g-medal">@medal</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="g-pos">@pos</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="fi fi-@s.Team.FlagCode.ToLower() g-flag"></span>
+                                                    <span class="g-name">@s.Team.Name</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center g-stat">@s.Played</td>
+                                            <td class="text-center g-stat">@s.Won</td>
+                                            <td class="text-center g-stat">@s.Drawn</td>
+                                            <td class="text-center g-stat">@s.Lost</td>
+                                            <td class="text-center g-stat @dgCss">@dgText</td>
+                                            <td class="text-center pe-3">
+                                                <span class="g-pts @(pos == 1 ? "g-pts-gold" : pos == 2 ? "g-pts-silver" : "")">
+                                                    @s.Points
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @* ── Progress footer ─────────────────────────────── *@
+                        <div class="g-footer">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                @if (done)
+                                {
+                                    <span class="g-footer-done">✓ Grupo completado</span>
+                                }
+                                else
+                                {
+                                    <span class="g-footer-info">@data.Played de @data.Total partidos jugados</span>
+                                }
+                                <span class="g-footer-pct">@pct%</span>
+                            </div>
+                            <div class="progress g-progress">
+                                <div class="progress-bar @(done ? "bg-success" : "bg-primary")"
+                                     role="progressbar"
+                                     style="width:@pct%"
+                                     aria-valuenow="@data.Played"
+                                     aria-valuemin="0"
+                                     aria-valuemax="@data.Total"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="g-legend mt-3">
+        <span class="g-legend-dot"></span>
+        <span>Clasifica a dieciseisavos (1° y 2°)</span>
+    </div>
+}
+
+@code {
+    private Dictionary<char, GroupResult> groups = [];
+    private HashSet<char> openGroups             = [];
+    private bool isLoading                       = true;
+    private bool isRefreshing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        isLoading = false;
+    }
+
+    private async Task RefreshAsync()
+    {
+        isRefreshing = true;
+        await LoadAsync();
+        isRefreshing = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        groups = await GroupStandingsService.GetAllGroupStandingsAsync();
+        if (groups.Count > 0 && openGroups.Count == 0)
+            openGroups.Add(groups.Keys.First());
+    }
+
+    private void ToggleGroup(char code)
+    {
+        if (!openGroups.Remove(code))
+            openGroups.Add(code);
+    }
+}

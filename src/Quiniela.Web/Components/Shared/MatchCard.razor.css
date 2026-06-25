@@ -221,3 +221,45 @@
 .match-locked {
     opacity: 0.62;
 }
+
+/* In-progress / live header */
+.mc-header-live {
+    background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 100%) !important;
+}
+
+.mc-live-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(239,68,68,0.2);
+    border: 1px solid rgba(239,68,68,0.5);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.56rem;
+    font-weight: 700;
+    color: #FCA5A5;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+}
+
+.live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #EF4444;
+    animation: livePulse 1.2s ease-in-out infinite;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+/* Flag tappable (finalized tab) */
+.mc-flag-tappable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mc-flag-tappable:hover,
+.mc-flag-tappable:active {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.3);
+}

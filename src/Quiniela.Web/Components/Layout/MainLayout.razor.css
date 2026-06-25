@@ -6,10 +6,28 @@
 
 main {
     flex: 1;
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar {
     background: linear-gradient(180deg, #0D1B2A 0%, #1E0A3C 100%);
+    position: relative;
+    z-index: 2;
+}
+
+/* ── Background rotating ball ───────────────────────────────── */
+.bg-ball {
+    position: fixed;
+    bottom: -55px;
+    right: -55px;
+    width: 350px;
+    height: 350px;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: 0;
+    animation: bgBallSpin 28s linear infinite;
 }
 
 .top-row {
@@ -47,6 +65,13 @@ main {
 }
 
 @media (min-width: 641px) {
+    .bg-ball {
+        width: 350px;
+        height: 350px;
+        bottom: -65px;
+        right: -65px;
+    }
+
     .page {
         flex-direction: row;
     }

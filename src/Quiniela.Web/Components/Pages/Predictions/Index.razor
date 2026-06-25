@@ -66,7 +66,8 @@ else
                                            PoolId="PoolId"
                                            UserId="currentUserId"
                                            ClientTz="clientTz"
-                                           ReadOnly="false" />
+                                           ReadOnly="false"
+                                           OnFlagTapped="OpenTeamSheet" />
                             }
                         </div>
                     </div>
@@ -74,6 +75,12 @@ else
             }
         </div>
     }
+
+    <TeamSheet TeamId="_selectedTeamId"
+               UserId="currentUserId"
+               PoolId="PoolId"
+               IsOpen="_sheetOpen"
+               OnClose="CloseTeamSheet" />
 }
 
 @code {
@@ -87,6 +94,9 @@ else
 
     private List<IGrouping<DateOnly, PredictionService.MatchWithPrediction>> grouped = [];
     private HashSet<DateOnly> openDays = [];
+
+    private int _selectedTeamId;
+    private bool _sheetOpen;
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,6 +138,14 @@ else
         if (!openDays.Remove(date))
             openDays.Add(date);
     }
+
+    private void OpenTeamSheet(int teamId)
+    {
+        _selectedTeamId = teamId;
+        _sheetOpen = true;
+    }
+
+    private void CloseTeamSheet() => _sheetOpen = false;
 
     private string FormatDayHeader(DateOnly date)
     {

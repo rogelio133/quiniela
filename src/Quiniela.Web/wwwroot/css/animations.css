@@ -36,6 +36,16 @@
     to   { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes bgBallSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
 /* ── Utility classes ────────────────────────────────────────── */
 .anim-spin-ball {
     display: inline-block;

@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 
 @inject AdminService AdminService
+@inject KnockoutService KnockoutService
 @inject IJSRuntime JS
 
 <PageTitle>Panel Admin — Quiniela 2026</PageTitle>
@@ -72,6 +73,17 @@ else
                 @if (finalizedMatches.Count > 0)
                 {
                     <span class="badge bg-secondary ms-1 rounded-pill">@finalizedMatches.Count</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == Tab.Bracket ? "active" : "")"
+                    @onclick='() => activeTab = Tab.Bracket'
+                    type="button" role="tab">
+                Bracket
+                @if (placeholderMatches.Count > 0)
+                {
+                    <span class="badge bg-warning text-dark ms-1 rounded-pill">@placeholderMatches.Count</span>
                 }
             </button>
         </li>
@@ -157,6 +169,16 @@ else
                                 </small>
                             </div>
                         </div>
+
+                        @if (match.Stage != MatchStage.Grupos)
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted d-block mb-1" style="font-size:0.68rem;">
+                                    Instancia (marcador global incl. penales)
+                                </small>
+                                @RenderInstanceChips(match.Id)
+                            </div>
+                        }
 
                         @if (errors.TryGetValue(match.Id, out var errMsg))
                         {
@@ -261,6 +283,16 @@ else
                                 </div>
                             </div>
 
+                            @if (match.Stage != MatchStage.Grupos)
+                            {
+                                <div class="mb-2">
+                                    <small class="text-muted d-block mb-1" style="font-size:0.68rem;">
+                                        Instancia (marcador global incl. penales)
+                                    </small>
+                                    @RenderInstanceChips(match.Id)
+                                </div>
+                            }
+
                             @if (errors.TryGetValue(match.Id, out var editErr))
                             {
                                 <div class="alert alert-danger py-1 px-2 small mb-2" role="alert">@editErr</div>
@@ -317,6 +349,10 @@ else
                                     </div>
                                     <small class="text-muted" style="font-size:0.65rem;">
                                         @OutcomeLabel(match)
+                                        @if (match.Stage != MatchStage.Grupos && match.DecidedIn is not null)
+                                        {
+                                            <span> · @DecidedInLabel(match.DecidedIn.Value)</span>
+                                        }
                                     </small>
                                 </div>
 
@@ -343,16 +379,94 @@ else
             }
         }
     }
+
+    @* ── Bracket tab (asignación/corrección manual de equipos en KO) ──── *@
+    @if (activeTab == Tab.Bracket)
+    {
+        @if (placeholderMatches.Count == 0)
+        {
+            <div class="text-center py-5">
+                <div style="font-size:3rem;">🏆</div>
+                <p class="text-muted mt-2">No hay partidos de eliminatorias pendientes de asignar.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var match in placeholderMatches)
+            {
+                <div class="card mb-3 shadow-sm border-start border-4 border-info" @key="match.Id">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-white">
+                        <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing:.04rem;">
+                            @StageLabel(match)
+                        </small>
+                        <span class="badge bg-info text-dark" style="font-size:0.65rem;">PLACEHOLDER</span>
+                    </div>
+                    <div class="card-body px-3 py-3">
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col">
+                                <label class="form-label small text-muted mb-1">
+                                    Local @(match.HomeSlotLabel is not null ? $"({match.HomeSlotLabel})" : "")
+                                </label>
+                                <select class="form-select form-select-sm" @bind="bracketModels[match.Id].HomeTeamId">
+                                    <option value="">— Sin asignar —</option>
+                                    @foreach (var t in allTeams)
+                                    {
+                                        <option value="@t.Id">@t.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="form-label small text-muted mb-1">
+                                    Visitante @(match.AwaySlotLabel is not null ? $"({match.AwaySlotLabel})" : "")
+                                </label>
+                                <select class="form-select form-select-sm" @bind="bracketModels[match.Id].AwayTeamId">
+                                    <option value="">— Sin asignar —</option>
+                                    @foreach (var t in allTeams)
+                                    {
+                                        <option value="@t.Id">@t.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @if (bracketErrors.TryGetValue(match.Id, out var bErr))
+                        {
+                            <div class="alert alert-danger py-1 px-2 small mb-2" role="alert">@bErr</div>
+                        }
+
+                        <button class="btn btn-outline-primary btn-sm w-100"
+                                @onclick="() => AssignTeams(match.Id)"
+                                disabled="@bracketSavingIds.Contains(match.Id)">
+                            @if (bracketSavingIds.Contains(match.Id))
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>💾 Guardar asignación</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    }
 }
 
 @code {
-    private enum Tab { Pending, Finalized }
+    private enum Tab { Pending, Finalized, Bracket }
 
     private bool isLoading = true;
     private Tab activeTab = Tab.Pending;
     private List<Match> pendingMatches = [];
     private List<Match> finalizedMatches = [];
+    private List<Match> placeholderMatches = [];
+    private List<Team> allTeams = [];
     private Dictionary<int, MatchEditModel> editModels = [];
+    private Dictionary<int, BracketEditModel> bracketModels = [];
+    private HashSet<int> bracketSavingIds = [];
+    private Dictionary<int, string> bracketErrors = [];
     private HashSet<int> savingIds = [];
     private HashSet<int> editingIds = [];
     private Dictionary<int, string> errors = [];
@@ -362,6 +476,13 @@ else
     {
         public int HomeScore { get; set; }
         public int AwayScore { get; set; }
+        public MatchDecidedIn? DecidedIn { get; set; }
+    }
+
+    private class BracketEditModel
+    {
+        public int? HomeTeamId { get; set; }
+        public int? AwayTeamId { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
@@ -385,6 +506,8 @@ else
     {
         pendingMatches = await AdminService.GetPendingResultsAsync();
         finalizedMatches = await AdminService.GetFinalizedMatchesAsync();
+        placeholderMatches = await KnockoutService.GetPlaceholderMatchesAsync();
+        allTeams = await KnockoutService.GetAllTeamsAsync();
 
         // Rebuild edit models: preserve any in-progress entries for pending matches,
         // and keep models for finalized matches currently being edited.
@@ -395,6 +518,13 @@ else
             if (editModels.TryGetValue(id, out var em))
                 newModels[id] = em;
         editModels = newModels;
+
+        var newBracketModels = new Dictionary<int, BracketEditModel>();
+        foreach (var m in placeholderMatches)
+            newBracketModels[m.Id] = bracketModels.TryGetValue(m.Id, out var bm)
+                ? bm
+                : new BracketEditModel { HomeTeamId = m.HomeTeamId, AwayTeamId = m.AwayTeamId };
+        bracketModels = newBracketModels;
     }
 
     private async Task SaveResult(int matchId)
@@ -406,7 +536,7 @@ else
         savingIds.Add(matchId);
 
         var (success, error) = await AdminService.SaveResultAsync(
-            matchId, model.HomeScore, model.AwayScore);
+            matchId, model.HomeScore, model.AwayScore, model.DecidedIn);
 
         savingIds.Remove(matchId);
 
@@ -428,7 +558,8 @@ else
         editModels[matchId] = new MatchEditModel
         {
             HomeScore = match.HomeScore ?? 0,
-            AwayScore = match.AwayScore ?? 0
+            AwayScore = match.AwayScore ?? 0,
+            DecidedIn = match.DecidedIn
         };
         editingIds.Add(matchId);
         errors.Remove(matchId);
@@ -439,6 +570,43 @@ else
         editingIds.Remove(matchId);
         editModels.Remove(matchId);
         errors.Remove(matchId);
+    }
+
+    private async Task AssignTeams(int matchId)
+    {
+        if (!bracketModels.TryGetValue(matchId, out var model))
+            return;
+
+        bracketErrors.Remove(matchId);
+        bracketSavingIds.Add(matchId);
+
+        var (success, error) = await KnockoutService.AssignTeamsAsync(
+            matchId, model.HomeTeamId, model.AwayTeamId);
+
+        bracketSavingIds.Remove(matchId);
+
+        if (success)
+            await ReloadAsync();
+        else
+            bracketErrors[matchId] = error ?? "Error al guardar. Intenta de nuevo.";
+    }
+
+    private RenderFragment RenderInstanceChips(int matchId) => @<div class="d-flex gap-2">
+        @foreach (var instance in new[] { MatchDecidedIn.Regular90, MatchDecidedIn.ExtraTime, MatchDecidedIn.Penalties })
+        {
+            var selected = editModels.TryGetValue(matchId, out var m) && m.DecidedIn == instance;
+            <button type="button"
+                    class="btn btn-sm flex-grow-1 @(selected ? "btn-primary" : "btn-outline-secondary")"
+                    @onclick="() => SelectInstance(matchId, instance)">
+                @DecidedInLabel(instance)
+            </button>
+        }
+    </div>;
+
+    private void SelectInstance(int matchId, MatchDecidedIn instance)
+    {
+        if (editModels.TryGetValue(matchId, out var model))
+            model.DecidedIn = instance;
     }
 
     private string FormatKickoff(Match match)
@@ -467,6 +635,14 @@ else
         if (match.HomeScore < match.AwayScore) return "GANA VISITANTE";
         return "EMPATE";
     }
+
+    private static string DecidedInLabel(MatchDecidedIn decidedIn) => decidedIn switch
+    {
+        MatchDecidedIn.Regular90 => "90'",
+        MatchDecidedIn.ExtraTime => "T.Extra",
+        MatchDecidedIn.Penalties => "Penales",
+        _ => decidedIn.ToString()
+    };
 
     private static string TeamShort(Team team) =>
         !string.IsNullOrWhiteSpace(team.ShortCode)

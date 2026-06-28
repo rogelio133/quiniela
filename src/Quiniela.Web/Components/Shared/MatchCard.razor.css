@@ -184,15 +184,86 @@
     animation: popIn 0.2s ease both;
 }
 
+/* Instance selector (KO only) */
+.mc-instance {
+    padding: 8px 12px;
+    border-top: 1px dashed rgba(0,0,0,.08);
+}
+
+.mc-instance-label {
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: #64748B;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.mc-instance-opts {
+    display: flex;
+    gap: 6px;
+}
+
+.mc-inst-chip {
+    flex: 1;
+    padding: 7px 4px;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: .72rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+}
+
+.mc-inst-chip:disabled {
+    opacity: .55;
+    cursor: default;
+}
+
+.mc-inst-selected {
+    border-color: #1A56DB;
+    background: #EFF4FF;
+    color: #1A56DB;
+}
+
+/* En KO, dos columnas en lugar de tres */
+.mc-options-ko {
+    grid-template-columns: 1fr 1fr;
+}
+
 /* Result footer */
 .mc-result-footer {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 6px;
     padding: 9px 14px;
     background: #F8FAFC;
     border-top: 1px solid #E2E8F0;
+}
+
+.mc-result-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mc-decided-in {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mc-pts-breakdown {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .mc-scoreboard {

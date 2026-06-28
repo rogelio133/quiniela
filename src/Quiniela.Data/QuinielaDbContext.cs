@@ -43,6 +43,8 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
             e.Property(m => m.Venue).HasMaxLength(100);
             e.Property(m => m.GroupCode).HasColumnType("char(1)");
+            e.Property(m => m.HomeSlotLabel).HasMaxLength(20);
+            e.Property(m => m.AwaySlotLabel).HasMaxLength(20);
         });
 
         modelBuilder.Entity<Pool>(e =>

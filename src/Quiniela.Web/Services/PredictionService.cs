@@ -41,14 +41,24 @@ public class PredictionService(QuinielaDbContext db)
         return await AttachPredictionsAsync(matches, poolId, userId);
     }
 
-    public async Task<(bool Success, string? Error)> UpsertAsync(int userId, int poolId, int matchId, char outcome)
+    public async Task<(bool Success, string? Error)> UpsertAsync(
+        int userId, int poolId, int matchId, char outcome, MatchDecidedIn? instance)
     {
-        if (outcome is not ('H' or 'D' or 'A'))
-            return (false, "Resultado inválido.");
-
         var match = await db.Matches.FindAsync(matchId);
         if (match is null) return (false, "Partido no encontrado.");
         if (match.KickoffUtc <= DateTime.UtcNow) return (false, "El partido ya inició, no puedes modificar tu pronóstico.");
+
+        bool isKnockout = match.Stage != MatchStage.Grupos;
+
+        if (isKnockout)
+        {
+            if (outcome is not ('H' or 'A'))
+                return (false, "En eliminatorias debes elegir quién avanza.");
+            if (instance is null)
+                return (false, "Selecciona la instancia (90 min, tiempo extra o penales).");
+        }
+        else if (outcome is not ('H' or 'D' or 'A'))
+            return (false, "Resultado inválido.");
 
         bool isMember = await db.PoolMembers.AnyAsync(m => m.PoolId == poolId && m.UserId == userId);
         if (!isMember) return (false, "No eres miembro de esta sala.");
@@ -56,10 +66,12 @@ public class PredictionService(QuinielaDbContext db)
         var existing = await db.Predictions
             .FirstOrDefaultAsync(p => p.UserId == userId && p.PoolId == poolId && p.MatchId == matchId);
 
+        var predInstance = isKnockout ? instance : null;
         var now = DateTime.UtcNow;
         if (existing is not null)
         {
             existing.PredOutcome = outcome;
+            existing.PredInstance = predInstance;
             existing.UpdatedAt = now;
         }
         else
@@ -70,6 +82,7 @@ public class PredictionService(QuinielaDbContext db)
                 PoolId = poolId,
                 MatchId = matchId,
                 PredOutcome = outcome,
+                PredInstance = predInstance,
                 Points = 0,
                 CreatedAt = now,
                 UpdatedAt = now

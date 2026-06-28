@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Quiniela.Data;
 
@@ -11,9 +12,11 @@ using Quiniela.Data;
 namespace Quiniela.Data.Migrations
 {
     [DbContext(typeof(QuinielaDbContext))]
-    partial class QuinielaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628161548_Add2ndPhaseSupport")]
+    partial class Add2ndPhaseSupport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -295,12 +298,6 @@ namespace Quiniela.Data.Migrations
                     b.Property<string>("PredOutcome")
                         .IsRequired()
                         .HasColumnType("char(1)");
-
-                    b.Property<int>("PtsInstance")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PtsResult")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");

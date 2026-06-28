@@ -25,9 +25,13 @@ public class ScoringService(QuinielaDbContext db)
 
         foreach (var pred in predictions)
         {
-            pred.Points = pred.PredOutcome == realOutcome
-                ? pred.Pool.PtsCorrect + (isKnockout ? pred.Pool.PtsBonusKO : 0)
+            pred.PtsResult = pred.PredOutcome == realOutcome ? pred.Pool.PtsCorrect : 0;
+
+            pred.PtsInstance = isKnockout && match.DecidedIn is not null && pred.PredInstance == match.DecidedIn
+                ? pred.Pool.PtsBonusKO
                 : 0;
+
+            pred.Points = pred.PtsResult + pred.PtsInstance;
         }
 
         await db.SaveChangesAsync();

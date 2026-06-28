@@ -35,7 +35,7 @@
 
     @* ── Selection zone ──────────────────────────────────────── *@
     <div class="mc-body">
-        <div class="mc-options">
+        <div class="mc-options @(IsKnockout ? "mc-options-ko" : "")">
 
             @* Local *@
             <div class="mc-option @OutcomeClass('H')"
@@ -49,14 +49,17 @@
                 @if (selectedOutcome == 'H') { <span class="mc-check">✓</span> }
             </div>
 
-            @* Empate *@
-            <div class="mc-option mc-draw-col @OutcomeClass('D')"
-                 role="@(IsInteractive ? "button" : null)"
-                 @onclick="@(() => SelectOutcome('D'))">
-                <span class="mc-draw-icon">🤝</span>
-                <span class="mc-draw-label">EMPATE</span>
-                @if (selectedOutcome == 'D') { <span class="mc-check">✓</span> }
-            </div>
+            @* Empate (solo grupos) *@
+            @if (!IsKnockout)
+            {
+                <div class="mc-option mc-draw-col @OutcomeClass('D')"
+                     role="@(IsInteractive ? "button" : null)"
+                     @onclick="@(() => SelectOutcome('D'))">
+                    <span class="mc-draw-icon">🤝</span>
+                    <span class="mc-draw-label">EMPATE</span>
+                    @if (selectedOutcome == 'D') { <span class="mc-check">✓</span> }
+                </div>
+            }
 
             @* Visitante *@
             <div class="mc-option @OutcomeClass('A')"
@@ -72,17 +75,53 @@
         </div>
     </div>
 
+    @* ── Selector de instancia (solo KO) ──────────────────────── *@
+    @if (IsKnockout)
+    {
+        <div class="mc-instance">
+            <span class="mc-instance-label">¿Cómo se define?</span>
+            <div class="mc-instance-opts">
+                <button class="mc-inst-chip @(selectedInstance == MatchDecidedIn.Regular90 ? "mc-inst-selected" : "")"
+                        @onclick="() => SelectInstance(MatchDecidedIn.Regular90)" disabled="@(!IsInteractive)">90'</button>
+                <button class="mc-inst-chip @(selectedInstance == MatchDecidedIn.ExtraTime ? "mc-inst-selected" : "")"
+                        @onclick="() => SelectInstance(MatchDecidedIn.ExtraTime)" disabled="@(!IsInteractive)">T. Extra</button>
+                <button class="mc-inst-chip @(selectedInstance == MatchDecidedIn.Penalties ? "mc-inst-selected" : "")"
+                        @onclick="() => SelectInstance(MatchDecidedIn.Penalties)" disabled="@(!IsInteractive)">Penales</button>
+            </div>
+        </div>
+    }
+
     @* ── Result (shown when match is done) ───────────────────── *@
     @if (Match.Status == MatchStatus.Finalizado && Match.HomeScore.HasValue)
     {
         <div class="mc-result-footer">
-            <span class="mc-scoreboard">@Match.HomeScore – @Match.AwayScore</span>
-            @if (selectedOutcome.HasValue)
+            <div class="mc-result-top">
+                <span class="mc-scoreboard">@Match.HomeScore – @Match.AwayScore</span>
+                @if (IsKnockout && Match.DecidedIn is not null)
+                {
+                    <span class="mc-decided-in">@DecidedInLabel(Match.DecidedIn.Value)</span>
+                }
+            </div>
+            @if (ExistingPrediction is not null)
             {
-                var hit = ExistingPrediction?.Points > 0;
-                <span class="badge @(hit ? "bg-success" : "bg-secondary")">
-                    @(hit ? $"+{ExistingPrediction!.Points} pts ✓" : "0 pts ✗")
-                </span>
+                <div class="mc-pts-breakdown">
+                    @if (IsKnockout)
+                    {
+                        <span class="badge @(ExistingPrediction.PtsResult > 0 ? "bg-success" : "bg-secondary")">
+                            @(ExistingPrediction.PtsResult > 0 ? $"+{ExistingPrediction.PtsResult} avance ✓" : "avance ✗")
+                        </span>
+                        <span class="badge @(ExistingPrediction.PtsInstance > 0 ? "bg-success" : "bg-secondary")">
+                            @(ExistingPrediction.PtsInstance > 0 ? $"+{ExistingPrediction.PtsInstance} instancia ✓" : "instancia ✗")
+                        </span>
+                    }
+                    else
+                    {
+                        var hit = ExistingPrediction.Points > 0;
+                        <span class="badge @(hit ? "bg-success" : "bg-secondary")">
+                            @(hit ? $"+{ExistingPrediction.Points} pts ✓" : "0 pts ✗")
+                        </span>
+                    }
+                </div>
             }
             else
             {
@@ -127,6 +166,7 @@
     [Parameter] public EventCallback<int> OnFlagTapped { get; set; }
 
     private char? selectedOutcome;
+    private MatchDecidedIn? selectedInstance;
     private bool saving;
     private bool savedOk;
     private string? saveError;
@@ -135,6 +175,7 @@
     private bool IsLocked         => Match.KickoffUtc <= DateTime.UtcNow;
     private bool IsInteractive    => !IsLocked && !ReadOnly;
     private bool IsInProgress     => IsLocked && Match.Status == MatchStatus.Programado;
+    private bool IsKnockout       => Match.Stage != MatchStage.Grupos;
     private bool FlagsAreTappable => ReadOnly && Match.Status == MatchStatus.Finalizado;
     private bool FlagsDblTappable => OnFlagTapped.HasDelegate && Match.Status == MatchStatus.Programado;
 
@@ -163,6 +204,7 @@
         if (!_initialized)
         {
             selectedOutcome = ExistingPrediction?.PredOutcome;
+            selectedInstance = ExistingPrediction?.PredInstance;
             _initialized = true;
         }
     }
@@ -171,6 +213,14 @@
     {
         if (!IsInteractive) return;
         selectedOutcome = outcome;
+        saveError = null;
+        savedOk = false;
+    }
+
+    private void SelectInstance(MatchDecidedIn instance)
+    {
+        if (!IsInteractive) return;
+        selectedInstance = instance;
         saveError = null;
         savedOk = false;
     }
@@ -189,6 +239,11 @@
             saveError = "Selecciona un resultado antes de guardar.";
             return;
         }
+        if (IsKnockout && !selectedInstance.HasValue)
+        {
+            saveError = "Selecciona la instancia antes de guardar.";
+            return;
+        }
         if (IsLocked)
         {
             saveError = "El partido ya inició.";
@@ -197,7 +252,8 @@
 
         saving = true;
         saveError = null;
-        var (success, error) = await PredictionService.UpsertAsync(UserId, PoolId, Match.Id, selectedOutcome.Value);
+        var (success, error) = await PredictionService.UpsertAsync(
+            UserId, PoolId, Match.Id, selectedOutcome.Value, selectedInstance);
         saving = false;
 
         if (success)
@@ -269,6 +325,14 @@
         !string.IsNullOrWhiteSpace(team.ShortCode)
             ? team.ShortCode
             : team.Name[..Math.Min(3, team.Name.Length)].ToUpperInvariant();
+
+    private static string DecidedInLabel(MatchDecidedIn decidedIn) => decidedIn switch
+    {
+        MatchDecidedIn.Regular90 => "90'",
+        MatchDecidedIn.ExtraTime => "T.Extra",
+        MatchDecidedIn.Penalties => "Penales",
+        _ => decidedIn.ToString()
+    };
 
     private static string StageName(MatchStage stage) => stage switch
     {

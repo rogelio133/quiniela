@@ -33,7 +33,7 @@ public class StandingsService(QuinielaDbContext db)
             {
                 UserId = g.Key,
                 TotalPoints = g.Sum(p => p.Points),
-                CorrectPredictions = g.Count(p => p.Points > 0),
+                CorrectPredictions = g.Count(p => p.PtsResult > 0),
                 TotalPredictions = g.Count()
             })
             .ToDictionaryAsync(x => x.UserId);

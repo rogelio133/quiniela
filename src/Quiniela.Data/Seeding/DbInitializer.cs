@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,17 @@ public static class DbInitializer
 {
     private record TeamSeed(string Name, string FlagCode, string ShortCode, char Group);
     private record MatchSeed(string Home, string Away, DateTime KickoffUtc, char Group, string Venue);
+
+    private record KnockoutFile(List<KnockoutMatchJson> Partidos);
+    private record KnockoutMatchJson(
+        int Match_Id, DateTime Fecha_Utc, string Local, string Visita, string Venue);
+
+    // Nombres del JSON que difieren de los sembrados en BD (normalización mínima).
+    private static readonly Dictionary<string, string> KnockoutNameFix =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["R.D. del Congo"] = "Congo RD",
+        };
 
     // 48 selecciones clasificadas — FIFA World Cup 2026
     private static readonly TeamSeed[] Teams =
@@ -195,7 +207,51 @@ public static class DbInitializer
         ILogger logger)
     {
         await SeedTeamsAndMatchesAsync(context, logger);
+        await SeedDieciseisavosAsync(context, logger);
         await SeedUsersAsync(userManager, roleManager, configuration, logger);
+    }
+
+    private static async Task SeedDieciseisavosAsync(QuinielaDbContext context, ILogger logger)
+    {
+        if (await context.Matches.AnyAsync(m => m.Stage == MatchStage.Dieciseisavos))
+            return;
+
+        var assembly = typeof(DbInitializer).Assembly;
+        await using var stream = assembly.GetManifestResourceStream(
+            "Quiniela.Data.Seeding.Data.mundial2026_dieciseisavos.json")
+            ?? throw new InvalidOperationException("No se encontró el JSON de dieciseisavos embebido.");
+
+        var file = await JsonSerializer.DeserializeAsync<KnockoutFile>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("JSON de dieciseisavos inválido o vacío.");
+
+        var teamsByName = await context.Teams.ToDictionaryAsync(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+        int Resolve(string name)
+        {
+            var key = KnockoutNameFix.GetValueOrDefault(name, name);
+            return teamsByName.TryGetValue(key, out var t)
+                ? t.Id
+                : throw new InvalidOperationException($"Equipo de dieciseisavos no encontrado en BD: '{name}'.");
+        }
+
+        var matches = file.Partidos
+            .OrderBy(p => p.Fecha_Utc)
+            .Select((p, i) => new Match
+            {
+                HomeTeamId = Resolve(p.Local),
+                AwayTeamId = Resolve(p.Visita),
+                KickoffUtc = DateTime.SpecifyKind(p.Fecha_Utc, DateTimeKind.Utc),
+                Venue = p.Venue.Split(',')[0].Trim(),
+                Stage = MatchStage.Dieciseisavos,
+                BracketOrder = i + 1,
+                Status = MatchStatus.Programado,
+            })
+            .ToList();
+
+        context.Matches.AddRange(matches);
+        await context.SaveChangesAsync();
+        logger.LogInformation("Seeded {Count} round-of-32 matches from JSON.", matches.Count);
     }
 
     private static async Task SeedTeamsAndMatchesAsync(QuinielaDbContext context, ILogger logger)

@@ -33,7 +33,8 @@ public class AdminService(QuinielaDbContext db, ScoringService scoringService)
             .ToListAsync();
     }
 
-    public async Task<(bool Success, string? Error)> SaveResultAsync(int matchId, int homeScore, int awayScore)
+    public async Task<(bool Success, string? Error)> SaveResultAsync(
+        int matchId, int homeScore, int awayScore, MatchDecidedIn? decidedIn)
     {
         if (homeScore < 0 || awayScore < 0)
             return (false, "Los goles no pueden ser negativos.");
@@ -42,8 +43,19 @@ public class AdminService(QuinielaDbContext db, ScoringService scoringService)
         if (match is null)
             return (false, "Partido no encontrado.");
 
+        bool isKnockout = match.Stage != MatchStage.Grupos;
+
+        if (isKnockout)
+        {
+            if (decidedIn is null)
+                return (false, "Indica la instancia (90', tiempo extra o penales).");
+            if (homeScore == awayScore)
+                return (false, "En eliminatorias el marcador global no puede ser empate (incluye penales).");
+        }
+
         match.HomeScore = homeScore;
         match.AwayScore = awayScore;
+        match.DecidedIn = isKnockout ? decidedIn : null;
         match.Status = MatchStatus.Finalizado;
         await db.SaveChangesAsync();
 

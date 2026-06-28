@@ -55,6 +55,7 @@ builder.Services.AddScoped<StandingsService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<GroupStandingsService>();
 builder.Services.AddScoped<TeamSheetService>();
+builder.Services.AddScoped<KnockoutService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

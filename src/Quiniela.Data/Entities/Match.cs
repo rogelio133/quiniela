@@ -17,6 +17,13 @@ public enum MatchStatus
     Finalizado = 1
 }
 
+public enum MatchDecidedIn
+{
+    Regular90 = 0,
+    ExtraTime = 1,
+    Penalties = 2
+}
+
 public class Match
 {
     public int Id { get; set; }
@@ -29,6 +36,16 @@ public class Match
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public MatchStatus Status { get; set; }
+
+    // Instancia a la que llegó el partido. NULL en grupos y en KO no finalizados.
+    public MatchDecidedIn? DecidedIn { get; set; }
+
+    // Etiquetas del cruce cuando aún no se conocen los equipos (bracket placeholder).
+    public string? HomeSlotLabel { get; set; }
+    public string? AwaySlotLabel { get; set; }
+
+    // Orden del partido dentro de su fase (1..16 en dieciseisavos), para el bracket.
+    public int? BracketOrder { get; set; }
 
     public Team? HomeTeam { get; set; }
     public Team? AwayTeam { get; set; }

@@ -1,0 +1,119 @@
+{
+  "torneo": "FIFA World Cup 2026",
+  "fase": "Dieciseisavos de final (Round of 32)",
+  "rango_fechas": "28 de junio – 3 de julio de 2026",
+  "partidos": [
+    {
+      "match_id": 73,
+      "fecha_utc": "2026-06-28T19:00:00Z",
+      "local": "Sudáfrica",
+      "visita": "Canadá",
+      "venue": "SoFi Stadium, Los Ángeles, EE.UU."
+    },
+    {
+      "match_id": 76,
+      "fecha_utc": "2026-06-29T17:00:00Z",
+      "local": "Brasil",
+      "visita": "Japón",
+      "venue": "NRG Stadium, Houston, EE.UU."
+    },
+    {
+      "match_id": 74,
+      "fecha_utc": "2026-06-29T20:30:00Z",
+      "local": "Alemania",
+      "visita": "Paraguay",
+      "venue": "Gillette Stadium, Foxborough, EE.UU."
+    },
+    {
+      "match_id": 75,
+      "fecha_utc": "2026-06-30T01:00:00Z",
+      "local": "Países Bajos",
+      "visita": "Marruecos",
+      "venue": "Estadio BBVA, Monterrey, México"
+    },
+    {
+      "match_id": 78,
+      "fecha_utc": "2026-06-30T17:00:00Z",
+      "local": "Costa de Marfil",
+      "visita": "Noruega",
+      "venue": "AT&T Stadium, Arlington, EE.UU."
+    },
+    {
+      "match_id": 77,
+      "fecha_utc": "2026-06-30T21:00:00Z",
+      "local": "Francia",
+      "visita": "Suecia",
+      "venue": "MetLife Stadium, East Rutherford, EE.UU."
+    },
+    {
+      "match_id": 79,
+      "fecha_utc": "2026-07-01T01:00:00Z",
+      "local": "México",
+      "visita": "Ecuador",
+      "venue": "Estadio Azteca, Ciudad de México, México"
+    },
+    {
+      "match_id": 80,
+      "fecha_utc": "2026-07-01T16:00:00Z",
+      "local": "Inglaterra",
+      "visita": "R.D. del Congo",
+      "venue": "Mercedes-Benz Stadium, Atlanta, EE.UU."
+    },
+    {
+      "match_id": 82,
+      "fecha_utc": "2026-07-01T20:00:00Z",
+      "local": "Bélgica",
+      "visita": "Senegal",
+      "venue": "Lumen Field, Seattle, EE.UU."
+    },
+    {
+      "match_id": 81,
+      "fecha_utc": "2026-07-02T00:00:00Z",
+      "local": "Estados Unidos",
+      "visita": "Bosnia y Herzegovina",
+      "venue": "Levi's Stadium, Santa Clara, EE.UU."
+    },
+    {
+      "match_id": 84,
+      "fecha_utc": "2026-07-02T19:00:00Z",
+      "local": "España",
+      "visita": "Austria",
+      "venue": "SoFi Stadium, Los Ángeles, EE.UU."
+    },
+    {
+      "match_id": 83,
+      "fecha_utc": "2026-07-02T23:00:00Z",
+      "local": "Portugal",
+      "visita": "Croacia",
+      "venue": "BMO Field, Toronto, Canadá"
+    },
+    {
+      "match_id": 85,
+      "fecha_utc": "2026-07-03T18:00:00Z",
+      "local": "Australia",
+      "visita": "Egipto",
+      "venue": "AT&T Stadium, Arlington, EE.UU."
+    },
+    {
+      "match_id": 86,
+      "fecha_utc": "2026-07-03T22:00:00Z",
+      "local": "Argentina",
+      "visita": "Cabo Verde",
+      "venue": "Hard Rock Stadium, Miami, EE.UU."
+    },
+    {
+      "match_id": 87,
+      "fecha_utc": "2026-07-04T01:30:00Z",
+      "local": "Colombia",
+      "visita": "Ghana",
+      "venue": "Arrowhead Stadium, Kansas City, EE.UU."
+    },
+    {
+      "match_id": 88,
+      "fecha_utc": "2026-07-04T03:00:00Z",
+      "local": "Suiza",
+      "visita": "Argelia",
+      "venue": "BC Place, Vancouver, Canadá"
+    }
+  ]
+}

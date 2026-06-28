@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Quiniela.Data;
 
@@ -11,9 +12,11 @@ using Quiniela.Data;
 namespace Quiniela.Data.Migrations
 {
     [DbContext(typeof(QuinielaDbContext))]
-    partial class QuinielaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628163442_AddPredictionPointsBreakdown")]
+    partial class AddPredictionPointsBreakdown
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

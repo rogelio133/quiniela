@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Seeding\Data\mundial2026_dieciseisavos.json" />
+    <EmbeddedResource Include="Seeding\Data\mundial_2026_2.json" />
   </ItemGroup>
 
 </Project>

@@ -13,6 +13,14 @@ public static class DbInitializer
     private record MatchSeed(string Home, string Away, DateTime KickoffUtc, char Group, string Venue);
 
     private record KnockoutFile(List<KnockoutMatchJson> Partidos);
+    private record MundialFile(List<SeleccionJson> Selecciones);
+    private record SeleccionJson(
+        string Nombre, string Abreviacion,
+        string Director_Tecnico, string Dato_Curioso,
+        List<JugadorJson> Jugadores,
+        List<HistorialMundialJson> Historial_Mundiales);
+    private record JugadorJson(string Nombre, string Posicion);
+    private record HistorialMundialJson(string Mundial, string Posicion);
     private record KnockoutMatchJson(
         int Match_Id, DateTime Fecha_Utc, string Local, string Visita, string Venue);
 
@@ -208,6 +216,8 @@ public static class DbInitializer
     {
         await SeedTeamsAndMatchesAsync(context, logger);
         await SeedDieciseisavosAsync(context, logger);
+        await SeedTeamInfoAsync(context, logger);
+        await SeedHistorialAsync(context, logger);
         await SeedUsersAsync(userManager, roleManager, configuration, logger);
     }
 
@@ -334,6 +344,43 @@ public static class DbInitializer
         logger.LogInformation("Backfilled Venue for {Count} group-stage matches.", matchesToUpdate.Count);
     }
 
+    private static async Task SeedHistorialAsync(QuinielaDbContext context, ILogger logger)
+    {
+        if (await context.HistorialMundiales.AnyAsync()) return;
+
+        var assembly = typeof(DbInitializer).Assembly;
+        await using var stream = assembly.GetManifestResourceStream(
+            "Quiniela.Data.Seeding.Data.mundial_2026_2.json")
+            ?? throw new InvalidOperationException("No se encontró el JSON mundial_2026_2 embebido.");
+
+        var file = await JsonSerializer.DeserializeAsync<MundialFile>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("JSON mundial_2026_2 inválido o vacío.");
+
+        var teamsByShortCode = await context.Teams
+            .ToDictionaryAsync(t => t.ShortCode ?? "", StringComparer.OrdinalIgnoreCase);
+
+        int added = 0;
+        foreach (var sel in file.Selecciones)
+        {
+            if (!teamsByShortCode.TryGetValue(sel.Abreviacion, out var team))
+                continue;
+
+            var registros = sel.Historial_Mundiales.Select(h => new HistorialMundial
+            {
+                TeamId   = team.Id,
+                Mundial  = h.Mundial,
+                Posicion = h.Posicion,
+            }).ToList();
+
+            context.HistorialMundiales.AddRange(registros);
+            added += registros.Count;
+        }
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("SeedHistorial: {Count} registros de historial mundialista insertados.", added);
+    }
+
     private static async Task SeedUsersAsync(
         UserManager<User> userManager,
         RoleManager<IdentityRole<int>> roleManager,
@@ -380,6 +427,53 @@ public static class DbInitializer
         await CreateUserAsync(userManager, logger,
             userName: "jugador2", displayName: "Jugador 2",
             isAdmin: false, password: playerPassword);
+    }
+
+    private static async Task SeedTeamInfoAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var alreadySeeded = await context.Teams.AnyAsync(t => t.DatoCurioso != null);
+        if (alreadySeeded) return;
+
+        var assembly = typeof(DbInitializer).Assembly;
+        await using var stream = assembly.GetManifestResourceStream(
+            "Quiniela.Data.Seeding.Data.mundial_2026_2.json")
+            ?? throw new InvalidOperationException("No se encontró el JSON mundial_2026_2 embebido.");
+
+        var file = await JsonSerializer.DeserializeAsync<MundialFile>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("JSON mundial_2026_2 inválido o vacío.");
+
+        var teamsByShortCode = await context.Teams
+            .ToDictionaryAsync(t => t.ShortCode ?? "", StringComparer.OrdinalIgnoreCase);
+
+        int teamsUpdated = 0;
+        int jugadoresAdded = 0;
+
+        foreach (var sel in file.Selecciones)
+        {
+            if (!teamsByShortCode.TryGetValue(sel.Abreviacion, out var team))
+            {
+                logger.LogWarning("SeedTeamInfo: no se encontró equipo con ShortCode '{Code}'.", sel.Abreviacion);
+                continue;
+            }
+
+            team.DatoCurioso = sel.Dato_Curioso;
+            team.DirectorTecnico = sel.Director_Tecnico;
+
+            var jugadores = sel.Jugadores.Select(j => new Jugador
+            {
+                TeamId   = team.Id,
+                Nombre   = j.Nombre,
+                Posicion = j.Posicion,
+            }).ToList();
+
+            context.Jugadores.AddRange(jugadores);
+            jugadoresAdded += jugadores.Count;
+            teamsUpdated++;
+        }
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("SeedTeamInfo: actualizados {Teams} equipos, {Players} jugadores.", teamsUpdated, jugadoresAdded);
     }
 
     private static async Task CreateUserAsync(

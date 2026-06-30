@@ -10,6 +10,11 @@ public class Team
     public string? ShortCode { get; set; }
     public char? GroupCode { get; set; }
 
+    public string? DatoCurioso { get; set; }
+    public string? DirectorTecnico { get; set; }
+
     public ICollection<Match> HomeMatches { get; set; } = [];
     public ICollection<Match> AwayMatches { get; set; } = [];
+    public ICollection<Jugador> Jugadores { get; set; } = [];
+    public ICollection<HistorialMundial> HistorialMundiales { get; set; } = [];
 }

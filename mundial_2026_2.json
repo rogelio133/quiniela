@@ -1,0 +1,3202 @@
+{
+  "torneo": "Copa Mundial de la FIFA 2026",
+  "sede": "Estados Unidos, México y Canadá",
+  "fecha_inicio": "2026-06-11",
+  "fecha_final": "2026-07-19",
+  "total_selecciones": 48,
+  "nota": "Las listas de jugadores incluyen figuras destacadas de cada selección. Las convocatorias oficiales completas (26 jugadores por equipo) están disponibles en fifa.com.",
+  "selecciones": [
+    {
+      "nombre": "México",
+      "abreviacion": "MEX",
+      "grupo": "A",
+      "director_tecnico": "Javier Aguirre",
+      "dato_curioso": "Es la tercera vez que México es sede de un Mundial (1970, 1986, 2026). El partido inaugural fue México vs Sudáfrica en el Estadio Azteca.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Guillermo Ochoa",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "César Montes",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jorge Sánchez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Johan Vásquez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jesús Gallardo",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Edson Álvarez",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Luis Romo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Diego Lainez",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Orbelín Pineda",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Hirving Lozano",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Santiago Giménez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Julián Quiñones",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Gilberto Mora Zambrano",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Roberto Alvarado",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Sudáfrica",
+      "abreviacion": "RSA",
+      "grupo": "A",
+      "director_tecnico": "Hugo Broos",
+      "dato_curioso": "Regresa a un Mundial por primera vez desde 2010, cuando fue anfitrión. Broos, belga, ganó la Copa Africana con Camerún en 2017.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Ronwen Williams",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Siyanda Xulu",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mothobi Mvala",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Themba Zwane",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Percy Tau",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Bongokuhle Hlongwane",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lyle Foster",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Teboho Mokoena",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Rushwin Dortley",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Iqraam Rayners",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Corea del Sur",
+      "abreviacion": "KOR",
+      "grupo": "A",
+      "director_tecnico": "Hong Myung-bo",
+      "dato_curioso": "Alcanzó semifinales en el Mundial 2002 que co-organizó. Hong Myung-bo fue leyenda como jugador y capitán de aquella selección histórica.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Kim Seung-gyu",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Kim Min-jae",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Lee Kang-in",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Son Heung-min",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Hwang Hee-chan",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Hwang In-beom",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Cho Gue-sung",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jeong Woo-yeong",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Bae Jun-ho",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Park Jin-seob",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "República Checa",
+      "abreviacion": "CZE",
+      "grupo": "A",
+      "director_tecnico": "Ivan Hašek",
+      "dato_curioso": "No participaba en un Mundial desde 2006. Como Checoslovaquia fue subcampeona en 1934 y 1962, y ganó la Eurocopa en 1976.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Jindřich Staněk",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Tomáš Souček",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Patrik Schick",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Vladimír Coufal",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Adam Hložek",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "David Jurásek",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ladislav Krejčí",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Antonín Barák",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Robin Hranáč",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Pavel Šulc",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Canadá",
+      "abreviacion": "CAN",
+      "grupo": "B",
+      "director_tecnico": "Jesse Marsch",
+      "dato_curioso": "Primera vez como sede de un Mundial masculino. Su única participación previa fue México 1986, donde no anotó ningún gol.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Milan Borjan",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Alphonso Davies",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Tajon Buchanan",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jonathan David",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Cyle Larin",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Stephen Eustáquio",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ismael Koné",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Alistair Johnston",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Moise Bombito",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jonathan Osorio",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Bosnia y Herzegovina",
+      "abreviacion": "BIH",
+      "grupo": "B",
+      "director_tecnico": "Sergej Barbarez",
+      "dato_curioso": "Clasificó eliminando a Italia en el repechaje europeo. Edin Džeko, capitán de 40 años, tiene 150 partidos y 73 goles con su selección.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Nikola Vasilj",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Edin Džeko",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Miralem Pjanić",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Sead Kolašinac",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ermedin Demirović",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Anel Ahmedhodžić",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kerim Alajbegović",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Esmir Bajraktarević",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Dennis Hadžikadunić",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Armin Gigović",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Qatar",
+      "abreviacion": "QAT",
+      "grupo": "B",
+      "director_tecnico": "Julen Lopetegui",
+      "dato_curioso": "Tras ser anfitrión en 2022, clasificó por méritos propios por primera vez. Lopetegui, español, fue DT de España y Real Madrid.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos (anfitrión)"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Meshaal Barsham",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Hassan Al-Haydos",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Akram Afif",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Almoez Ali",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Abdulaziz Hatem",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Karim Boudiaf",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Boualem Khoukhi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Pedro Miguel",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mohammed Muntari",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ahmed Alaaeldin",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Suiza",
+      "abreviacion": "SUI",
+      "grupo": "B",
+      "director_tecnico": "Murat Yakin",
+      "dato_curioso": "Ha participado en 5 de los últimos 6 Mundiales y siempre ha alcanzado al menos octavos de final en los últimos tres.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Yann Sommer",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Manuel Akanji",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ricardo Rodríguez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Granit Xhaka",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Xherdan Shaqiri",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Breel Embolo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Denis Zakaria",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Remo Freuler",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Dan Ndoye",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Fabian Rieder",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Zeki Amdouni",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Brasil",
+      "abreviacion": "BRA",
+      "grupo": "C",
+      "director_tecnico": "Carlo Ancelotti",
+      "dato_curioso": "Única selección que ha participado en todos los Mundiales. Con 5 títulos es la más ganadora. Ancelotti es el DT mejor pagado del torneo (11.6M USD/año).",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Cuarto lugar"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Cuartos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Alisson",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Marquinhos",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Éder Militão",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Casemiro",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Bruno Guimarães",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Vinícius Júnior",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Rodrygo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Raphinha",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Endrick",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lucas Paquetá",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Savinho",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Gabriel Martinelli",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Marruecos",
+      "abreviacion": "MAR",
+      "grupo": "C",
+      "director_tecnico": "Mohamed Ouahbi",
+      "dato_curioso": "En Qatar 2022 fue la primera selección africana y árabe en alcanzar semifinales, derrotando a España, Portugal y Bélgica.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Semifinales (4to lugar)"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Yassine Bounou",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Achraf Hakimi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Noussair Mazraoui",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Sofyan Amrabat",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Hakim Ziyech",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Youssef En-Nesyri",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Azzedine Ounahi",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ibrahim Díaz",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Bilal El Khannouss",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ilias Akhomach",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Haití",
+      "abreviacion": "HAI",
+      "grupo": "C",
+      "director_tecnico": "Sébastien Migné",
+      "dato_curioso": "Regresa a un Mundial después de 52 años. Su única participación fue Alemania 1974, donde marcó un gol histórico contra Italia.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Josué Duverger",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Carlens Arcus",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Frantzdy Pierrot",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Derrick Étienne Jr.",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ricardo Adé",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Bryan Alcéus",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Duckens Nazon",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jeff Louis",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Leverton Pierre",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Steeven Saba",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Escocia",
+      "abreviacion": "SCO",
+      "grupo": "C",
+      "director_tecnico": "Steve Clarke",
+      "dato_curioso": "Regresa a un Mundial después de 28 años (última vez: Francia 1998). Craig Gordon, de 43 años, es el jugador más longevo de todo el torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Craig Gordon",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Andrew Robertson",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kieran Tierney",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Scott McTominay",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "John McGinn",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Billy Gilmour",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Che Adams",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lyndon Dykes",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lewis Ferguson",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kenny McLean",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Estados Unidos",
+      "abreviacion": "USA",
+      "grupo": "D",
+      "director_tecnico": "Mauricio Pochettino",
+      "dato_curioso": "Segunda vez como sede (primera fue 1994). Pochettino es uno de los 6 DTs argentinos en el torneo, un récord histórico.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Matt Turner",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Sergiño Dest",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Antonee Robinson",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Tyler Adams",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Weston McKennie",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Christian Pulisic",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Giovanni Reyna",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Folarin Balogun",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Timothy Weah",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Yunus Musah",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Auston Trusty",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Sebastian Berhalter",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Paraguay",
+      "abreviacion": "PAR",
+      "grupo": "D",
+      "director_tecnico": "Gustavo Alfaro",
+      "dato_curioso": "Regresa al Mundial después de 16 años (última vez: Sudáfrica 2010, donde alcanzó cuartos de final por primera vez).",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Antony Silva",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Gustavo Gómez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Omar Alderete",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Miguel Almirón",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Mathías Villasanti",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Matías Galarza",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Julio Enciso",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mauricio Prado",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Damián Bobadilla",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Andrés Cubas",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Robert Morales",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Australia",
+      "abreviacion": "AUS",
+      "grupo": "D",
+      "director_tecnico": "Tony Popovic",
+      "dato_curioso": "Sexta Copa del Mundo consecutiva. En Qatar 2022 alcanzó octavos de final por segunda vez en su historia.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Mat Ryan",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Harry Souttar",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Aziz Behich",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jackson Irvine",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Riley McGree",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Martin Boyle",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mitchell Duke",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Cameron Burgess",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Alex Freeman",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Keanu Baccus",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Turquía",
+      "abreviacion": "TUR",
+      "grupo": "D",
+      "director_tecnico": "Vincenzo Montella",
+      "dato_curioso": "Regresa al Mundial después de 24 años. Su mejor actuación fue el tercer lugar en 2002. Arda Güler anotó su primer gol mundialista ante EE.UU.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Altay Bayındır",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Merih Demiral",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ferdi Kadıoğlu",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Hakan Çalhanoğlu",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Arda Güler",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Orkun Kökçü",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kenan Yıldız",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Barış Yılmaz",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Kerem Aktürkoğlu",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Kaan Ayhan",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Cenk Tosun",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Alemania",
+      "abreviacion": "GER",
+      "grupo": "E",
+      "director_tecnico": "Julian Nagelsmann",
+      "dato_curioso": "Nagelsmann, con 38 años, es el DT más joven del torneo. Alemania es 4 veces campeona del mundo (1954, 1974, 1990, 2014).",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Campeón"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Manuel Neuer",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Antonio Rüdiger",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Joshua Kimmich",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jonathan Tah",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "İlkay Gündoğan",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jamal Musiala",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Florian Wirtz",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kai Havertz",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Leroy Sané",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Deniz Undav",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Robert Andrich",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Chris Führich",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Curazao",
+      "abreviacion": "CUW",
+      "grupo": "E",
+      "director_tecnico": "Dick Advocaat",
+      "dato_curioso": "Nación más pequeña en la historia de los Mundiales (156,000 habitantes). Advocaat, de 78 años, es el DT más longevo del torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Eloy Room",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Cuco Martina",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jurien Gaari",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Leandro Bacuna",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Juninho Bacuna",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kenji Gorré",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jarchinio Antonia",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Rangelo Janga",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Shanon Carmelia",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Costa de Marfil",
+      "abreviacion": "CIV",
+      "grupo": "E",
+      "director_tecnico": "Emerse Faé",
+      "dato_curioso": "Ganó la Copa Africana 2024 como anfitrión. En 2026 superó por primera vez la fase de grupos de un Mundial en su historia.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Yahia Fofana",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Serge Aurier",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Eric Bailly",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Franck Kessié",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ibrahim Sangaré",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Seko Fofana",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nicolas Pépé",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Sebastien Haller",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Simon Adingra",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ousmane Diomandé",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Yan Diomandé",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Ecuador",
+      "abreviacion": "ECU",
+      "grupo": "E",
+      "director_tecnico": "Sebastián Beccacece",
+      "dato_curioso": "Quinta participación mundialista y segunda consecutiva. Beccacece, discípulo de Bielsa, es uno de los 6 DTs argentinos del torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Hernán Galíndez",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Piero Hincapié",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Pervis Estupiñán",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Félix Torres",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Moisés Caicedo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Carlos Gruezo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Gonzalo Plata",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Enner Valencia",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Kendry Páez",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jeremy Sarmiento",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Alan Franco",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Angelo Preciado",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Países Bajos",
+      "abreviacion": "NED",
+      "grupo": "F",
+      "director_tecnico": "Ronald Koeman",
+      "dato_curioso": "Subcampeón del mundo en 3 ocasiones (1974, 1978, 2010) pero nunca ha ganado una Copa del Mundo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Tercer lugar"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Cuartos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Bart Verbruggen",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Virgil van Dijk",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Nathan Aké",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Denzel Dumfries",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Frenkie de Jong",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ryan Gravenberch",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Xavi Simons",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Memphis Depay",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Cody Gakpo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Tijjani Reijnders",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jeremie Frimpong",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Japón",
+      "abreviacion": "JPN",
+      "grupo": "F",
+      "director_tecnico": "Hajime Moriyasu",
+      "dato_curioso": "Primera selección no anfitriona en clasificar al Mundial 2026. Moriyasu dirige desde 2018, el DT con más tiempo en Asia.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Shuichi Gonda",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Takehiro Tomiyasu",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ko Itakura",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Wataru Endō",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Takefusa Kubo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Kaoru Mitoma",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ritsu Doan",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Daichi Kamada",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ayase Ueda",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Hidemasa Morita",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Suecia",
+      "abreviacion": "SWE",
+      "grupo": "F",
+      "director_tecnico": "Graham Potter",
+      "dato_curioso": "Regresa al Mundial después de 8 años. Potter, inglés, es conocido por su paso por Brighton y Chelsea. Mejor resultado: subcampeón en 1958.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Robin Olsen",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Victor Lindelöf",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Alexander Isak",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Dejan Kulusevski",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Viktor Gyökeres",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Emil Forsberg",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Hugo Larsson",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Anthony Elanga",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jens Cajuste",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Carl Starfelt",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Túnez",
+      "abreviacion": "TUN",
+      "grupo": "F",
+      "director_tecnico": "Hervé Renard",
+      "dato_curioso": "Séptima participación mundialista y tercera consecutiva. Sabri Lamouchi fue despedido tras perder 5-1 ante Suecia y Hervé Renard asumió durante el torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Aymen Dahmen",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Montassar Talbi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Dylan Bronn",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Aïssa Laïdouni",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ellyes Skhiri",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Hannibal Mejbri",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Youssef Msakni",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Seifeddine Jaziri",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Naïm Sliti",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mohamed Ali Ben Romdhane",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Bélgica",
+      "abreviacion": "BEL",
+      "grupo": "G",
+      "director_tecnico": "Rudi Garcia",
+      "dato_curioso": "Tercer lugar en Rusia 2018 y lideró el ranking FIFA durante años. Garcia, francés, busca llevar a los Diablos Rojos a su primera final.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Tercer lugar"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Thibaut Courtois",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Timothy Castagne",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kevin De Bruyne",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Youri Tielemans",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Amadou Onana",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jérémy Doku",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Romelu Lukaku",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Leandro Trossard",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Loïs Openda",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Arthur Theate",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Charles De Ketelaere",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Egipto",
+      "abreviacion": "EGY",
+      "grupo": "G",
+      "director_tecnico": "Hossam Hassan",
+      "dato_curioso": "Mohamed Salah lidera a la selección más exitosa de la Copa Africana (7 títulos). Regresa al Mundial tras la ausencia en Qatar 2022.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Mohamed El Shenawy",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Ahmed Hegazi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mohamed Salah",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Omar Marmoush",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mostafa Mohamed",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mohamed Elneny",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ibrahim Adel",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ahmed Sayed Zizo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Emam Ashour",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Trezeguet",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Irán",
+      "abreviacion": "IRN",
+      "grupo": "G",
+      "director_tecnico": "Amir Ghalenoei",
+      "dato_curioso": "Cuarta participación consecutiva. El equipo tuvo que establecer su base en Tijuana, México, debido a restricciones de viaje de EE.UU. por el conflicto bilateral.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Alireza Beiranvand",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Ehsan Hajsafi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Shoja Khalilzadeh",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Milad Mohammadi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Saeid Ezatolahi",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Alireza Jahanbakhsh",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Mehdi Taremi",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mehdi Ghayedi",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Saman Ghoddos",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Shahriyar Moghanlou",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ali Alipour",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Rouzbeh Cheshmi",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Nueva Zelanda",
+      "abreviacion": "NZL",
+      "grupo": "G",
+      "director_tecnico": "Darren Bazeley",
+      "dato_curioso": "Su participación más recordada fue Sudáfrica 2010, donde empató sus 3 partidos y fue la única selección invicta del torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Stefan Marinovic",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Winston Reid",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Liberato Cacace",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Joe Bell",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Sarpreet Singh",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Chris Wood",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Kosta Barbarouses",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Matt Garbett",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Finn Surman",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Elijah Just",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "España",
+      "abreviacion": "ESP",
+      "grupo": "H",
+      "director_tecnico": "Luis de la Fuente",
+      "dato_curioso": "Vigente campeona de Europa (Eurocopa 2024) y campeona del mundo 2010. Lamine Yamal, de 18 años, es una de las jóvenes estrellas del torneo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Unai Simón",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Dani Carvajal",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Aymeric Laporte",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Marc Cucurella",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Rodri",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Pedri",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Gavi",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Lamine Yamal",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Nico Williams",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Álvaro Morata",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Dani Olmo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Fermín López",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Álex Baena",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Cabo Verde",
+      "abreviacion": "CPV",
+      "grupo": "H",
+      "director_tecnico": "Bubista",
+      "dato_curioso": "Primera participación en un Mundial. Con 600,000 habitantes, es una de las naciones más pequeñas en disputar una Copa del Mundo.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Vozinha",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Steven Fortes",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Roberto Lopes",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Logan Costa",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kenny Rocha Santos",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nuno Borges",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jamiro Monteiro",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Garry Rodrigues",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ryan Mendes",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Júlio Tavares",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Arabia Saudita",
+      "abreviacion": "KSA",
+      "grupo": "H",
+      "director_tecnico": "Georgios Donis",
+      "dato_curioso": "En Qatar 2022 protagonizó una de las mayores sorpresas al vencer 2-1 a la Argentina de Messi en fase de grupos.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Mohammed Al-Owais",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Yasser Al-Shahrani",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ali Al-Bulaihi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Salem Al-Dawsari",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Salman Al-Faraj",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Firas Al-Buraikan",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Mohamed Kanno",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Abdulrahman Ghareeb",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Nasser Al-Dawsari",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Abdullah Madu",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "Uruguay",
+      "abreviacion": "URU",
+      "grupo": "H",
+      "director_tecnico": "Marcelo Bielsa",
+      "dato_curioso": "Bicampeón del mundo (1930, 1950). Bielsa participa en su tercer Mundial como DT (Argentina 2002, Chile 2010, Uruguay 2026).",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Fernando Muslera",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "José María Giménez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ronald Araújo",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mathías Olivera",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Federico Valverde",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Rodrigo Bentancur",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Manuel Ugarte",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nicolás De La Cruz",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Darwin Núñez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Facundo Pellistri",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Luis Suárez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Maximiliano Araújo",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Francia",
+      "abreviacion": "FRA",
+      "grupo": "I",
+      "director_tecnico": "Didier Deschamps",
+      "dato_curioso": "Deschamps anunció que este será su último Mundial. Ganó en 2018 y fue subcampeón en 2022. Busca su tercer título mundialista.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Campeón"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Subcampeón"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Mike Maignan",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Theo Hernández",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Dayot Upamecano",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Jules Koundé",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "William Saliba",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Aurélien Tchouaméni",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Antoine Griezmann",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kylian Mbappé",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ousmane Dembélé",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Marcus Thuram",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Eduardo Camavinga",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Randal Kolo Muani",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Senegal",
+      "abreviacion": "SEN",
+      "grupo": "I",
+      "director_tecnico": "Aliou Cissé",
+      "dato_curioso": "Campeón de la Copa Africana 2022. Cissé fue capitán de la selección que alcanzó cuartos de final en el Mundial 2002.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Octavos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Édouard Mendy",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Kalidou Koulibaly",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Abdou Diallo",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Idrissa Gueye",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Sadio Mané",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ismaïla Sarr",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Boulaye Dia",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Iliman Ndiaye",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Pape Matar Sarr",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nicolas Jackson",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Irak",
+      "abreviacion": "IRQ",
+      "grupo": "I",
+      "director_tecnico": "Graham Arnold",
+      "dato_curioso": "Regresa al Mundial 40 años después (última vez: México 1986). Arnold, australiano, dirigió a Australia en Qatar 2022.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Jalal Hassan",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Ali Adnan",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ahmed Ibrahim",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Bashar Resan",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Mohanad Ali",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Aymen Hussein",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ibrahim Bayesh",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ali Jasim",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Zidane Iqbal",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Amjad Attwan",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Noruega",
+      "abreviacion": "NOR",
+      "grupo": "I",
+      "director_tecnico": "Ståle Solbakken",
+      "dato_curioso": "Regresa al Mundial después de 28 años (última vez: Francia 1998). Clasificó tras golear 4-1 a Italia en la última fecha eliminatoria.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Ørjan Nyland",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Kristoffer Ajer",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Birger Meling",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Martin Ødegaard",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Sander Berge",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Fredrik Aursnes",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Erling Haaland",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Alexander Sørloth",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Antonio Nusa",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Oscar Bobb",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Argentina",
+      "abreviacion": "ARG",
+      "grupo": "J",
+      "director_tecnico": "Lionel Scaloni",
+      "dato_curioso": "Vigente campeona (Qatar 2022). Lionel Messi participa en su sexto Mundial, igualando a Cristiano Ronaldo. Hay 6 DTs argentinos, récord histórico.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Subcampeón"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Campeón"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Emiliano Martínez",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Cristian Romero",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Lisandro Martínez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Nahuel Molina",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Nicolás Tagliafico",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Rodrigo De Paul",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Enzo Fernández",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Alexis Mac Allister",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Lionel Messi",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Julián Álvarez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lautaro Martínez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Giovani Lo Celso",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Thiago Almada",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Argelia",
+      "abreviacion": "ALG",
+      "grupo": "J",
+      "director_tecnico": "Vladimir Petković",
+      "dato_curioso": "Regresa tras faltar en 2018 y 2022. Petković, bosnio, previamente dirigió a Suiza en el Mundial 2018.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Raïs M'Bolhi",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Aïssa Mandi",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ramy Bensebaïni",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ismaël Bennacer",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Saïd Benrahma",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Riyad Mahrez",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Islam Slimani",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Amine Gouiri",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Houssem Aouar",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Farès Chaïbi",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Austria",
+      "abreviacion": "AUT",
+      "grupo": "J",
+      "director_tecnico": "Ralf Rangnick",
+      "dato_curioso": "No participaba en un Mundial desde 1998. Rangnick, el 'padre del gegenpressing', revolucionó la selección. Mejor resultado: tercer lugar 1954.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Patrick Pentz",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "David Alaba",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kevin Danso",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Stefan Posch",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Konrad Laimer",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Marcel Sabitzer",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Christoph Baumgartner",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Marko Arnautović",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Michael Gregoritsch",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Sasa Kalajdžić",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Florian Grillitsch",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Jordania",
+      "abreviacion": "JOR",
+      "grupo": "J",
+      "director_tecnico": "Jamal Sellami",
+      "dato_curioso": "Primera participación en un Mundial. Sellami, marroquí, logró la clasificación histórica. Jordania fue subcampeona de la Copa Asiática 2024.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Yazeed Abulaila",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Anas Bani Yaseen",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Salem Al-Ajalin",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mousa Al-Taamari",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Yazan Al-Naimat",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Hamza Al-Dardour",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Baha Faisal",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nizar Al-Rashdan",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Ahmad Ersan",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Musa Al-Bataineh",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Portugal",
+      "abreviacion": "POR",
+      "grupo": "K",
+      "director_tecnico": "Roberto Martínez",
+      "dato_curioso": "Cristiano Ronaldo participa en su sexto Mundial, igualando el récord histórico. Clasificó goleando 9-1 a Armenia sin Ronaldo (suspendido).",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Cuartos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Diogo Costa",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Rúben Dias",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "João Cancelo",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Nuno Mendes",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Bruno Fernandes",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Bernardo Silva",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Vitinha",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Cristiano Ronaldo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Rafael Leão",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "João Félix",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Pedro Neto",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "António Silva",
+          "posicion": "Defensa"
+        }
+      ]
+    },
+    {
+      "nombre": "República Democrática del Congo",
+      "abreviacion": "COD",
+      "grupo": "K",
+      "director_tecnico": "Sébastien Desabre",
+      "dato_curioso": "Regresa después de 52 años. En 1974, como Zaire, fue la primera selección del África subsahariana en un Mundial.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Lionel Mpasi",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Chancel Mbemba",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Arthur Masuaku",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Axel Tuanzebe",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Samuel Moutoussamy",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Gaël Kakuta",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Cédric Bakambu",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Yoane Wissa",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Silas Katompa",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Théo Bongonda",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Meschack Elia",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Uzbekistán",
+      "abreviacion": "UZB",
+      "grupo": "K",
+      "director_tecnico": "Fabio Cannavaro",
+      "dato_curioso": "Primera participación en un Mundial. Cannavaro, campeón del mundo 2006 y Balón de Oro, percibe 4 millones USD anuales.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Eldor Suyunov",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Abdukodir Khusanov",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Husniddin Aliqulov",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Oston Urunov",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jaloliddin Masharipov",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Eldor Shomurodov",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Igor Sergeev",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Abbosbek Fayzullaev",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Otabek Shukurov",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Islom Kobilov",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Colombia",
+      "abreviacion": "COL",
+      "grupo": "K",
+      "director_tecnico": "Néstor Lorenzo",
+      "dato_curioso": "Lorenzo, argentino, reconstruyó la selección tras la ausencia en Qatar 2022. Colombia clasificó manteniendo solidez defensiva.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Cuartos de final"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Octavos de final"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "David Ospina",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Davinson Sánchez",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Yerry Mina",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Daniel Muñoz",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Johan Mojica",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "James Rodríguez",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Richard Ríos",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jefferson Lerma",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Luis Díaz",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Rafael Santos Borré",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jhon Durán",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Luis Sinisterra",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Juan Fernando Quintero",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Inglaterra",
+      "abreviacion": "ENG",
+      "grupo": "L",
+      "director_tecnico": "Thomas Tuchel",
+      "dato_curioso": "Tuchel, alemán, es uno de los DTs mejor pagados (6-7M USD/año). Inglaterra busca su segundo título, el primero fue como anfitrión en 1966.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Cuarto lugar"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Cuartos de final"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Jordan Pickford",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "John Stones",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Kyle Walker",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Luke Shaw",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Trent Alexander-Arnold",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Declan Rice",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Jude Bellingham",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Phil Foden",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Bukayo Saka",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Harry Kane",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Cole Palmer",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Kobbie Mainoo",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Anthony Gordon",
+          "posicion": "Delantero"
+        }
+      ]
+    },
+    {
+      "nombre": "Croacia",
+      "abreviacion": "CRO",
+      "grupo": "L",
+      "director_tecnico": "Zlatko Dalić",
+      "dato_curioso": "Subcampeona en Rusia 2018 y tercera en Qatar 2022. Dalić dirige desde 2017. Luka Modrić podría jugar su último Mundial.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Subcampeón"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Tercer lugar"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Dominik Livaković",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Joško Gvardiol",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Borna Sosa",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Luka Modrić",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Mateo Kovačić",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Marcelo Brozović",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Nikola Vlašić",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Ivan Perišić",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Andrej Kramarić",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Ante Budimir",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Lovro Majer",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Ghana",
+      "abreviacion": "GHA",
+      "grupo": "L",
+      "director_tecnico": "Carlos Queiroz",
+      "dato_curioso": "Queiroz, portugués, participa en su quinto Mundial como DT (el más experimentado del torneo), habiendo dirigido a Portugal, Irán y ahora Ghana.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "Fase de grupos"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Richard Ofori",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Daniel Amartey",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Mohammed Salisu",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Tariq Lamptey",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Thomas Partey",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Mohammed Kudus",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "André Ayew",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Jordan Ayew",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Inaki Williams",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Antoine Semenyo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Abdul Fatawu Issahaku",
+          "posicion": "Mediocampista"
+        }
+      ]
+    },
+    {
+      "nombre": "Panamá",
+      "abreviacion": "PAN",
+      "grupo": "L",
+      "director_tecnico": "Thomas Christiansen",
+      "dato_curioso": "Segundo Mundial tras su histórico debut en Rusia 2018. Christiansen, danés-español, llegó a la final de la Copa Oro 2023.",
+      "historial_mundiales": [
+        {
+          "mundial": "Brasil 2014",
+          "posicion": "No clasificado"
+        },
+        {
+          "mundial": "Rusia 2018",
+          "posicion": "Fase de grupos"
+        },
+        {
+          "mundial": "Qatar 2022",
+          "posicion": "No clasificado"
+        }
+      ],
+      "jugadores": [
+        {
+          "nombre": "Luis Mejía",
+          "posicion": "Portero"
+        },
+        {
+          "nombre": "Fidel Escobar",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Eric Davis",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Michael Murillo",
+          "posicion": "Defensa"
+        },
+        {
+          "nombre": "Adalberto Carrasquilla",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Édgar Bárcenas",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "José Fajardo",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "César Yanis",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "Aníbal Godoy",
+          "posicion": "Mediocampista"
+        },
+        {
+          "nombre": "Freddy Gondola",
+          "posicion": "Delantero"
+        },
+        {
+          "nombre": "José Luis Rodríguez",
+          "posicion": "Mediocampista"
+        }
+      ]
+    }
+  ]
+}

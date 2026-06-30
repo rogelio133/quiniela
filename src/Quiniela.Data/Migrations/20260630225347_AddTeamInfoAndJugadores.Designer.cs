@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Quiniela.Data;
 
@@ -11,9 +12,11 @@ using Quiniela.Data;
 namespace Quiniela.Data.Migrations
 {
     [DbContext(typeof(QuinielaDbContext))]
-    partial class QuinielaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630225347_AddTeamInfoAndJugadores")]
+    partial class AddTeamInfoAndJugadores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,34 +156,6 @@ namespace Quiniela.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("Quiniela.Data.Entities.HistorialMundial", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Mundial")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Posicion")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("HistorialMundiales");
                 });
 
             modelBuilder.Entity("Quiniela.Data.Entities.Jugador", b =>
@@ -545,17 +520,6 @@ namespace Quiniela.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Quiniela.Data.Entities.HistorialMundial", b =>
-                {
-                    b.HasOne("Quiniela.Data.Entities.Team", "Team")
-                        .WithMany("HistorialMundiales")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Team");
-                });
-
             modelBuilder.Entity("Quiniela.Data.Entities.Jugador", b =>
                 {
                     b.HasOne("Quiniela.Data.Entities.Team", "Team")
@@ -656,8 +620,6 @@ namespace Quiniela.Data.Migrations
             modelBuilder.Entity("Quiniela.Data.Entities.Team", b =>
                 {
                     b.Navigation("AwayMatches");
-
-                    b.Navigation("HistorialMundiales");
 
                     b.Navigation("HomeMatches");
 

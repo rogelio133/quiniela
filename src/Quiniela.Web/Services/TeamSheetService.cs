@@ -17,13 +17,20 @@ public class TeamSheetData
     public int GroupPositionRank { get; set; }
     public List<TeamSheetMatchEntry> PreviousMatches { get; set; } = [];
     public List<Match> UpcomingMatches { get; set; } = [];
+    public string? DatoCurioso { get; set; }
+    public string? DirectorTecnico { get; set; }
+    public List<Jugador> Jugadores { get; set; } = [];
+    public List<HistorialMundial> HistorialMundiales { get; set; } = [];
 }
 
 public class TeamSheetService(QuinielaDbContext db)
 {
     public async Task<TeamSheetData> GetTeamSheetAsync(int teamId, int userId, int poolId)
     {
-        var team = await db.Teams.FindAsync(teamId)
+        var team = await db.Teams
+            .Include(t => t.Jugadores.OrderBy(j => j.Posicion).ThenBy(j => j.Nombre))
+            .Include(t => t.HistorialMundiales)
+            .FirstOrDefaultAsync(t => t.Id == teamId)
             ?? throw new KeyNotFoundException($"Team {teamId} not found");
 
         var allMatches = await db.Matches
@@ -76,7 +83,11 @@ public class TeamSheetService(QuinielaDbContext db)
             GroupPosition      = position,
             GroupPositionRank  = rank,
             PreviousMatches    = entries,
-            UpcomingMatches    = upcoming
+            UpcomingMatches    = upcoming,
+            DatoCurioso        = team.DatoCurioso,
+            DirectorTecnico    = team.DirectorTecnico,
+            Jugadores          = team.Jugadores.ToList(),
+            HistorialMundiales = team.HistorialMundiales.ToList(),
         };
     }
 }

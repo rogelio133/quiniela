@@ -10,6 +10,8 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
 {
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<Match> Matches => Set<Match>();
+    public DbSet<Jugador> Jugadores => Set<Jugador>();
+    public DbSet<HistorialMundial> HistorialMundiales => Set<HistorialMundial>();
     public DbSet<Pool> Pools => Set<Pool>();
     public DbSet<PoolMember> PoolMembers => Set<PoolMember>();
     public DbSet<Prediction> Predictions => Set<Prediction>();
@@ -29,6 +31,26 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
             e.Property(t => t.FlagCode).HasMaxLength(10);
             e.Property(t => t.ShortCode).HasMaxLength(3);
             e.Property(t => t.GroupCode).HasColumnType("char(1)");
+        });
+
+        modelBuilder.Entity<Jugador>(e =>
+        {
+            e.HasOne(j => j.Team)
+             .WithMany(t => t.Jugadores)
+             .HasForeignKey(j => j.TeamId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.Property(j => j.Nombre).HasMaxLength(100);
+            e.Property(j => j.Posicion).HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<HistorialMundial>(e =>
+        {
+            e.HasOne(h => h.Team)
+             .WithMany(t => t.HistorialMundiales)
+             .HasForeignKey(h => h.TeamId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.Property(h => h.Mundial).HasMaxLength(50);
+            e.Property(h => h.Posicion).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Match>(e =>

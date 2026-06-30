@@ -32,6 +32,47 @@
                     <button class="ts-close-btn" @onclick="HandleClose" aria-label="Cerrar">×</button>
                 </div>
 
+                @* ── Dato curioso ─────────────────────────────── *@
+                @if (!string.IsNullOrWhiteSpace(data.DatoCurioso))
+                {
+                    <section class="ts-section ts-curiosity">
+                        <h6 class="ts-section-title">¿Sabías que?</h6>
+                        <div class="ts-curiosity-card">
+                            <span class="ts-curiosity-icon">💡</span>
+                            <p class="ts-curiosity-text">@data.DatoCurioso</p>
+                        </div>
+                    </section>
+                }
+
+                @* ── Historial mundialista ────────────────────── *@
+                @if (data.HistorialMundiales.Any())
+                {
+                    <section class="ts-section">
+                        <h6 class="ts-section-title">Historial mundialista</h6>
+                        <div class="ts-historial-list">
+                            @foreach (var h in data.HistorialMundiales)
+                            {
+                                <div class="ts-historial-row">
+                                    <span class="ts-historial-tournament">@h.Mundial</span>
+                                    <span class="ts-historial-badge ts-historial-@HistorialClass(h.Posicion)">@h.Posicion</span>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+
+                @* ── Director técnico ─────────────────────────── *@
+                @if (!string.IsNullOrWhiteSpace(data.DirectorTecnico))
+                {
+                    <section class="ts-section">
+                        <h6 class="ts-section-title">Director Técnico</h6>
+                        <div class="ts-dt-row">
+                            <span class="ts-dt-icon">🧑‍💼</span>
+                            <span class="ts-dt-name">@data.DirectorTecnico</span>
+                        </div>
+                    </section>
+                }
+
                 @* ── Group position ───────────────────────────── *@
                 @if (data.GroupPosition is not null)
                 {
@@ -100,7 +141,7 @@
                 </section>
 
                 @* ── Upcoming matches ─────────────────────────── *@
-                <section class="ts-section ts-section-last">
+                <section class="ts-section">
                     <h6 class="ts-section-title">Próximos partidos</h6>
                     @if (!data.UpcomingMatches.Any())
                     {
@@ -128,6 +169,29 @@
                         }
                     }
                 </section>
+
+                @* ── Jugadores convocados ──────────────────────── *@
+                @if (data.Jugadores.Any())
+                {
+                    var posicionOrder = new[] { "Portero", "Defensa", "Mediocampista", "Delantero" };
+                    var grupos = data.Jugadores
+                        .GroupBy(j => j.Posicion)
+                        .OrderBy(g => Array.IndexOf(posicionOrder, g.Key));
+
+                    <section class="ts-section ts-section-last">
+                        <h6 class="ts-section-title">Jugadores convocados</h6>
+                        @foreach (var grupo in grupos)
+                        {
+                            <p class="ts-pos-label">@grupo.Key</p>
+                            <div class="ts-players-grid">
+                                @foreach (var j in grupo)
+                                {
+                                    <div class="ts-player-chip">@j.Nombre</div>
+                                }
+                            </div>
+                        }
+                    </section>
+                }
             }
 
         </div>
@@ -163,4 +227,16 @@
 
     private static string TeamCode(Team? team) =>
         team is null ? "?" : team.Name;
+
+    private static string HistorialClass(string posicion)
+    {
+        var p = posicion.ToLowerInvariant();
+        if (p.Contains("campeón") || p.Contains("campeon") || p.Contains("ganador")) return "champion";
+        if (p.Contains("subcampeón") || p.Contains("subcampeon") || (p.Contains("final") && !p.Contains("semi") && !p.Contains("cuartos") && !p.Contains("octavos"))) return "final";
+        if (p.Contains("semifinal") || p.Contains("3er") || p.Contains("tercer")) return "semi";
+        if (p.Contains("cuartos")) return "quarters";
+        if (p.Contains("octavos") || p.Contains("segunda ronda") || p.Contains("16")) return "round16";
+        if (p.Contains("grupos")) return "groups";
+        return "none";
+    }
 }

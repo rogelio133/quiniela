@@ -77,7 +77,7 @@ else
     }
     else
     {
-        var positions = ComputePositions(standings);
+        var positions = StandingsService.ComputePositions(standings);
         var maxPoints = standings[0].TotalPoints;
 
         @* ── Podium (top 3) ─────────────────────────────────── *@
@@ -89,7 +89,9 @@ else
             var medal  = MedalFor(pos)!;
             var delay  = $"anim-d{i + 1}";
 
-            <div class="podium-card podium-@pos @delay anim-fade-in-up mb-2" @key="entry.UserId">
+            <div class="podium-card podium-@pos @delay anim-fade-in-up mb-2 @(isMe ? "podium-clickable" : "")"
+                 @key="entry.UserId"
+                 @onclick="() => GoToStatsIfMe(entry.UserId)">
                 <div class="d-flex align-items-center gap-3">
 
                     <span class="podium-medal">@medal</span>
@@ -111,6 +113,8 @@ else
                         <div class="d-flex align-items-center gap-1">
                             <span class="fw-bold text-truncate" style="font-size:0.95rem;">@entry.DisplayName</span>
                             @if (isMe) { <span class="badge bg-primary flex-shrink-0" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                            @{ var (deltaClass, deltaText) = DeltaFor(entry.UserId, pos); }
+                            <small class="@deltaClass fw-semibold flex-shrink-0" style="font-size:.68rem;">@deltaText</small>
                         </div>
                         <small class="text-muted" style="font-size:.68rem;">@entry.CorrectPredictions ✓ / @entry.TotalPredictions pronósticos</small>
                     </div>
@@ -136,7 +140,8 @@ else
                     var delay = $"anim-d{Math.Min(i - 2, 6)}";
 
                     <div class="list-group-item list-group-item-action py-3 px-3 @delay anim-fade-in-up @(isMe ? "border-start border-3 border-primary" : "")"
-                         @key="entry.UserId">
+                         @key="entry.UserId"
+                         @onclick="() => GoToStatsIfMe(entry.UserId)">
                         <div class="d-flex align-items-center gap-2">
                             <div class="text-center flex-shrink-0" style="width:26px;">
                                 <span class="text-muted fw-semibold" style="font-size:.88rem;">@pos</span>
@@ -159,6 +164,8 @@ else
                                 <div class="d-flex align-items-center gap-1">
                                     <span class="fw-semibold text-truncate @(isMe ? "text-primary" : "")" style="font-size:.9rem;">@entry.DisplayName</span>
                                     @if (isMe) { <span class="badge bg-primary flex-shrink-0" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                                    @{ var (deltaClass, deltaText) = DeltaFor(entry.UserId, pos); }
+                                    <small class="@deltaClass fw-semibold flex-shrink-0" style="font-size:.68rem;">@deltaText</small>
                                 </div>
                                 <div class="progress mt-1" style="height:3px;border-radius:2px;">
                                     <div class="progress-bar bg-primary"
@@ -193,6 +200,7 @@ else
     private int  currentUserId;
     private int  finalizedCount;
     private List<StandingsService.StandingEntry> standings = [];
+    private Dictionary<int, int> previousPositions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,8 +223,9 @@ else
 
     private async Task LoadDataAsync()
     {
-        finalizedCount = await StandingsService.GetFinalizedMatchCountAsync();
-        standings      = await StandingsService.GetStandingsAsync(PoolId);
+        finalizedCount     = await StandingsService.GetFinalizedMatchCountAsync();
+        standings          = await StandingsService.GetStandingsAsync(PoolId);
+        previousPositions  = await StandingsService.GetLastSnapshotPositionsAsync(PoolId);
     }
 
     private async Task RefreshAsync()
@@ -241,5 +250,25 @@ else
 
     private static string? MedalFor(int pos) => pos switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => null };
 
+    private void GoToStatsIfMe(int userId)
+    {
+        if (userId == currentUserId)
+            NavigationManager.NavigateTo($"/pools/{PoolId}/my-stats");
+    }
+
     private static int PointsPct(int pts, int max) => max > 0 ? (int)(pts * 100.0 / max) : 0;
+
+    private (string CssClass, string Text) DeltaFor(int userId, int currentPos)
+    {
+        if (!previousPositions.TryGetValue(userId, out var prevPos))
+            return ("text-muted", "─");
+
+        var delta = prevPos - currentPos; // positive = moved up
+        return delta switch
+        {
+            > 0 => ("text-success", $"▲+{delta}"),
+            < 0 => ("text-danger", $"▼{delta}"),
+            _   => ("text-muted", "─"),
+        };
+    }
 }

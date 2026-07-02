@@ -13,7 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("QuinielaDb")
     ?? throw new InvalidOperationException("Connection string 'QuinielaDb' not found.");
 
-builder.Services.AddDbContext<QuinielaDbContext>(options =>
+// Registers IDbContextFactory<QuinielaDbContext>. Services must inject the factory and
+// create a short-lived context per method call (await using var db = await
+// dbFactory.CreateDbContextAsync();) rather than injecting QuinielaDbContext directly.
+// Needed for Blazor Server: components like NavMenu render in the same interactive circuit
+// as the routed page, and overlapping async calls on a single shared DbContext instance
+// throw "A second operation was started on this context instance before a previous
+// operation completed."
+builder.Services.AddDbContextFactory<QuinielaDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
@@ -58,6 +65,7 @@ builder.Services.AddScoped<TeamSheetService>();
 builder.Services.AddScoped<KnockoutService>();
 builder.Services.AddScoped<MatchPredictionsService>();
 builder.Services.AddScoped<BracketService>();
+builder.Services.AddScoped<PlayerStatsService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

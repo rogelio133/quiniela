@@ -13,11 +13,11 @@
 | A | [x] | Tabs de Fases extendidas (Octavos → Final) | 🔴 Alta | ~2–3 h | Alto |
 | B | [x] | Ver pronósticos de todos por partido | 🔴 Alta | ~3–4 h | Muy alto |
 | C | [x] | Bracket visual de eliminatorias | 🔴 Alta | ~6–8 h | Muy alto |
-| C1 | [ ] | Seed de partidos Octavos → Final (datos FIFA) | 🔴 Alta | ~2–3 h + datos | Muy alto |
-| C2 | [ ] | Origen del cruce visible en tab Bracket del admin | 🟡 Media | ~0.5–1 h | Medio |
-| D | [ ] | Badge de pronósticos pendientes en NavMenu | 🟡 Media | ~1–2 h | Alto |
-| E | [ ] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
-| F | [ ] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |
+| C1 | [x] | Seed de partidos Octavos → Final (datos FIFA) | 🔴 Alta | ~2–3 h + datos | Muy alto |
+| C2 | [x] | Origen del cruce visible en tab Bracket del admin | 🟡 Media | ~0.5–1 h | Medio |
+| D | [x] | Badge de pronósticos pendientes en NavMenu | 🟡 Media | ~1–2 h | Alto |
+| E | [x] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
+| F | [x] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |
 | H | [ ] | Predicción especial "¿Quién gana el Mundial?" | 🟢 Baja | ~4–6 h | Bajo |
 
 **Orden de implementación sugerido:** A → B → C → C1 → C2 → D → E → F → H

@@ -4,7 +4,7 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class StandingsService(QuinielaDbContext db)
+public class StandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public record StandingEntry(
         int UserId,
@@ -20,6 +20,8 @@ public class StandingsService(QuinielaDbContext db)
     /// </summary>
     public async Task<List<StandingEntry>> GetStandingsAsync(int poolId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var members = await db.PoolMembers
             .Where(m => m.PoolId == poolId)
             .Select(m => new { m.UserId, m.User.DisplayName, m.User.ProfilePicturePath })
@@ -55,6 +57,46 @@ public class StandingsService(QuinielaDbContext db)
             .ThenBy(e => e.DisplayName)];
     }
 
-    public async Task<int> GetFinalizedMatchCountAsync() =>
-        await db.Matches.CountAsync(m => m.Status == MatchStatus.Finalizado);
+    public async Task<int> GetFinalizedMatchCountAsync()
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Matches.CountAsync(m => m.Status == MatchStatus.Finalizado);
+    }
+
+    /// <summary>
+    /// Tie-aware ranking: entries with the same points and correct-prediction count share a position.
+    /// </summary>
+    public static List<int> ComputePositions(IReadOnlyList<StandingEntry> list)
+    {
+        var pos = new int[list.Count];
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (i == 0) { pos[i] = 1; continue; }
+            bool tied = list[i].TotalPoints == list[i - 1].TotalPoints
+                     && list[i].CorrectPredictions == list[i - 1].CorrectPredictions;
+            pos[i] = tied ? pos[i - 1] : i + 1;
+        }
+        return [.. pos];
+    }
+
+    /// <summary>
+    /// Positions from the most recent standings snapshot for the pool, keyed by UserId.
+    /// Returns an empty dictionary if no snapshot exists yet (e.g. first finalized match).
+    /// </summary>
+    public async Task<Dictionary<int, int>> GetLastSnapshotPositionsAsync(int poolId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var lastMatchId = await db.StandingsSnapshots
+            .Where(s => s.PoolId == poolId)
+            .OrderByDescending(s => s.SavedAt)
+            .Select(s => (int?)s.MatchId)
+            .FirstOrDefaultAsync();
+
+        if (lastMatchId is null) return [];
+
+        return await db.StandingsSnapshots
+            .Where(s => s.PoolId == poolId && s.MatchId == lastMatchId)
+            .ToDictionaryAsync(s => s.UserId, s => s.Position);
+    }
 }

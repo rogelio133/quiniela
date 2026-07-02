@@ -4,12 +4,14 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class PredictionService(QuinielaDbContext db)
+public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public record MatchWithPrediction(Match Match, Prediction? Prediction);
 
     public async Task<(Pool? Pool, bool IsMember)> GetPoolContextAsync(int poolId, int userId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var pool = await db.Pools.FindAsync(poolId);
         if (pool is null) return (null, false);
         bool isMember = await db.PoolMembers.AnyAsync(m => m.PoolId == poolId && m.UserId == userId);
@@ -18,6 +20,8 @@ public class PredictionService(QuinielaDbContext db)
 
     public async Task<List<MatchWithPrediction>> GetUpcomingMatchesAsync(int poolId, int userId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var now = DateTime.UtcNow;
         var matches = await db.Matches
             .Where(m => m.KickoffUtc > now && m.HomeTeamId != null && m.AwayTeamId != null)
@@ -26,11 +30,13 @@ public class PredictionService(QuinielaDbContext db)
             .OrderBy(m => m.KickoffUtc)
             .ToListAsync();
 
-        return await AttachPredictionsAsync(matches, poolId, userId);
+        return await AttachPredictionsAsync(db, matches, poolId, userId);
     }
 
     public async Task<List<MatchWithPrediction>> GetAllMatchesAsync(int poolId, int userId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var matches = await db.Matches
             .Where(m => m.HomeTeamId != null && m.AwayTeamId != null)
             .Include(m => m.HomeTeam)
@@ -38,12 +44,14 @@ public class PredictionService(QuinielaDbContext db)
             .OrderBy(m => m.KickoffUtc)
             .ToListAsync();
 
-        return await AttachPredictionsAsync(matches, poolId, userId);
+        return await AttachPredictionsAsync(db, matches, poolId, userId);
     }
 
     public async Task<(bool Success, string? Error)> UpsertAsync(
         int userId, int poolId, int matchId, char outcome, MatchDecidedIn? instance)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var match = await db.Matches.FindAsync(matchId);
         if (match is null) return (false, "Partido no encontrado.");
         if (match.KickoffUtc <= DateTime.UtcNow) return (false, "El partido ya inició, no puedes modificar tu pronóstico.");
@@ -93,7 +101,29 @@ public class PredictionService(QuinielaDbContext db)
         return (true, null);
     }
 
-    private async Task<List<MatchWithPrediction>> AttachPredictionsAsync(List<Match> matches, int poolId, int userId)
+    public async Task<int> GetPendingCountAsync(int userId, int poolId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var now = DateTime.UtcNow;
+
+        var upcomingMatchIds = await db.Matches
+            .Where(m => m.KickoffUtc > now && m.HomeTeamId != null && m.AwayTeamId != null)
+            .Select(m => m.Id)
+            .ToListAsync();
+
+        if (upcomingMatchIds.Count == 0) return 0;
+
+        var predictedCount = await db.Predictions
+            .CountAsync(p => p.UserId == userId
+                          && p.PoolId == poolId
+                          && upcomingMatchIds.Contains(p.MatchId));
+
+        return upcomingMatchIds.Count - predictedCount;
+    }
+
+    private static async Task<List<MatchWithPrediction>> AttachPredictionsAsync(
+        QuinielaDbContext db, List<Match> matches, int poolId, int userId)
     {
         var matchIds = matches.Select(m => m.Id).ToList();
         var preds = await db.Predictions

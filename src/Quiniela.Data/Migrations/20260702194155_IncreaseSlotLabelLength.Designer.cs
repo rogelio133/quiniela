@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Quiniela.Data;
 
@@ -11,9 +12,11 @@ using Quiniela.Data;
 namespace Quiniela.Data.Migrations
 {
     [DbContext(typeof(QuinielaDbContext))]
-    partial class QuinielaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702194155_IncreaseSlotLabelLength")]
+    partial class IncreaseSlotLabelLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -376,43 +379,6 @@ namespace Quiniela.Data.Migrations
                     b.ToTable("Predictions");
                 });
 
-            modelBuilder.Entity("Quiniela.Data.Entities.StandingsSnapshot", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MatchId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PoolId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("SavedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MatchId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("PoolId", "SavedAt");
-
-                    b.ToTable("StandingsSnapshots");
-                });
-
             modelBuilder.Entity("Quiniela.Data.Entities.Team", b =>
                 {
                     b.Property<int>("Id")
@@ -667,33 +633,6 @@ namespace Quiniela.Data.Migrations
 
                     b.HasOne("Quiniela.Data.Entities.User", "User")
                         .WithMany("Predictions")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Match");
-
-                    b.Navigation("Pool");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Quiniela.Data.Entities.StandingsSnapshot", b =>
-                {
-                    b.HasOne("Quiniela.Data.Entities.Match", "Match")
-                        .WithMany()
-                        .HasForeignKey("MatchId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Quiniela.Data.Entities.Pool", "Pool")
-                        .WithMany()
-                        .HasForeignKey("PoolId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Quiniela.Data.Entities.User", "User")
-                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

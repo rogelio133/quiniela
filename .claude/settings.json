@@ -25,10 +25,30 @@
       "Bash(Get-Location)",
       "Bash(timeout 25 dotnet run --project src/Quiniela.Web --no-build)",
       "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -d QuinielaDB -E -Q \"SELECT Stage, COUNT\\(*\\) AS Cnt FROM Matches GROUP BY Stage ORDER BY Stage\")",
-      "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -d QuinielaDB -E -Q \"SELECT m.BracketOrder, m.KickoffUtc, m.Venue, h.Name AS Home, a.Name AS Away FROM Matches m JOIN Teams h ON m.HomeTeamId=h.Id JOIN Teams a ON m.AwayTeamId=a.Id WHERE m.Stage=1 ORDER BY m.BracketOrder\")"
+      "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -d QuinielaDB -E -Q \"SELECT m.BracketOrder, m.KickoffUtc, m.Venue, h.Name AS Home, a.Name AS Away FROM Matches m JOIN Teams h ON m.HomeTeamId=h.Id JOIN Teams a ON m.AwayTeamId=a.Id WHERE m.Stage=1 ORDER BY m.BracketOrder\")",
+      "Bash(mv matches.json src/Quiniela.Data/Seeding/Data/matches.json && ls src/Quiniela.Data/Seeding/Data/)",
+      "Bash(mkdir -p /c/Users/rogel/AppData/Local/Temp/claude/c--personalprojects-quiniela/8268c14c-6660-4194-a1cf-1114cdb03a35/scratchpad/verify)",
+      "Read(//c/Users/rogel/AppData/Local/Temp/claude/c--personalprojects-quiniela/8268c14c-6660-4194-a1cf-1114cdb03a35/scratchpad/**)",
+      "Bash(dotnet new *)",
+      "Read(//c/Users/rogel/AppData/Local/Temp/claude/c--personalprojects-quiniela/8268c14c-6660-4194-a1cf-1114cdb03a35/scratchpad/verify/**)",
+      "Bash(sqlcmd -S \"pc133\\\\sqlexpress\" -d QuinielaDB -E -Q \"SELECT m.Stage, m.BracketOrder, m.KickoffUtc, h.ShortCode AS Home, a.ShortCode AS Away, m.HomeSlotLabel, m.AwaySlotLabel FROM Matches m LEFT JOIN Teams h ON m.HomeTeamId=h.Id LEFT JOIN Teams a ON m.AwayTeamId=a.Id WHERE m.Stage IN \\(2,3,4,5,6\\) ORDER BY m.Stage, m.BracketOrder\")",
+      "Bash(dotnet tool *)",
+      "Bash(echo \"started with PID $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5299/)",
+      "Read(//tmp/**)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5299 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, Path, StartTime })",
+      "PowerShell(Stop-Process -Id 26452 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5299 -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -c 'C:\\\\Users\\\\rogel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--personalprojects-quiniela\\\\6df1db8b-bb74-47c5-9c82-8f4d7911fef1\\\\scratchpad/cookies.txt' -b 'C:\\\\Users\\\\rogel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--personalprojects-quiniela\\\\6df1db8b-bb74-47c5-9c82-8f4d7911fef1\\\\scratchpad/cookies.txt' http://localhost:5299/login -o 'C:\\\\Users\\\\rogel\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--personalprojects-quiniela\\\\6df1db8b-bb74-47c5-9c82-8f4d7911fef1\\\\scratchpad/login.html')",
+      "Read(//c//**)",
+      "Read(//c/Users/rogel/.nuget/**)",
+      "Read(//c/Users/rogel/.nuget/packages/microsoft.entityframeworkcore/**)",
+      "Bash(rm -rf /c/Users/rogel/AppData/Local/Temp/claude/c--personalprojects-quiniela/61ad8ea4-d71d-4948-99c2-16699e524ac4/scratchpad/ditest)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\rogel\\.claude\\projects\\c--personalprojects-quiniela\\memory"
+      "c:\\Users\\rogel\\.claude\\projects\\c--personalprojects-quiniela\\memory",
+      "C:\\personalprojects\\quiniela",
+      "C:\\Users\\rogel\\AppData\\Local\\Temp\\claude\\c--personalprojects-quiniela\\61ad8ea4-d71d-4948-99c2-16699e524ac4\\scratchpad\\ditest"
     ]
   }
 }

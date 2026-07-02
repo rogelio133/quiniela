@@ -19,10 +19,11 @@ public class GroupStanding
 
 public record GroupResult(List<GroupStanding> Standings, int Played, int Total);
 
-public class GroupStandingsService(QuinielaDbContext db)
+public class GroupStandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public async Task<Dictionary<char, GroupResult>> GetAllGroupStandingsAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var matches = await db.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)

@@ -405,7 +405,7 @@ else
                         <div class="row g-2 align-items-center mb-2">
                             <div class="col">
                                 <label class="form-label small text-muted mb-1">
-                                    Local @(match.HomeSlotLabel is not null ? $"({match.HomeSlotLabel})" : "")
+                                    Local @(match.HomeTeamId is null && match.HomeSlotLabel is not null ? $"({match.HomeSlotLabel})" : "")
                                 </label>
                                 <select class="form-select form-select-sm" @bind="bracketModels[match.Id].HomeTeamId">
                                     <option value="">— Sin asignar —</option>
@@ -417,7 +417,7 @@ else
                             </div>
                             <div class="col">
                                 <label class="form-label small text-muted mb-1">
-                                    Visitante @(match.AwaySlotLabel is not null ? $"({match.AwaySlotLabel})" : "")
+                                    Visitante @(match.AwayTeamId is null && match.AwaySlotLabel is not null ? $"({match.AwaySlotLabel})" : "")
                                 </label>
                                 <select class="form-select form-select-sm" @bind="bracketModels[match.Id].AwayTeamId">
                                     <option value="">— Sin asignar —</option>

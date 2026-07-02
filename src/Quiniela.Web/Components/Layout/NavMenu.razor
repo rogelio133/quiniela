@@ -1,4 +1,10 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using System.Security.Claims
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject PoolService PoolService
+@inject PredictionService PredictionService
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="">
             <span class="nav-ball">⚽</span> Quiniela 2026
@@ -24,6 +30,15 @@
 
         <AuthorizeView>
             <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="@_predictionsHref">
+                        <span class="bi bi-ball-nav-menu" aria-hidden="true"></span> Pronosticar
+                        @if (_pendingCount > 0)
+                        {
+                            <span class="badge bg-danger ms-auto">@_pendingCount</span>
+                        }
+                    </NavLink>
+                </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="fases">
                         <span class="bi bi-table-nav-menu" aria-hidden="true"></span> Fases
@@ -71,4 +86,27 @@
         </AuthorizeView>
     </nav>
 </div>
+
+@code {
+    private int _pendingCount;
+    private string _predictionsHref = "pools";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+            return;
+
+        var userId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var pools = await PoolService.GetUserPoolsAsync(userId);
+        if (pools.Count == 0)
+            return;
+
+        if (pools.Count == 1)
+            _predictionsHref = $"pools/{pools[0].Id}/predictions";
+
+        foreach (var pool in pools)
+            _pendingCount += await PredictionService.GetPendingCountAsync(userId, pool.Id);
+    }
+}
 

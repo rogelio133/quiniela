@@ -23,10 +23,12 @@ public class TeamSheetData
     public List<HistorialMundial> HistorialMundiales { get; set; } = [];
 }
 
-public class TeamSheetService(QuinielaDbContext db)
+public class TeamSheetService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public async Task<TeamSheetData> GetTeamSheetAsync(int teamId, int userId, int poolId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var team = await db.Teams
             .Include(t => t.Jugadores.OrderBy(j => j.Posicion).ThenBy(j => j.Nombre))
             .Include(t => t.HistorialMundiales)

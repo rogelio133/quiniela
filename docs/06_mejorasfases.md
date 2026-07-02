@@ -13,12 +13,16 @@
 | A | [x] | Tabs de Fases extendidas (Octavos → Final) | 🔴 Alta | ~2–3 h | Alto |
 | B | [x] | Ver pronósticos de todos por partido | 🔴 Alta | ~3–4 h | Muy alto |
 | C | [x] | Bracket visual de eliminatorias | 🔴 Alta | ~6–8 h | Muy alto |
+| C1 | [ ] | Seed de partidos Octavos → Final (datos FIFA) | 🔴 Alta | ~2–3 h + datos | Muy alto |
+| C2 | [ ] | Origen del cruce visible en tab Bracket del admin | 🟡 Media | ~0.5–1 h | Medio |
 | D | [ ] | Badge de pronósticos pendientes en NavMenu | 🟡 Media | ~1–2 h | Alto |
 | E | [ ] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
 | F | [ ] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |
 | H | [ ] | Predicción especial "¿Quién gana el Mundial?" | 🟢 Baja | ~4–6 h | Bajo |
 
-**Orden de implementación sugerido:** A → B → C → D → E → F → H
+**Orden de implementación sugerido:** A → B → C → C1 → C2 → D → E → F → H
+
+> **Nota:** C1/C2 son la continuación natural de C — sin ellos, `/bracket` y el tab "Fases" solo tienen datos reales hasta Dieciseisavos; Octavos→Final existen en el diseño pero no en BD.
 
 ---
 
@@ -531,6 +535,242 @@ public class BracketService(QuinielaDbContext db)
 
 ---
 
+## Módulo C1 — Seed de partidos Octavos → Final (datos oficiales FIFA)
+
+### Objetivo
+
+Cargar en BD los partidos de Octavos, Cuartos, Semifinal, Tercer Lugar y Final con **sede y hora UTC oficiales de FIFA**, para que los módulos A (tabs de fases) y C (bracket visual) —ya implementados y agnósticos de `Stage`— muestren el cuadro completo aunque los equipos de rondas futuras aún no estén definidos. El seed debe fijar también los cruces de Octavos que **ya se conocen al día de hoy** (2026-07-02), a partir de los partidos de Dieciseisavos ya jugados.
+
+### Contexto técnico (verificado en el código actual)
+
+- El schema ya soporta esto **sin cambios**: `Match.HomeSlotLabel` / `AwaySlotLabel` (texto libre para cruces sin equipo aún) y `BracketOrder` existen desde la migración `Add2ndPhaseSupport` (Módulo 8), pero **nunca se han usado** — Dieciseisavos se sembró con los 16 equipos ya conocidos, sin placeholders.
+- El precedente a seguir es `DbInitializer.SeedDieciseisavosAsync` (`src/Quiniela.Data/Seeding/DbInitializer.cs:224`): lee un JSON embebido y lo convierte en filas `Match`. C1 sigue el mismo patrón — **no** una migración EF Core con `HasData`/SQL crudo, para poder corregir sedes/horarios sin generar una migración nueva cada vez que FIFA ajusta el calendario.
+- `PredictionService.GetUpcomingMatchesAsync` y `GetAllMatchesAsync` (`src/Quiniela.Web/Services/PredictionService.cs:19,32`) **ya filtran** `m.HomeTeamId != null && m.AwayTeamId != null`. Esto ya protege pronosticar / mis pronósticos **sin cambios de código**: cualquier partido de Octavos+ sembrado como placeholder (sin equipos) simplemente no aparece hasta que el admin le asigne ambos equipos (ver C2).
+- El tab "Bracket" del admin, la vista `/fases` (Módulo A) y `/bracket` (Módulo C) ya son agnósticos de `MatchStage` — no requieren cambios de código para mostrar Octavos+ una vez que existan filas en BD.
+
+### Numeración de partidos FIFA (referencia para armar el JSON)
+
+El bracket de 48 equipos de FIFA 2026 numera los partidos 73–104:
+
+| Rango | Fase | # Partidos |
+|---|---|---|
+| 73–88 | Dieciseisavos (ya sembrado) | 16 |
+| 89–96 | Octavos | 8 |
+| 97–100 | Cuartos | 4 |
+| 101–102 | Semifinal | 2 |
+| 103 | Tercer Lugar | 1 |
+| 104 | Final | 1 |
+
+### Fuente de datos
+
+**Ya aportada por el usuario**: `matches.json` (raíz del repo). Cubre los 16 partidos (Octavos 89–96, Cuartos 97–100, Semifinal 101–102, Tercer Lugar 103, Final 104), agrupados por fase, con sede y hora UTC oficiales. En Octavos, 5 de los 8 cruces ya traen `equipo_local`/`equipo_visitante` definidos (Paraguay–Francia, Canadá–Marruecos, Brasil–Noruega, México–Inglaterra, Estados Unidos–Bélgica); los otros 3 (partidos 93, 95, 96) y todo Cuartos→Final vienen con equipos en `null` y una `nota` en texto libre describiendo el cruce.
+
+Este archivo se moverá a `Quiniela.Data/Seeding/Data/matches.json` y se marcará como `EmbeddedResource`, mismo mecanismo que `mundial2026_dieciseisavos.json`.
+
+### Formato real de `matches.json`
+
+```json
+{
+  "mundial_2026_octavos_final": [
+    {
+      "partido": 89,
+      "fecha_utc": "2026-07-04T21:00:00Z",
+      "sede": "Philadelphia Stadium (Lincoln Financial Field), Filadelfia, EE.UU.",
+      "equipo_local": "Paraguay",
+      "equipo_visitante": "Francia"
+    },
+    {
+      "partido": 93,
+      "fecha_utc": "2026-07-06T19:00:00Z",
+      "sede": "Dallas Stadium (AT&T Stadium), Arlington, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador (Portugal vs. Croacia) vs. Ganador (España vs. Austria)"
+    }
+  ],
+  "mundial_2026_cuartos_final": [
+    {
+      "partido": 97,
+      "fecha_utc": "2026-07-09T20:00:00Z",
+      "sede": "Boston Stadium (Gillette Stadium), Foxborough, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 89 vs. Ganador Partido 90"
+    }
+  ],
+  "mundial_2026_semifinal": [ /* … */ ],
+  "mundial_2026_tercer_lugar": [ /* … */ ],
+  "mundial_2026_final": [ /* … */ ]
+}
+```
+
+- Cada clave de primer nivel (`mundial_2026_octavos_final`, `_cuartos_final`, `_semifinal`, `_tercer_lugar`, `_final`) mapea 1:1 a un `MatchStage` (`Octavos`, `Cuartos`, `Semifinal`, `TercerLugar`, `Final`).
+- Si `equipo_local`/`equipo_visitante` no son `null`: se resuelven a `HomeTeamId`/`AwayTeamId`, igual que en Dieciseisavos.
+- Si son `null`: el campo `nota` (un solo string que describe ambos orígenes, ej. `"Ganador Partido 89 vs. Ganador Partido 90"` o `"Ganador (Portugal vs. Croacia) vs. Ganador (España vs. Austria)"`) se **divide en dos mitades** para poblar `HomeSlotLabel`/`AwaySlotLabel` por separado. La división no puede ser un `Split(" vs. ")` ingenuo porque algunas notas tienen `" vs. "` anidado dentro de paréntesis (ej. el caso de Portugal/Croacia arriba) — hay que partir solo en el `" vs. "` de nivel superior (fuera de paréntesis).
+- `sede` sigue el mismo formato `"Nombre oficial (Nombre alterno), Ciudad, País"` que Dieciseisavos → se toma el primer segmento antes de la coma, igual que ya hace `SeedDieciseisavosAsync`.
+- `partido` no se persiste (no hay columna para él); solo determina el orden dentro de cada fase (`BracketOrder`).
+
+### Helper para partir `nota` en Local/Visitante
+
+```csharp
+// DbInitializer.cs — divide "X vs. Y" respetando paréntesis anidados
+private static (string Home, string Away) SplitNota(string nota)
+{
+    int depth = 0;
+    for (int i = 0; i < nota.Length - 4; i++)
+    {
+        if (nota[i] == '(') depth++;
+        else if (nota[i] == ')') depth--;
+        else if (depth == 0 && nota.AsSpan(i, 5).SequenceEqual(" vs. "))
+            return (nota[..i], nota[(i + 5)..]);
+    }
+    return (nota, nota); // fallback si no se encuentra un separador de nivel superior
+}
+```
+
+### Nuevo método en DbInitializer
+
+```csharp
+// DbInitializer.cs
+private static async Task SeedOctavosAFinalAsync(QuinielaDbContext context, ILogger logger)
+{
+    if (await context.Matches.AnyAsync(m => m.Stage == MatchStage.Octavos))
+        return;
+
+    var assembly = typeof(DbInitializer).Assembly;
+    await using var stream = assembly.GetManifestResourceStream(
+        "Quiniela.Data.Seeding.Data.matches.json")
+        ?? throw new InvalidOperationException("No se encontró matches.json embebido.");
+
+    var file = await JsonSerializer.DeserializeAsync<MatchesFile>(stream,
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        ?? throw new InvalidOperationException("matches.json inválido o vacío.");
+
+    var teamsByName = await context.Teams.ToDictionaryAsync(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+    int? Resolve(string? name)
+    {
+        if (name is null) return null;
+        var key = KnockoutNameFix.GetValueOrDefault(name, name);
+        return teamsByName.TryGetValue(key, out var t)
+            ? t.Id
+            : throw new InvalidOperationException($"Equipo no encontrado en BD: '{name}'.");
+    }
+
+    (List<MatchEntry> Entries, MatchStage Stage)[] groups =
+    [
+        (file.Octavos,     MatchStage.Octavos),
+        (file.Cuartos,     MatchStage.Cuartos),
+        (file.Semifinal,   MatchStage.Semifinal),
+        (file.TercerLugar, MatchStage.TercerLugar),
+        (file.Final,       MatchStage.Final),
+    ];
+
+    var matches = groups.SelectMany(g => g.Entries
+        .OrderBy(p => p.Partido)
+        .Select((p, i) =>
+        {
+            var (homeLabel, awayLabel) = p.Nota is not null ? SplitNota(p.Nota) : (null, null);
+            return new Match
+            {
+                HomeTeamId    = Resolve(p.Equipo_Local),
+                AwayTeamId    = Resolve(p.Equipo_Visitante),
+                HomeSlotLabel = p.Equipo_Local is null ? homeLabel : null,
+                AwaySlotLabel = p.Equipo_Visitante is null ? awayLabel : null,
+                KickoffUtc    = DateTime.SpecifyKind(p.Fecha_Utc, DateTimeKind.Utc),
+                Venue         = p.Sede.Split(',')[0].Trim(),
+                Stage         = g.Stage,
+                BracketOrder  = i + 1,
+                Status        = MatchStatus.Programado,
+            };
+        }))
+        .ToList();
+
+    context.Matches.AddRange(matches);
+    await context.SaveChangesAsync();
+    logger.LogInformation("Seeded {Count} matches (Octavos→Final) from matches.json.", matches.Count);
+}
+```
+
+`MatchesFile`/`MatchEntry` son records nuevos que reflejan el esquema del JSON (propiedades `Mundial_2026_Octavos_Final`, `Mundial_2026_Cuartos_Final`, etc. — o usar `[JsonPropertyName]` explícito por claridad).
+
+Registrar la llamada en `SeedAsync`, justo después de `SeedDieciseisavosAsync`:
+
+```csharp
+await SeedDieciseisavosAsync(context, logger);
+await SeedOctavosAFinalAsync(context, logger);   // nuevo
+```
+
+### Archivos a crear / modificar
+
+| Archivo | Cambio |
+|---|---|
+| `matches.json` (raíz) → `Quiniela.Data/Seeding/Data/matches.json` | **Mover** — ya aportado por el usuario |
+| `Quiniela.Data/Seeding/DbInitializer.cs` | Nuevo método `SeedOctavosAFinalAsync` + `SplitNota` + registro en `SeedAsync` + records `MatchesFile`/`MatchEntry` |
+| `Quiniela.Data.csproj` | Agregar `matches.json` como `EmbeddedResource` (igual que el de Dieciseisavos) |
+
+### Criterio de aceptación
+
+- Al iniciar la app con BD sin partidos de Octavos, se crean automáticamente 8+4+2+1+1 = 16 partidos nuevos con `Venue`/`KickoffUtc` correctos.
+- Los partidos de Octavos con equipos ya conocidos hoy quedan con `HomeTeamId`/`AwayTeamId` poblados (sin placeholder).
+- El resto de Octavos y todo Cuartos/Semifinal/Final quedan con `HomeSlotLabel`/`AwaySlotLabel` poblados y `HomeTeamId`/`AwayTeamId` en `null`.
+- **Regresión a verificar (sin cambios de código):** `/pools/{id}/predictions` y `/pools/{id}/my-predictions` no muestran ningún partido de Octavos+ hasta que el admin le asigne ambos equipos — ya cubierto por el filtro existente en `PredictionService`.
+- El tab "Fases" (Módulo A) y `/bracket` (Módulo C) muestran las nuevas rondas automáticamente, con `SlotLabel` donde aplique.
+- Reiniciar la app con los partidos ya sembrados no duplica filas (guard `AnyAsync(Stage == Octavos)`).
+
+### Estimación: 2–3 horas de código + tiempo variable para recopilar/verificar los datos oficiales de FIFA
+
+---
+
+## Módulo C2 — Origen del cruce visible en el tab Bracket del admin
+
+### Objetivo
+
+Cuando el admin asigna equipos a un partido de Octavos+ en el tab "Bracket" (`/admin`), debe quedar claro de dónde viene cada cupo (p. ej. "Ganador Partido 89" o "Ganador (Portugal vs. Croacia)"), para no adivinar qué casilla corresponde a cuál cruce.
+
+### Hallazgo clave: gran parte de esto ya existe
+
+`Admin/Index.razor` (`src/Quiniela.Web/Components/Pages/Admin/Index.razor:405-429`) **ya renderiza** `HomeSlotLabel`/`AwaySlotLabel` junto a cada selector:
+
+```razor
+<label class="form-label small text-muted mb-1">
+    Local @(match.HomeSlotLabel is not null ? $"({match.HomeSlotLabel})" : "")
+</label>
+```
+
+y `KnockoutService.AssignTeamsAsync` (ya implementado) permite asignar equipos a cualquier partido con `Stage != Grupos`. **No se requiere código nuevo para esto** — en cuanto C1 pueble `HomeSlotLabel`/`AwaySlotLabel` con el texto derivado de `nota` (ej. `"Ganador Partido 89"` en vez de vacío), el admin ya ve el origen del cruce automáticamente.
+
+### Qué sí falta (ajuste menor, opcional)
+
+- El dropdown de equipos (`allTeams`) sigue mostrando los 48 equipos sin filtrar. Se decidió **no** restringir por elegibilidad — fuera de alcance de C2 — así que no hay cambio ahí.
+- Único ajuste real propuesto: una vez que el admin ya asignó el equipo real a un cruce, ocultar el `SlotLabel` original (ya es redundante) en vez de seguir mostrándolo junto al nombre del equipo:
+
+```razor
+@* Admin/Index.razor — ajuste opcional *@
+<label class="form-label small text-muted mb-1">
+    Local
+    @if (match.HomeTeamId is null && match.HomeSlotLabel is not null)
+    {
+        <span>(@match.HomeSlotLabel)</span>
+    }
+</label>
+```
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `Components/Pages/Admin/Index.razor` | (Opcional) ocultar `SlotLabel` una vez que el cruce ya tiene equipo asignado |
+
+### Criterio de aceptación
+
+- Con los datos de C1 cargados, el tab Bracket muestra junto a cada selector vacío el origen del cruce (ej. "Local (Ganador Partido 89)").
+- No se modifica `KnockoutService.AssignTeamsAsync` ni el modelo de datos — este módulo es casi enteramente resultado de los datos de C1 + UI ya existente.
+
+### Estimación: 0.5–1 hora (la mayor parte del trabajo ya estaba hecho en el Módulo 8)
+
+---
+
 ## Módulo D — Badge de pronósticos pendientes en NavMenu
 
 ### Objetivo
@@ -999,6 +1239,7 @@ Cuando se finaliza el partido de la Final, `ScoringService` llama a un método q
 | `Components/Shared/BracketMatchCard.razor(.css)` | C |
 | `Components/Shared/KnockoutStageView.razor` | A |
 | `Components/Shared/MatchPredictionsSheet.razor(.css)` | B |
+| `Quiniela.Data/Seeding/Data/matches.json` | C1 |
 
 ---
 
@@ -1008,10 +1249,12 @@ Cuando se finaliza el partido de la Final, `ScoringService` llama a un método q
 A (tabs dinámicos, 2h)
   └─> B (ver pronósticos por partido, 4h)
         └─> C (bracket visual, 8h)
-              └─> D (badge pendientes, 1h)
-                    └─> E (stats personales, 6h)
-                          └─> F (historial posiciones, 5h)
-                                └─> H (predicción campeón, 5h)
+              └─> C1 (seed Octavos→Final, 2-3h + datos)
+                    └─> C2 (origen del cruce en admin, 0.5-1h)
+                          └─> D (badge pendientes, 1h)
+                                └─> E (stats personales, 6h)
+                                      └─> F (historial posiciones, 5h)
+                                            └─> H (predicción campeón, 5h)
 ```
 
-Total estimado: **~30–43 horas** de trabajo.
+Total estimado: **~33–47 horas** de trabajo.

@@ -1,0 +1,135 @@
+{
+  "mundial_2026_octavos_final": [
+    {
+      "partido": 89,
+      "fecha_utc": "2026-07-04T21:00:00Z",
+      "sede": "Philadelphia Stadium (Lincoln Financial Field), Filadelfia, EE.UU.",
+      "equipo_local": "Paraguay",
+      "equipo_visitante": "Francia"
+    },
+    {
+      "partido": 90,
+      "fecha_utc": "2026-07-04T17:00:00Z",
+      "sede": "Houston Stadium (NRG Stadium), Houston, EE.UU.",
+      "equipo_local": "Canadá",
+      "equipo_visitante": "Marruecos"
+    },
+    {
+      "partido": 91,
+      "fecha_utc": "2026-07-05T20:00:00Z",
+      "sede": "New York New Jersey Stadium (MetLife Stadium), East Rutherford, EE.UU.",
+      "equipo_local": "Brasil",
+      "equipo_visitante": "Noruega"
+    },
+    {
+      "partido": 92,
+      "fecha_utc": "2026-07-06T00:00:00Z",
+      "sede": "Mexico City Stadium (Estadio Azteca), Ciudad de México, México",
+      "equipo_local": "México",
+      "equipo_visitante": "Inglaterra"
+    },
+    {
+      "partido": 93,
+      "fecha_utc": "2026-07-06T19:00:00Z",
+      "sede": "Dallas Stadium (AT&T Stadium), Arlington, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador (Portugal vs. Croacia) vs. Ganador (España vs. Austria)"
+    },
+    {
+      "partido": 94,
+      "fecha_utc": "2026-07-06T21:00:00Z",
+      "sede": "Seattle Stadium (Lumen Field), Seattle, EE.UU.",
+      "equipo_local": "Estados Unidos",
+      "equipo_visitante": "Bélgica"
+    },
+    {
+      "partido": 95,
+      "fecha_utc": "2026-07-07T16:00:00Z",
+      "sede": "Atlanta Stadium (Mercedes-Benz Stadium), Atlanta, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador (Argentina vs. Cabo Verde) vs. Ganador (Australia vs. Egipto)"
+    },
+    {
+      "partido": 96,
+      "fecha_utc": "2026-07-07T20:00:00Z",
+      "sede": "Vancouver Stadium (BC Place), Vancouver, Canadá",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador (Suiza vs. Argelia) vs. Ganador (Colombia vs. Ghana)"
+    }
+  ],
+  "mundial_2026_cuartos_final": [
+    {
+      "partido": 97,
+      "fecha_utc": "2026-07-09T20:00:00Z",
+      "sede": "Boston Stadium (Gillette Stadium), Foxborough, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 89 vs. Ganador Partido 90"
+    },
+    {
+      "partido": 98,
+      "fecha_utc": "2026-07-10T19:00:00Z",
+      "sede": "Los Angeles Stadium (SoFi Stadium), Inglewood, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 93 vs. Ganador Partido 94"
+    },
+    {
+      "partido": 99,
+      "fecha_utc": "2026-07-11T21:00:00Z",
+      "sede": "Miami Stadium (Hard Rock Stadium), Miami Gardens, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 91 vs. Ganador Partido 92"
+    },
+    {
+      "partido": 100,
+      "fecha_utc": "2026-07-12T01:00:00Z",
+      "sede": "Kansas City Stadium (Arrowhead Stadium), Kansas City, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 95 vs. Ganador Partido 96"
+    }
+  ],
+  "mundial_2026_semifinal": [
+    {
+      "partido": 101,
+      "fecha_utc": "2026-07-14T19:00:00Z",
+      "sede": "Dallas Stadium (AT&T Stadium), Arlington, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 97 vs. Ganador Partido 98"
+    },
+    {
+      "partido": 102,
+      "fecha_utc": "2026-07-15T19:00:00Z",
+      "sede": "Atlanta Stadium (Mercedes-Benz Stadium), Atlanta, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 99 vs. Ganador Partido 100"
+    }
+  ],
+  "mundial_2026_tercer_lugar": [
+    {
+      "partido": 103,
+      "fecha_utc": "2026-07-18T21:00:00Z",
+      "sede": "Miami Stadium (Hard Rock Stadium), Miami Gardens, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Perdedor Partido 101 vs. Perdedor Partido 102"
+    }
+  ],
+  "mundial_2026_final": [
+    {
+      "partido": 104,
+      "fecha_utc": "2026-07-19T19:00:00Z",
+      "sede": "New York New Jersey Stadium (MetLife Stadium), East Rutherford, EE.UU.",
+      "equipo_local": null,
+      "equipo_visitante": null,
+      "nota": "Ganador Partido 101 vs. Ganador Partido 102"
+    }
+  ]
+}

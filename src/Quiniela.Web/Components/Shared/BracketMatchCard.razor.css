@@ -1,0 +1,61 @@
+.bmc {
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.72rem;
+    width: 100%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.bmc-done {
+    border-color: #CBD5E1;
+}
+
+.bmc-team {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    min-width: 0;
+}
+
+.bmc-flag {
+    width: 18px !important;
+    height: 13px !important;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.bmc-name {
+    flex: 1;
+    font-weight: 600;
+    color: #1E293B;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bmc-score {
+    font-weight: 700;
+    color: #1E293B;
+    min-width: 14px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.bmc-winner .bmc-name,
+.bmc-winner .bmc-score {
+    color: #059669;
+}
+
+.bmc-loser .bmc-name,
+.bmc-loser .bmc-score {
+    color: #94A3B8;
+}
+
+.bmc-divider {
+    height: 1px;
+    background: #F1F5F9;
+    margin: 0 8px;
+}

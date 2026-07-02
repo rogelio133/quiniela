@@ -1,0 +1,70 @@
+@page "/bracket"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject BracketService BracketService
+
+<PageTitle>Bracket</PageTitle>
+
+<div class="bracket-page">
+    <h5 class="bracket-page-title">Bracket Eliminatorio</h5>
+
+    @if (_isLoading)
+    {
+        <div class="p-3 d-flex justify-content-center">
+            <ThreeBallLoader />
+        </div>
+    }
+    else if (_mainRounds.Count == 0)
+    {
+        <div class="alert alert-info m-3">No hay partidos eliminatorios disponibles aún.</div>
+    }
+    else
+    {
+        <div class="bracket-outer">
+            <div class="bracket-container">
+                @{int maxMatches = _mainRounds.Max(r => r.Matches.Count);}
+                @foreach (var (round, idx) in _mainRounds.Select((r, i) => (r, i)))
+                {
+                    int slots = maxMatches / round.Matches.Count;
+                    bool isFirst = idx == 0;
+                    bool isLast  = idx == _mainRounds.Count - 1;
+                    <div class="bracket-round @(isFirst ? "bracket-round-first" : "") @(isLast ? "bracket-round-last" : "")">
+                        <div class="bracket-round-label">@round.Label</div>
+                        <div class="bracket-round-matches">
+                            @foreach (var match in round.Matches)
+                            {
+                                <div class="bmc-slot" style="--slots: @slots">
+                                    <BracketMatchCard Match="match" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (_tercerLugar is not null)
+            {
+                <div class="bracket-third">
+                    <span class="bracket-round-label">@_tercerLugar.Label</span>
+                    <div class="bracket-third-card">
+                        <BracketMatchCard Match="_tercerLugar.Matches[0]" />
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private List<BracketRound> _mainRounds = [];
+    private BracketRound? _tercerLugar;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var rounds = await BracketService.GetBracketAsync();
+        _tercerLugar = rounds.FirstOrDefault(r => r.Stage == MatchStage.TercerLugar);
+        _mainRounds = rounds.Where(r => r.Stage != MatchStage.TercerLugar).ToList();
+        _isLoading = false;
+    }
+}

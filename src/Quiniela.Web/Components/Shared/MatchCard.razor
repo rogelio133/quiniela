@@ -128,6 +128,15 @@
                 <span class="badge bg-secondary">Sin pronóstico</span>
             }
         </div>
+        @if (OnViewPredictions.HasDelegate)
+        {
+            <button class="mc-view-all-btn"
+                    @onclick="() => OnViewPredictions.InvokeAsync(Match.Id)">
+                <span class="mc-va-icon">👥</span>
+                <span class="mc-va-text">Ver pronósticos de todos</span>
+                <span class="mc-va-arrow">›</span>
+            </button>
+        }
     }
 
     @* ── Save button ─────────────────────────────────────────── *@
@@ -164,6 +173,7 @@
     [Parameter] public bool ReadOnly { get; set; }
     [Parameter] public TimeZoneInfo ClientTz { get; set; } = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
     [Parameter] public EventCallback<int> OnFlagTapped { get; set; }
+    [Parameter] public EventCallback<int> OnViewPredictions { get; set; }
 
     private char? selectedOutcome;
     private MatchDecidedIn? selectedInstance;

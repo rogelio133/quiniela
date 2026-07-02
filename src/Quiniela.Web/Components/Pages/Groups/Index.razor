@@ -31,17 +31,16 @@
 
 @* ── Tabs ─────────────────────────────────────────────────── *@
 <ul class="nav nav-tabs mb-3 mt-2" role="tablist">
-    <li class="nav-item">
-        <button class="nav-link @(activeTab == FaseTab.Grupos ? "active" : "")"
-                @onclick="() => activeTab = FaseTab.Grupos" type="button">Grupos</button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link @(activeTab == FaseTab.Dieciseisavos ? "active" : "")"
-                @onclick="() => activeTab = FaseTab.Dieciseisavos" type="button">Dieciseisavos</button>
-    </li>
+    @foreach (var (stage, label) in StageOrder.Where(s => _activeStages.Contains(s.Stage)))
+    {
+        <li class="nav-item">
+            <button class="nav-link @(activeTab == stage ? "active" : "")"
+                    @onclick="() => activeTab = stage" type="button">@label</button>
+        </li>
+    }
 </ul>
 
-@if (activeTab == FaseTab.Grupos)
+@if (activeTab == MatchStage.Grupos)
 {
 @if (isLoading)
 {
@@ -198,99 +197,45 @@ else
 }
 else
 {
-    @* ── Tab Dieciseisavos ───────────────────────────────────── *@
-    if (isLoadingKo)
-    {
-        <SkeletonLoader ShowCard="true" />
-        <SkeletonLoader ShowCard="true" />
-    }
-    else if (dieciseisavos.Count == 0)
-    {
-        <div class="alert alert-info mt-3">Los partidos de dieciseisavos no están disponibles aún.</div>
-    }
-    else
-    {
-        <div class="d-flex flex-column gap-2">
-            @foreach (var match in dieciseisavos)
-            {
-                <div class="ko-card" @key="match.Id">
-                    <div class="ko-card-header">
-                        <span class="ko-order">#@match.BracketOrder</span>
-                        <span class="ko-kickoff">@FormatKickoff(match)</span>
-                    </div>
-                    <div class="ko-card-body">
-                        <div class="ko-team">
-                            @if (match.HomeTeam is not null)
-                            {
-                                <span class="fi fi-@match.HomeTeam.FlagCode.ToLower() ko-flag"></span>
-                                <span class="ko-team-name">@match.HomeTeam.Name</span>
-                            }
-                            else
-                            {
-                                <span class="ko-slot">@(match.HomeSlotLabel ?? "?")</span>
-                            }
-                        </div>
-
-                        @if (match.Status == MatchStatus.Finalizado && match.HomeScore.HasValue)
-                        {
-                            <span class="ko-score">@match.HomeScore – @match.AwayScore</span>
-                        }
-                        else
-                        {
-                            <span class="ko-vs">VS</span>
-                        }
-
-                        <div class="ko-team ko-team-away">
-                            @if (match.AwayTeam is not null)
-                            {
-                                <span class="ko-team-name">@match.AwayTeam.Name</span>
-                                <span class="fi fi-@match.AwayTeam.FlagCode.ToLower() ko-flag"></span>
-                            }
-                            else
-                            {
-                                <span class="ko-slot">@(match.AwaySlotLabel ?? "?")</span>
-                            }
-                        </div>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(match.Venue))
-                    {
-                        <div class="ko-venue">@match.Venue</div>
-                    }
-                </div>
-            }
-        </div>
-    }
+    <KnockoutStageView Stage="activeTab" @key="_refreshKey" />
 }
 
 @code {
-    private enum FaseTab { Grupos, Dieciseisavos }
-    // Extensible: agregar más valores aquí (Octavos, Cuartos, Semifinal, Final) conforme avance el torneo.
+    private static readonly (MatchStage Stage, string Label)[] StageOrder =
+    [
+        (MatchStage.Grupos,        "Grupos"),
+        (MatchStage.Dieciseisavos, "Dieciseisavos"),
+        (MatchStage.Octavos,       "Octavos"),
+        (MatchStage.Cuartos,       "Cuartos"),
+        (MatchStage.Semifinal,     "Semifinal"),
+        (MatchStage.TercerLugar,   "3er Lugar"),
+        (MatchStage.Final,         "Final"),
+    ];
 
-    private FaseTab activeTab = FaseTab.Grupos;
+    private List<MatchStage> _activeStages = [];
+    private MatchStage activeTab = MatchStage.Grupos;
+    private int _refreshKey = 0;
 
     private Dictionary<char, GroupResult> groups = [];
     private HashSet<char> openGroups             = [];
     private bool isLoading                       = true;
     private bool isRefreshing;
 
-    private List<Match> dieciseisavos = [];
-    private bool isLoadingKo = true;
-    private static readonly TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
-
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
         isLoading = false;
 
-        dieciseisavos = await KnockoutService.GetMatchesByStageAsync(MatchStage.Dieciseisavos);
-        isLoadingKo = false;
+        _activeStages = await KnockoutService.GetStagesWithMatchesAsync();
+        activeTab = _activeStages.LastOrDefault();
     }
 
     private async Task RefreshAsync()
     {
         isRefreshing = true;
         await LoadAsync();
-        dieciseisavos = await KnockoutService.GetMatchesByStageAsync(MatchStage.Dieciseisavos);
+        _activeStages = await KnockoutService.GetStagesWithMatchesAsync();
+        _refreshKey++;
         isRefreshing = false;
     }
 
@@ -305,11 +250,5 @@ else
     {
         if (!openGroups.Remove(code))
             openGroups.Add(code);
-    }
-
-    private static string FormatKickoff(Match match)
-    {
-        var local = TimeZoneInfo.ConvertTimeFromUtc(match.KickoffUtc, clientTz);
-        return local.ToString("dd MMM · HH:mm", new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant();
     }
 }

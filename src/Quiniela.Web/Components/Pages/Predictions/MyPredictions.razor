@@ -152,7 +152,8 @@ else
                                                UserId="currentUserId"
                                                ClientTz="clientTz"
                                                ReadOnly="true"
-                                               OnFlagTapped="OpenTeamSheet" />
+                                               OnFlagTapped="OpenTeamSheet"
+                                               OnViewPredictions="OpenPredictionsSheet" />
                                 }
                             </div>
                         </div>
@@ -167,6 +168,11 @@ else
                PoolId="PoolId"
                IsOpen="_sheetOpen"
                OnClose="CloseTeamSheet" />
+
+    <MatchPredictionsSheet MatchId="_predictionsMatchId"
+                           PoolId="PoolId"
+                           IsOpen="_predictionsSheetOpen"
+                           OnClose="ClosePredictionsSheet" />
 }
 
 @code {
@@ -190,6 +196,9 @@ else
     private int _selectedTeamId;
     private bool _sheetOpen;
     private bool _hintSeen;
+
+    private int _predictionsMatchId;
+    private bool _predictionsSheetOpen;
 
     protected override async Task OnInitializedAsync()
     {
@@ -262,6 +271,17 @@ else
     private void CloseTeamSheet()
     {
         _sheetOpen = false;
+    }
+
+    private void OpenPredictionsSheet(int matchId)
+    {
+        _predictionsMatchId = matchId;
+        _predictionsSheetOpen = true;
+    }
+
+    private void ClosePredictionsSheet()
+    {
+        _predictionsSheetOpen = false;
     }
 
     private string FormatDayHeader(DateOnly date)

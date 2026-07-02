@@ -290,7 +290,7 @@
 
 /* Locked state */
 .match-locked {
-    opacity: 0.62;
+    opacity: 1;
 }
 
 /* In-progress / live header */
@@ -333,4 +333,55 @@
 .mc-flag-tappable:active {
     transform: scale(1.1);
     box-shadow: 0 0 0 3px rgba(26,86,219,0.3);
+}
+
+/* Ver pronósticos de todos — action row below result footer */
+.mc-view-all-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%);
+    border: none;
+    border-top: 1px solid #E2E8F0;
+    cursor: pointer;
+    gap: 8px;
+    transition: background 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mc-view-all-btn:hover {
+    background: linear-gradient(135deg, #E0E7FF 0%, #DCFCE7 100%);
+}
+
+.mc-view-all-btn:active {
+    background: linear-gradient(135deg, #C7D2FE 0%, #BBF7D0 100%);
+}
+
+.mc-va-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.mc-va-text {
+    flex: 1;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #3730A3;
+    letter-spacing: 0.01em;
+}
+
+.mc-va-arrow {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #6366F1;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+
+.mc-view-all-btn:hover .mc-va-arrow {
+    transform: translateX(3px);
 }

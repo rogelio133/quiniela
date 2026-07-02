@@ -1,0 +1,90 @@
+@inject KnockoutService KnockoutService
+
+@if (_isLoading)
+{
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+}
+else if (_matches.Count == 0)
+{
+    <div class="alert alert-info mt-3">No hay partidos disponibles para esta fase.</div>
+}
+else
+{
+    <div class="d-flex flex-column gap-2">
+        @foreach (var match in _matches)
+        {
+            <div class="ko-card" @key="match.Id">
+                <div class="ko-card-header">
+                    <span class="ko-order">#@match.BracketOrder</span>
+                    <span class="ko-kickoff">@FormatKickoff(match)</span>
+                </div>
+                <div class="ko-card-body">
+                    <div class="ko-team">
+                        @if (match.HomeTeam is not null)
+                        {
+                            <span class="fi fi-@match.HomeTeam.FlagCode.ToLower() ko-flag"></span>
+                            <span class="ko-team-name">@match.HomeTeam.Name</span>
+                        }
+                        else
+                        {
+                            <span class="ko-slot">@(match.HomeSlotLabel ?? "?")</span>
+                        }
+                    </div>
+
+                    @if (match.Status == MatchStatus.Finalizado && match.HomeScore.HasValue)
+                    {
+                        <span class="ko-score">@match.HomeScore – @match.AwayScore</span>
+                    }
+                    else
+                    {
+                        <span class="ko-vs">VS</span>
+                    }
+
+                    <div class="ko-team ko-team-away">
+                        @if (match.AwayTeam is not null)
+                        {
+                            <span class="ko-team-name">@match.AwayTeam.Name</span>
+                            <span class="fi fi-@match.AwayTeam.FlagCode.ToLower() ko-flag"></span>
+                        }
+                        else
+                        {
+                            <span class="ko-slot">@(match.AwaySlotLabel ?? "?")</span>
+                        }
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(match.Venue))
+                {
+                    <div class="ko-venue">@match.Venue</div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public MatchStage Stage { get; set; }
+
+    private List<Match> _matches = [];
+    private bool _isLoading = true;
+    private MatchStage? _loadedStage;
+
+    private static readonly TimeZoneInfo ClientTz =
+        TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedStage == Stage) return;
+        _isLoading = true;
+        _matches = await KnockoutService.GetMatchesByStageAsync(Stage);
+        _loadedStage = Stage;
+        _isLoading = false;
+    }
+
+    private static string FormatKickoff(Match match)
+    {
+        var local = TimeZoneInfo.ConvertTimeFromUtc(match.KickoffUtc, ClientTz);
+        return local.ToString("dd MMM · HH:mm",
+            new System.Globalization.CultureInfo("es-MX")).ToUpperInvariant();
+    }
+}

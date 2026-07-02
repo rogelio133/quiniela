@@ -1,0 +1,185 @@
+@inject MatchPredictionsService MatchPredictionsService
+
+@if (IsOpen)
+{
+    <div class="mps-overlay" @onclick="HandleClose">
+        <div class="mps-panel" @onclick:stopPropagation="true">
+
+            <div class="mps-handle"></div>
+
+            @if (_summary is null)
+            {
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var m = _summary.Match;
+                var isKo = m.Stage != MatchStage.Grupos;
+
+                @* ── Match header ───────────────────────────── *@
+                <div class="mps-header">
+                    <div class="mps-match-info">
+                        @if (m.HomeTeam is not null)
+                        {
+                            <span class="fi fi-@m.HomeTeam.FlagCode.ToLower() mps-flag"></span>
+                            <span class="mps-team-name">@(m.HomeTeam.ShortCode ?? m.HomeTeam.Name)</span>
+                        }
+                        else
+                        {
+                            <span class="mps-team-name mps-slot">@(m.HomeSlotLabel ?? "?")</span>
+                        }
+                        <span class="mps-score-badge">@m.HomeScore – @m.AwayScore</span>
+                        @if (m.AwayTeam is not null)
+                        {
+                            <span class="mps-team-name">@(m.AwayTeam.ShortCode ?? m.AwayTeam.Name)</span>
+                            <span class="fi fi-@m.AwayTeam.FlagCode.ToLower() mps-flag"></span>
+                        }
+                        else
+                        {
+                            <span class="mps-team-name mps-slot">@(m.AwaySlotLabel ?? "?")</span>
+                        }
+                    </div>
+                    <button class="mps-close-btn" @onclick="HandleClose" aria-label="Cerrar">×</button>
+                </div>
+
+                @* ── Entries ─────────────────────────────────── *@
+                <div class="mps-body">
+                    @if (_summary.Entries.Count == 0)
+                    {
+                        <p class="mps-empty">Nadie pertenece a esta sala.</p>
+                    }
+                    else if (!_summary.Entries.Any(e => e.HasPrediction))
+                    {
+                        <p class="mps-empty">Nadie pronosticó este partido.</p>
+                    }
+                    else
+                    {
+                        <table class="mps-table">
+                            <thead>
+                                <tr class="mps-thead">
+                                    <th>Jugador</th>
+                                    <th>Pronóstico</th>
+                                    @if (isKo)
+                                    {
+                                        <th class="mps-th-center">Instancia</th>
+                                    }
+                                    <th class="mps-th-right">Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in _summary.Entries)
+                                {
+                                    <tr class="mps-row @(entry.PtsResult > 0 ? "mps-row-hit" : "")">
+                                        <td class="mps-td-name">@entry.DisplayName</td>
+                                        <td class="mps-td-pred">
+                                            @if (!entry.HasPrediction)
+                                            {
+                                                <span class="mps-none">—</span>
+                                            }
+                                            else
+                                            {
+                                                var outcomeTeam = entry.PredOutcome == 'H' ? m.HomeTeam : (entry.PredOutcome == 'A' ? m.AwayTeam : null);
+                                                <span class="mps-pred-pill @(entry.PtsResult > 0 ? "mps-pred-hit" : "mps-pred-miss")">
+                                                    @if (entry.PredOutcome == 'D')
+                                                    {
+                                                        <span>🤝 Empate</span>
+                                                    }
+                                                    else if (outcomeTeam is not null)
+                                                    {
+                                                        <span class="fi fi-@outcomeTeam.FlagCode.ToLower() mps-pred-flag"></span>
+                                                        <span>@(outcomeTeam.ShortCode ?? outcomeTeam.Name)</span>
+                                                    }
+                                                    <span class="mps-hitmark">@(entry.PtsResult > 0 ? "✓" : "✗")</span>
+                                                </span>
+                                            }
+                                        </td>
+                                        @if (isKo)
+                                        {
+                                            <td class="mps-td-center">
+                                                @if (!entry.HasPrediction)
+                                                {
+                                                    <span class="mps-none">—</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="mps-inst @(entry.PtsInstance > 0 ? "mps-inst-hit" : "")">
+                                                        @InstanceLabel(entry.PredInstance)
+                                                    </span>
+                                                }
+                                            </td>
+                                        }
+                                        <td class="mps-td-pts">
+                                            @if (!entry.HasPrediction)
+                                            {
+                                                <span class="mps-none">—</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="mps-pts @(entry.Points > 0 ? "mps-pts-pos" : "")">
+                                                    @(entry.Points > 0 ? $"+{entry.Points}" : "0")
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                @* ── Summary footer ──────────────────────────── *@
+                @if (_summary.TotalWithPrediction > 0)
+                {
+                    <div class="mps-footer">
+                        <span class="mps-footer-stat">
+                            ✓ <strong>@_summary.TotalCorrect</strong> de <strong>@_summary.TotalWithPrediction</strong> acertaron
+                        </span>
+                        <span class="mps-footer-avg">
+                            Promedio: <strong>@_summary.AveragePoints.ToString("F1")</strong> pts
+                        </span>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int MatchId { get; set; }
+    [Parameter, EditorRequired] public int PoolId { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private MatchPredictionsSummary? _summary;
+    private int _loadedForMatch;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && MatchId > 0 && MatchId != _loadedForMatch)
+        {
+            _loadedForMatch = MatchId;
+            _summary = null;
+            _summary = await MatchPredictionsService.GetForMatchAsync(MatchId, PoolId);
+        }
+        if (!IsOpen)
+        {
+            _summary = null;
+            _loadedForMatch = 0;
+        }
+    }
+
+    private async Task HandleClose() => await OnClose.InvokeAsync();
+
+    private static string InstanceLabel(MatchDecidedIn? instance) => instance switch
+    {
+        MatchDecidedIn.Regular90 => "90'",
+        MatchDecidedIn.ExtraTime => "T.Extra",
+        MatchDecidedIn.Penalties => "Penales",
+        _ => "—"
+    };
+}

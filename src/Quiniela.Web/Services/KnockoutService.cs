@@ -6,6 +6,15 @@ namespace Quiniela.Web.Services;
 
 public class KnockoutService(QuinielaDbContext db)
 {
+    public async Task<List<MatchStage>> GetStagesWithMatchesAsync()
+    {
+        return await db.Matches
+            .Select(m => m.Stage)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToListAsync();
+    }
+
     public async Task<List<Match>> GetMatchesByStageAsync(MatchStage stage)
     {
         return await db.Matches

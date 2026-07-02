@@ -15,6 +15,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
     public DbSet<Pool> Pools => Set<Pool>();
     public DbSet<PoolMember> PoolMembers => Set<PoolMember>();
     public DbSet<Prediction> Predictions => Set<Prediction>();
+    public DbSet<StandingsSnapshot> StandingsSnapshots => Set<StandingsSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,8 +66,8 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
             e.Property(m => m.Venue).HasMaxLength(100);
             e.Property(m => m.GroupCode).HasColumnType("char(1)");
-            e.Property(m => m.HomeSlotLabel).HasMaxLength(20);
-            e.Property(m => m.AwaySlotLabel).HasMaxLength(20);
+            e.Property(m => m.HomeSlotLabel).HasMaxLength(60);
+            e.Property(m => m.AwaySlotLabel).HasMaxLength(60);
         });
 
         modelBuilder.Entity<Pool>(e =>
@@ -98,6 +99,24 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
             e.HasOne(p => p.Pool)
                 .WithMany(pl => pl.Predictions)
                 .HasForeignKey(p => p.PoolId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StandingsSnapshot>(e =>
+        {
+            e.HasIndex(s => new { s.PoolId, s.SavedAt });
+            // Restrict to avoid multiple cascade paths (Users→Pools→StandingsSnapshots AND Users→StandingsSnapshots)
+            e.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(s => s.Pool)
+                .WithMany()
+                .HasForeignKey(s => s.PoolId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(s => s.Match)
+                .WithMany()
+                .HasForeignKey(s => s.MatchId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

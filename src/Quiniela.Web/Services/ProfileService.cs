@@ -1,22 +1,28 @@
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.EntityFrameworkCore;
 using Quiniela.Data;
 using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class ProfileService(QuinielaDbContext db, IWebHostEnvironment env)
+public class ProfileService(IDbContextFactory<QuinielaDbContext> dbFactory, IWebHostEnvironment env)
 {
     private static readonly HashSet<string> AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
     private const long MaxFileSize = 2 * 1024 * 1024; // 2 MB
 
-    public async Task<User?> GetUserAsync(int userId) =>
-        await db.Users.FindAsync(userId);
+    public async Task<User?> GetUserAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Users.FindAsync(userId);
+    }
 
     public async Task<(bool Success, string? Error)> UpdateDisplayNameAsync(int userId, string displayName)
     {
         var name = displayName.Trim();
         if (string.IsNullOrEmpty(name)) return (false, "El nombre no puede estar vacío.");
         if (name.Length > 50) return (false, "El nombre no puede tener más de 50 caracteres.");
+
+        await using var db = await dbFactory.CreateDbContextAsync();
 
         var user = await db.Users.FindAsync(userId);
         if (user is null) return (false, "Usuario no encontrado.");
@@ -50,6 +56,8 @@ public class ProfileService(QuinielaDbContext db, IWebHostEnvironment env)
         }
 
         var relativePath = $"/uploads/avatars/{fileName}";
+
+        await using var db = await dbFactory.CreateDbContextAsync();
 
         var user = await db.Users.FindAsync(userId);
         if (user is null) return (false, "Usuario no encontrado.", null);

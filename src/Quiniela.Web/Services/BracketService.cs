@@ -22,7 +22,7 @@ public class BracketMatch
     public char? WinnerSide { get; set; }  // 'H' or 'A'
 }
 
-public class BracketService(QuinielaDbContext db)
+public class BracketService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     private static readonly MatchStage[] KoStages =
     [
@@ -33,6 +33,7 @@ public class BracketService(QuinielaDbContext db)
 
     public async Task<List<BracketRound>> GetBracketAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var matches = await db.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)

@@ -4,10 +4,11 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class KnockoutService(QuinielaDbContext db)
+public class KnockoutService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public async Task<List<MatchStage>> GetStagesWithMatchesAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Matches
             .Select(m => m.Stage)
             .Distinct()
@@ -17,6 +18,7 @@ public class KnockoutService(QuinielaDbContext db)
 
     public async Task<List<Match>> GetMatchesByStageAsync(MatchStage stage)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Matches
             .Where(m => m.Stage == stage)
             .Include(m => m.HomeTeam)
@@ -28,6 +30,7 @@ public class KnockoutService(QuinielaDbContext db)
 
     public async Task<List<Match>> GetPlaceholderMatchesAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Matches
             .Where(m => m.Stage != MatchStage.Grupos && (m.HomeTeamId == null || m.AwayTeamId == null))
             .Include(m => m.HomeTeam)
@@ -37,11 +40,16 @@ public class KnockoutService(QuinielaDbContext db)
             .ToListAsync();
     }
 
-    public async Task<List<Team>> GetAllTeamsAsync() =>
-        await db.Teams.OrderBy(t => t.Name).ToListAsync();
+    public async Task<List<Team>> GetAllTeamsAsync()
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.Teams.OrderBy(t => t.Name).ToListAsync();
+    }
 
     public async Task<(bool Success, string? Error)> AssignTeamsAsync(int matchId, int? homeTeamId, int? awayTeamId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var match = await db.Matches.FindAsync(matchId);
         if (match is null) return (false, "Partido no encontrado.");
         if (match.Stage == MatchStage.Grupos) return (false, "No aplica a partidos de grupos.");

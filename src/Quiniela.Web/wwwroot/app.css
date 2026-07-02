@@ -265,6 +265,10 @@ h1:focus {
     box-shadow: 0 4px 14px rgba(245,158,11,.2);
 }
 
+.podium-clickable {
+    cursor: pointer;
+}
+
 .podium-2 {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     border-color: #CBD5E1;

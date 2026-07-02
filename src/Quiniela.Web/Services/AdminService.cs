@@ -4,13 +4,14 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class AdminService(QuinielaDbContext db, ScoringService scoringService)
+public class AdminService(IDbContextFactory<QuinielaDbContext> dbFactory, ScoringService scoringService)
 {
     /// <summary>
     /// Matches that have started (KickoffUtc &lt;= now) but whose result hasn't been entered yet.
     /// </summary>
     public async Task<List<Match>> GetPendingResultsAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         var now = DateTime.UtcNow;
         return await db.Matches
             .Where(m => m.KickoffUtc <= now
@@ -25,6 +26,7 @@ public class AdminService(QuinielaDbContext db, ScoringService scoringService)
 
     public async Task<List<Match>> GetFinalizedMatchesAsync()
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
         return await db.Matches
             .Where(m => m.Status == MatchStatus.Finalizado)
             .Include(m => m.HomeTeam)
@@ -38,6 +40,8 @@ public class AdminService(QuinielaDbContext db, ScoringService scoringService)
     {
         if (homeScore < 0 || awayScore < 0)
             return (false, "Los goles no pueden ser negativos.");
+
+        await using var db = await dbFactory.CreateDbContextAsync();
 
         var match = await db.Matches.FindAsync(matchId);
         if (match is null)

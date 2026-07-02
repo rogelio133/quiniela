@@ -26,10 +26,12 @@ public class MatchPredictionsSummary
         : 0;
 }
 
-public class MatchPredictionsService(QuinielaDbContext db)
+public class MatchPredictionsService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public async Task<MatchPredictionsSummary> GetForMatchAsync(int matchId, int poolId)
     {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
         var match = await db.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)

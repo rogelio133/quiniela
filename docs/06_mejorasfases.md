@@ -12,7 +12,7 @@
 |---|:-----:|--------|----------|----------|---------|
 | A | [x] | Tabs de Fases extendidas (Octavos → Final) | 🔴 Alta | ~2–3 h | Alto |
 | B | [x] | Ver pronósticos de todos por partido | 🔴 Alta | ~3–4 h | Muy alto |
-| C | [ ] | Bracket visual de eliminatorias | 🔴 Alta | ~6–8 h | Muy alto |
+| C | [x] | Bracket visual de eliminatorias | 🔴 Alta | ~6–8 h | Muy alto |
 | D | [ ] | Badge de pronósticos pendientes en NavMenu | 🟡 Media | ~1–2 h | Alto |
 | E | [ ] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
 | F | [ ] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |

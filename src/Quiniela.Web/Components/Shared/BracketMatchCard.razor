@@ -1,0 +1,37 @@
+<div class="bmc @(Match.IsFinalized ? "bmc-done" : "")">
+    <div class="bmc-team @HomeTeamClass">
+        @if (!string.IsNullOrEmpty(Match.HomeFlagCode))
+        {
+            <span class="fi fi-@Match.HomeFlagCode.ToLower() bmc-flag"></span>
+        }
+        <span class="bmc-name">@Match.HomeName</span>
+        @if (Match.IsFinalized)
+        {
+            <span class="bmc-score">@Match.Match.HomeScore</span>
+        }
+    </div>
+    <div class="bmc-divider"></div>
+    <div class="bmc-team @AwayTeamClass">
+        @if (!string.IsNullOrEmpty(Match.AwayFlagCode))
+        {
+            <span class="fi fi-@Match.AwayFlagCode.ToLower() bmc-flag"></span>
+        }
+        <span class="bmc-name">@Match.AwayName</span>
+        @if (Match.IsFinalized)
+        {
+            <span class="bmc-score">@Match.Match.AwayScore</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public BracketMatch Match { get; set; } = null!;
+
+    private string HomeTeamClass => Match.IsFinalized
+        ? (Match.WinnerSide == 'H' ? "bmc-winner" : "bmc-loser")
+        : "";
+
+    private string AwayTeamClass => Match.IsFinalized
+        ? (Match.WinnerSide == 'A' ? "bmc-winner" : "bmc-loser")
+        : "";
+}

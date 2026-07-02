@@ -1,0 +1,131 @@
+/* ── Page header ─────────────────────────────────────────────── */
+.bracket-page-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 16px 16px 12px;
+}
+
+/* ── Outer wrapper ────────────────────────────────────────────── */
+.bracket-outer {
+    padding: 0 0 32px;
+}
+
+/* ── Scrollable bracket container ────────────────────────────── */
+.bracket-container {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 8px 16px 16px;
+    align-items: flex-start;
+    /* allow connector pseudo-elements to overflow round columns */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── Round column ─────────────────────────────────────────────── */
+.bracket-round {
+    flex-shrink: 0;
+    min-width: 130px;
+    width: 140px;
+    overflow: visible;
+}
+
+.bracket-round-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748B;
+    text-align: center;
+    margin-bottom: 10px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Match column (stacked slots) ────────────────────────────── */
+.bracket-round-matches {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+/* ── Single bracket slot ─────────────────────────────────────── */
+/*
+ * --slots is injected per-slot via inline style (1, 2, 4, 8…).
+ * --slot-h is the base slot height: card (~58px) + gap (14px) = 72px.
+ * Each slot is (--slots × --slot-h) tall; the card is vertically centred.
+ * Connector pseudo-elements extend ±12px horizontally into the 24px gap.
+ */
+.bmc-slot {
+    --slot-h: 72px;
+    height: calc(var(--slots, 1) * var(--slot-h));
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: visible;
+}
+
+/* ── Right-side connectors (all rounds except the last) ───────── */
+
+/* Odd slot — card center → down to mid-point (┐ shape) */
+.bracket-round:not(.bracket-round-last) .bmc-slot:nth-child(odd)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -12px;
+    width: 12px;
+    height: calc(var(--slots, 1) * 36px);
+    border-top: 2px solid #CBD5E1;
+    border-right: 2px solid #CBD5E1;
+    pointer-events: none;
+}
+
+/* Even slot — mid-point → up to card center (┘ shape) */
+.bracket-round:not(.bracket-round-last) .bmc-slot:nth-child(even)::after {
+    content: '';
+    position: absolute;
+    bottom: 50%;
+    right: -12px;
+    width: 12px;
+    height: calc(var(--slots, 1) * 36px);
+    border-bottom: 2px solid #CBD5E1;
+    border-right: 2px solid #CBD5E1;
+    pointer-events: none;
+}
+
+/* ── Left-side input connector (all rounds except the first) ──── */
+.bracket-round:not(.bracket-round-first) .bmc-slot::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    left: -12px;
+    width: 12px;
+    height: 2px;
+    background: #CBD5E1;
+    pointer-events: none;
+}
+
+/* ── 3rd place match (shown below the bracket) ────────────────── */
+.bracket-third {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 0;
+    border-top: 1px solid #F1F5F9;
+    margin: 12px 16px 0;
+}
+
+.bracket-third .bracket-round-label {
+    margin-bottom: 0;
+    height: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.bracket-third-card {
+    width: 140px;
+    flex-shrink: 0;
+}

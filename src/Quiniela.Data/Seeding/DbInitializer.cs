@@ -42,6 +42,8 @@ public static class DbInitializer
             ["R.D. del Congo"] = "Congo RD",
         };
 
+    private static string NormalizeKnockoutName(string name) => KnockoutNameFix.GetValueOrDefault(name, name);
+
     // 48 selecciones clasificadas — FIFA World Cup 2026
     private static readonly TeamSeed[] Teams =
     [
@@ -232,6 +234,52 @@ public static class DbInitializer
         await SeedTeamInfoAsync(context, logger);
         await SeedHistorialAsync(context, logger);
         await SeedUsersAsync(userManager, roleManager, configuration, logger);
+        await BackfillPredictionPointsAsync(context, logger);
+    }
+
+    // Corrige PtsResult/PtsInstance de predicciones en partidos ya finalizados que se calcularon
+    // antes de la migración AddPredictionPointsBreakdown (Módulo 8): quedaron con Points correcto
+    // pero PtsResult/PtsInstance en 0. Recalcula directo aquí (misma lógica que
+    // ScoringService.RecalculateForMatchAsync) en vez de invocar ese servicio, para no generar
+    // StandingsSnapshot fuera de tiempo para partidos históricos (mismo criterio ya aplicado a
+    // snapshots: no se hace backfill retroactivo del historial de posiciones).
+    private static async Task BackfillPredictionPointsAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var predictions = await context.Predictions
+            .Include(p => p.Match)
+            .Include(p => p.Pool)
+            .Where(p => p.Match.Status == MatchStatus.Finalizado
+                     && p.Match.HomeScore != null && p.Match.AwayScore != null)
+            .ToListAsync();
+
+        int updated = 0;
+        foreach (var pred in predictions)
+        {
+            var match = pred.Match;
+            char realOutcome = match.HomeScore > match.AwayScore ? 'H'
+                             : match.HomeScore < match.AwayScore ? 'A'
+                             : 'D';
+
+            bool isKnockout = match.Stage != MatchStage.Grupos;
+
+            int ptsResult = pred.PredOutcome == realOutcome ? pred.Pool.PtsCorrect : 0;
+            int ptsInstance = isKnockout && match.DecidedIn is not null && pred.PredInstance == match.DecidedIn
+                ? pred.Pool.PtsBonusKO
+                : 0;
+
+            if (pred.PtsResult != ptsResult || pred.PtsInstance != ptsInstance)
+            {
+                pred.PtsResult = ptsResult;
+                pred.PtsInstance = ptsInstance;
+                pred.Points = ptsResult + ptsInstance;
+                updated++;
+            }
+        }
+
+        if (updated == 0) return;
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("Backfilled PtsResult/PtsInstance for {Count} predictions.", updated);
     }
 
     private static async Task SeedDieciseisavosAsync(QuinielaDbContext context, ILogger logger)
@@ -239,14 +287,9 @@ public static class DbInitializer
         if (await context.Matches.AnyAsync(m => m.Stage == MatchStage.Dieciseisavos))
             return;
 
-        var assembly = typeof(DbInitializer).Assembly;
-        await using var stream = assembly.GetManifestResourceStream(
-            "Quiniela.Data.Seeding.Data.mundial2026_dieciseisavos.json")
-            ?? throw new InvalidOperationException("No se encontró el JSON de dieciseisavos embebido.");
-
-        var file = await JsonSerializer.DeserializeAsync<KnockoutFile>(stream,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            ?? throw new InvalidOperationException("JSON de dieciseisavos inválido o vacío.");
+        var file = await LoadDieciseisavosFileAsync();
+        var matchesFile = await LoadMatchesFileAsync();
+        var orderByPartido = ComputeBracketOrders(matchesFile, file);
 
         var teamsByName = await context.Teams.ToDictionaryAsync(t => t.Name, StringComparer.OrdinalIgnoreCase);
 
@@ -259,15 +302,14 @@ public static class DbInitializer
         }
 
         var matches = file.Partidos
-            .OrderBy(p => p.Fecha_Utc)
-            .Select((p, i) => new Match
+            .Select(p => new Match
             {
                 HomeTeamId = Resolve(p.Local),
                 AwayTeamId = Resolve(p.Visita),
                 KickoffUtc = DateTime.SpecifyKind(p.Fecha_Utc, DateTimeKind.Utc),
                 Venue = p.Venue.Split(',')[0].Trim(),
                 Stage = MatchStage.Dieciseisavos,
-                BracketOrder = i + 1,
+                BracketOrder = orderByPartido[p.Match_Id],
                 Status = MatchStatus.Programado,
             })
             .ToList();
@@ -275,6 +317,30 @@ public static class DbInitializer
         context.Matches.AddRange(matches);
         await context.SaveChangesAsync();
         logger.LogInformation("Seeded {Count} round-of-32 matches from JSON.", matches.Count);
+    }
+
+    private static async Task<MatchesFile> LoadMatchesFileAsync()
+    {
+        var assembly = typeof(DbInitializer).Assembly;
+        await using var stream = assembly.GetManifestResourceStream(
+            "Quiniela.Data.Seeding.Data.matches.json")
+            ?? throw new InvalidOperationException("No se encontró matches.json embebido.");
+
+        return await JsonSerializer.DeserializeAsync<MatchesFile>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("matches.json inválido o vacío.");
+    }
+
+    private static async Task<KnockoutFile> LoadDieciseisavosFileAsync()
+    {
+        var assembly = typeof(DbInitializer).Assembly;
+        await using var stream = assembly.GetManifestResourceStream(
+            "Quiniela.Data.Seeding.Data.mundial2026_dieciseisavos.json")
+            ?? throw new InvalidOperationException("No se encontró el JSON de dieciseisavos embebido.");
+
+        return await JsonSerializer.DeserializeAsync<KnockoutFile>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new InvalidOperationException("JSON de dieciseisavos inválido o vacío.");
     }
 
     // Divide "X vs. Y" respetando paréntesis anidados (ej. "Ganador (Portugal vs. Croacia) vs. Ganador (España vs. Austria)").
@@ -305,7 +371,11 @@ public static class DbInitializer
     // Se recorre de arriba hacia abajo: Final (1 partido) -> Semifinal -> Cuartos -> Octavos,
     // usando las referencias "Ganador/Perdedor Partido NN" de cada nota para saber qué dos
     // partidos de la ronda anterior deben quedar visualmente adyacentes.
-    private static Dictionary<int, int> ComputeBracketOrders(MatchesFile file)
+    //
+    // El límite Octavos -> Dieciseisavos no usa números de partido (las notas de Octavos
+    // referencian nombres de equipo, no "Partido NN"), así que se resuelve con un matching
+    // por nombre de equipo contra el archivo de dieciseisavos.
+    private static Dictionary<int, int> ComputeBracketOrders(MatchesFile file, KnockoutFile dieciseisavos)
     {
         var orderByPartido = new Dictionary<int, int>
         {
@@ -325,7 +395,44 @@ public static class DbInitializer
             }
         }
 
+        var dieciseisavoMatchIdByTeam = dieciseisavos.Partidos
+            .SelectMany(p => new[] { (Team: p.Local, p.Match_Id), (Team: p.Visita, p.Match_Id) })
+            .ToDictionary(x => x.Team, x => x.Match_Id, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var octavo in file.Octavos.OrderBy(p => orderByPartido[p.Partido]))
+        {
+            var pos = orderByPartido[octavo.Partido];
+            var (homeTeam, awayTeam) = octavo.Equipo_Local is not null
+                ? (octavo.Equipo_Local, octavo.Equipo_Visitante!)
+                : SplitTeamsFromNota(octavo.Nota!);
+
+            if (dieciseisavoMatchIdByTeam.TryGetValue(homeTeam, out var homeMatchId))
+                orderByPartido[homeMatchId] = 2 * pos - 1;
+            if (dieciseisavoMatchIdByTeam.TryGetValue(awayTeam, out var awayMatchId))
+                orderByPartido[awayMatchId] = 2 * pos;
+        }
+
         return orderByPartido;
+    }
+
+    // Extrae un nombre de equipo representativo de cada lado de una nota de Octavos, ej.
+    // "Ganador (Portugal vs. Croacia) vs. Ganador (España vs. Austria)" -> ("Portugal", "España").
+    // Cualquiera de los dos equipos de cada grupo sirve para identificar el partido de
+    // dieciseisavos de origen, ya que ambos pertenecen al mismo Match_Id.
+    private static (string Home, string Away) SplitTeamsFromNota(string nota)
+    {
+        var (homeLabel, awayLabel) = SplitNota(nota);
+        return (ExtractAnyTeamName(homeLabel), ExtractAnyTeamName(awayLabel));
+    }
+
+    private static string ExtractAnyTeamName(string label)
+    {
+        var start = label.IndexOf('(');
+        if (start < 0) return label.Trim();
+
+        var end = label.IndexOf(')', start);
+        var (team, _) = SplitNota(label[(start + 1)..end]);
+        return team.Trim();
     }
 
     private static async Task SeedOctavosAFinalAsync(QuinielaDbContext context, ILogger logger)
@@ -333,17 +440,11 @@ public static class DbInitializer
         if (await context.Matches.AnyAsync(m => m.Stage == MatchStage.Octavos))
             return;
 
-        var assembly = typeof(DbInitializer).Assembly;
-        await using var stream = assembly.GetManifestResourceStream(
-            "Quiniela.Data.Seeding.Data.matches.json")
-            ?? throw new InvalidOperationException("No se encontró matches.json embebido.");
-
-        var file = await JsonSerializer.DeserializeAsync<MatchesFile>(stream,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            ?? throw new InvalidOperationException("matches.json inválido o vacío.");
+        var file = await LoadMatchesFileAsync();
+        var dieciseisavos = await LoadDieciseisavosFileAsync();
 
         var teamsByName = await context.Teams.ToDictionaryAsync(t => t.Name, StringComparer.OrdinalIgnoreCase);
-        var orderByPartido = ComputeBracketOrders(file);
+        var orderByPartido = ComputeBracketOrders(file, dieciseisavos);
 
         int? Resolve(string? name)
         {
@@ -387,22 +488,16 @@ public static class DbInitializer
         logger.LogInformation("Seeded {Count} matches (Octavos→Final) from matches.json.", matches.Count);
     }
 
-    // Corrige el BracketOrder de partidos ya sembrados (Octavos→Final) si no coincide con el
-    // árbol de eliminatorias derivado de matches.json. Necesario porque un seed previo a este
-    // fix asignaba el orden por número de partido FIFA ascendente, que no respeta la geometría
-    // del cuadro (ver ComputeBracketOrders).
+    // Corrige el BracketOrder de partidos ya sembrados (Dieciseisavos→Final) si no coincide con
+    // el árbol de eliminatorias derivado de matches.json + mundial2026_dieciseisavos.json.
+    // Necesario porque un seed previo a este fix asignaba el orden de Octavos→Final por número
+    // de partido FIFA ascendente (no respeta la geometría del cuadro) y el de Dieciseisavos por
+    // fecha/hora de kickoff (sin relación con el árbol de eliminación) — ver ComputeBracketOrders.
     private static async Task BackfillBracketOrderAsync(QuinielaDbContext context, ILogger logger)
     {
-        var assembly = typeof(DbInitializer).Assembly;
-        await using var stream = assembly.GetManifestResourceStream(
-            "Quiniela.Data.Seeding.Data.matches.json")
-            ?? throw new InvalidOperationException("No se encontró matches.json embebido.");
-
-        var file = await JsonSerializer.DeserializeAsync<MatchesFile>(stream,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            ?? throw new InvalidOperationException("matches.json inválido o vacío.");
-
-        var orderByPartido = ComputeBracketOrders(file);
+        var file = await LoadMatchesFileAsync();
+        var dieciseisavos = await LoadDieciseisavosFileAsync();
+        var orderByPartido = ComputeBracketOrders(file, dieciseisavos);
 
         (List<MatchEntry> Entries, MatchStage Stage)[] groups =
         [
@@ -413,8 +508,8 @@ public static class DbInitializer
             (file.Final,       MatchStage.Final),
         ];
 
-        // Los partidos en BD no guardan el número de partido FIFA; se identifican por
-        // (Stage, KickoffUtc), que es único dentro de matches.json.
+        // Los partidos de Octavos→Final en BD no guardan el número de partido FIFA; se
+        // identifican por (Stage, KickoffUtc), que es único dentro de matches.json.
         var orderByStageAndKickoff = groups
             .SelectMany(g => g.Entries.Select(e => (
                 g.Stage,
@@ -439,10 +534,34 @@ public static class DbInitializer
             }
         }
 
+        // Dieciseisavos: ambos equipos siempre están definidos (no hay placeholders en esta
+        // ronda), así que se identifica por (equipo local, equipo visitante) en vez de
+        // KickoffUtc — más robusto ante correcciones de horario hechas después del seed
+        // original (KickoffUtc puede haberse editado manualmente y ya no coincidir con el JSON).
+        var orderByTeamPair = dieciseisavos.Partidos.ToDictionary(
+            p => (Local: NormalizeKnockoutName(p.Local), Visita: NormalizeKnockoutName(p.Visita)),
+            p => orderByPartido[p.Match_Id]);
+
+        var dieciseisavosMatches = await context.Matches
+            .Include(m => m.HomeTeam)
+            .Include(m => m.AwayTeam)
+            .Where(m => m.Stage == MatchStage.Dieciseisavos)
+            .ToListAsync();
+
+        foreach (var m in dieciseisavosMatches)
+        {
+            if (orderByTeamPair.TryGetValue((m.HomeTeam!.Name, m.AwayTeam!.Name), out var order)
+                && m.BracketOrder != order)
+            {
+                m.BracketOrder = order;
+                updated++;
+            }
+        }
+
         if (updated == 0) return;
 
         await context.SaveChangesAsync();
-        logger.LogInformation("Backfilled BracketOrder for {Count} matches (Octavos→Final).", updated);
+        logger.LogInformation("Backfilled BracketOrder for {Count} matches (Dieciseisavos→Final).", updated);
     }
 
     private static async Task SeedTeamsAndMatchesAsync(QuinielaDbContext context, ILogger logger)

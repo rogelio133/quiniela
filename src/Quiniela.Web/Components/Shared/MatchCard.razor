@@ -128,15 +128,16 @@
                 <span class="badge bg-secondary">Sin pronóstico</span>
             }
         </div>
-        @if (OnViewPredictions.HasDelegate)
-        {
-            <button class="mc-view-all-btn"
-                    @onclick="() => OnViewPredictions.InvokeAsync(Match.Id)">
-                <span class="mc-va-icon">👥</span>
-                <span class="mc-va-text">Ver pronósticos de todos</span>
-                <span class="mc-va-arrow">›</span>
-            </button>
-        }
+    }
+
+    @if (OnViewPredictions.HasDelegate && (Match.Status == MatchStatus.Finalizado || IsInProgress))
+    {
+        <button class="mc-view-all-btn"
+                @onclick="() => OnViewPredictions.InvokeAsync(Match.Id)">
+            <span class="mc-va-icon">👥</span>
+            <span class="mc-va-text">Ver pronósticos de todos</span>
+            <span class="mc-va-arrow">›</span>
+        </button>
     }
 
     @* ── Save button ─────────────────────────────────────────── *@

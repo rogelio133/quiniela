@@ -1,0 +1,202 @@
+@page "/pools/{poolId:int}/champion"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PredictionService PredictionService
+@inject ChampionService ChampionService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>¿Quién gana el Mundial? — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Campeón</li>
+        </ol>
+    </nav>
+
+    @if (windowState == ChampionWindowState.Closed)
+    {
+        <div class="champ-locked">
+            @if (myPrediction is null)
+            {
+                <div class="alert alert-secondary text-center">No hiciste tu selección de campeón a tiempo.</div>
+            }
+            else if (isEliminated)
+            {
+                <h4 class="champ-locked-title">JAJA no le atinaste</h4>
+                <span class="fi fi-@myPrediction.Team.FlagCode.ToLower() champ-flag-big champ-flag-eliminated"></span>
+                <p class="champ-locked-team">@myPrediction.Team.Name</p>
+            }
+            else
+            {
+                <h4 class="champ-locked-title">Tu pronóstico es:</h4>
+                <span class="fi fi-@myPrediction.Team.FlagCode.ToLower() champ-flag-big"></span>
+                <p class="champ-locked-team">@myPrediction.Team.Name</p>
+            }
+        </div>
+    }
+    else
+    {
+        <h2 class="champ-title">¿Qué selección consideras que ganará el mundial?</h2>
+        <p class="champ-subtitle">
+            Si le atinas a quien gana el mundial puedes llevarte <b>@pool.PtsChampion</b>   puntos adicionales
+        </p>
+
+        @if (windowState == ChampionWindowState.NotYetOpen)
+        {
+            <div class="alert alert-info">
+                La selección de campeón se abrirá cuando terminen todos los partidos de Dieciseisavos.
+                Mientras tanto, estos son los equipos que siguen con vida.
+            </div>
+        }
+        
+
+        @if (teams.Count == 0)
+        {
+            <p class="text-muted text-center py-4">Aún no hay equipos definidos.</p>
+        }
+        else
+        {
+            <div class="champ-grid">
+                @foreach (var team in teams)
+                {
+                    var isSelected = selectedTeamId == team.Id;
+                    var clickable = windowState == ChampionWindowState.Open;
+                    <div class="champ-cell @(isSelected ? "champ-cell-selected" : "") @(clickable ? "" : "champ-cell-disabled")"
+                         @key="team.Id"
+                         @onclick="() => SelectTeam(team.Id, clickable)">
+                        <span class="fi fi-@team.FlagCode.ToLower() champ-cell-flag"></span>
+                        <span class="champ-cell-name">@(team.Name ?? team.ShortCode)</span>
+                    </div>
+                }
+            </div>
+
+            @if (windowState == ChampionWindowState.Open)
+            {
+                <div class="champ-save-bar">
+                    <button class="btn btn-primary w-100" @onclick="SaveAsync"
+                            disabled="@(isSaving || selectedTeamId is null || selectedTeamId == myPrediction?.TeamId)">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        }
+                        Guardar selección
+                    </button>
+                    @if (saveMessage is not null)
+                    {
+                        <div class="alert alert-success mt-2 mb-0 py-2 text-center">@saveMessage</div>
+                    }
+                    @if (saveError is not null)
+                    {
+                        <div class="alert alert-danger mt-2 mb-0 py-2 text-center">@saveError</div>
+                    }
+                </div>
+            }
+        }
+    }
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+
+    private ChampionWindowState windowState;
+    private List<Team> teams = [];
+    private ChampionPrediction? myPrediction;
+    private int? selectedTeamId;
+    private bool isEliminated;
+
+    private bool isSaving;
+    private string? saveMessage;
+    private string? saveError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var (p, member) = await PredictionService.GetPoolContextAsync(PoolId, currentUserId);
+        pool = p;
+        isMember = member;
+
+        if (pool is not null && isMember)
+            await LoadDataAsync();
+
+        isLoading = false;
+    }
+
+    private async Task LoadDataAsync()
+    {
+        windowState = await ChampionService.GetWindowStateAsync();
+        myPrediction = await ChampionService.GetMyPredictionAsync(currentUserId, PoolId);
+        selectedTeamId = myPrediction?.TeamId;
+
+        if (windowState == ChampionWindowState.Closed)
+        {
+            if (myPrediction is not null)
+                isEliminated = await ChampionService.IsTeamEliminatedAsync(myPrediction.TeamId);
+        }
+        else
+        {
+            teams = await ChampionService.GetEligibleTeamsAsync();
+        }
+    }
+
+    private void SelectTeam(int teamId, bool clickable)
+    {
+        if (!clickable) return;
+        selectedTeamId = teamId;
+        saveMessage = null;
+        saveError = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (selectedTeamId is null) return;
+
+        isSaving = true;
+        saveMessage = null;
+        saveError = null;
+
+        var (success, error) = await ChampionService.UpsertAsync(currentUserId, PoolId, selectedTeamId.Value);
+        if (success)
+        {
+            myPrediction = await ChampionService.GetMyPredictionAsync(currentUserId, PoolId);
+            saveMessage = "Selección guardada ✓";
+        }
+        else
+        {
+            saveError = error;
+        }
+
+        isSaving = false;
+    }
+}

@@ -18,7 +18,7 @@
 | D | [x] | Badge de pronósticos pendientes en NavMenu | 🟡 Media | ~1–2 h | Alto |
 | E | [x] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
 | F | [x] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |
-| H | [ ] | Predicción especial "¿Quién gana el Mundial?" | 🟢 Baja | ~4–6 h | Bajo |
+| H | [x] | Predicción especial "¿Quién gana el Mundial?" | 🟢 Baja | ~5–7 h | Bajo |
 
 **Orden de implementación sugerido:** A → B → C → C1 → C2 → D → E → F → H
 
@@ -1150,17 +1150,52 @@ public async Task<Dictionary<int, int>> GetLastSnapshotPositionsAsync(int poolId
 
 ### Objetivo
 
-Una predicción especial one-shot por sala: cada jugador elige al campeón del torneo. Se cierra en un momento configurable por el admin (antes del inicio de Octavos, por defecto). Vale puntos fijos al acertar.
+Una predicción especial one-shot por sala: cada jugador elige al campeón del torneo. La ventana de captura/edición está atada a los partidos de 16avos y Octavos (no a una fecha fija configurable por el admin). Vale puntos fijos al acertar.
 
 ### Decisiones de producto
 
-| Tema | Decisión sugerida |
+| Tema | Decisión |
 |------|-------------------|
-| ¿Cuándo se cierra? | Al inicio del primer partido de Octavos (configurable) |
-| Puntos por acierto | 10 pts fijos (configurable en `Pool`, nuevo campo `PtsChampion`) |
-| ¿Se puede cambiar? | Sí, hasta el cierre |
+| ¿Cuándo se abre? | Cuando **todos** los partidos de 16avos (Dieciseisavos) están marcados como `Finalizado` |
+| ¿Cuándo se cierra? | Al **inicio (kickoff) del primer partido de Octavos** — no es una fecha configurable manualmente, se calcula de los datos |
+| Puntos por acierto | 10 pts fijos (configurable en `Pool`, campo `PtsChampion`, default 10) |
+| ¿Se puede cambiar? | Sí, en cualquier momento **dentro** de la ventana (abierta → cierre) |
 | Granularidad | Por sala (cada sala tiene su campeón, igual que pronósticos normales) |
-| Recálculo | Manual desde admin, o automático al capturar el resultado de la Final |
+| Recálculo | Automático al capturar el resultado de la Final |
+
+**Nota:** se elimina el campo `ChampionDeadline` manual de la propuesta original — la ventana se deriva 100% del estado de los partidos (`MatchStage.Dieciseisavos` todos finalizados = apertura; `MIN(KickoffUtc)` de `MatchStage.Octavos` = cierre), igual que ya se calculan otros estados derivados en el proyecto (ej. `GetStagesWithMatchesAsync`).
+
+### Ventana de tiempo y estados de la vista
+
+La vista `/pools/{poolId}/champion` tiene **tres estados** según el momento en que se consulta:
+
+**1. Antes de que abra (aún hay partidos de 16avos sin finalizar)**
+
+- No se puede seleccionar ni guardar todavía (sin botón de guardar activo, o vista solo informativa).
+- Se muestra igualmente la grilla de banderas, pero **filtrada** a los equipos que:
+  - ya ganaron su partido de 16avos (pasaron a Octavos), **o**
+  - todavía no juegan su partido de 16avos (siguen con vida, podrían pasar).
+- Se excluyen de la grilla los equipos ya eliminados (perdieron un partido de 16avos ya finalizado).
+
+**2. Ventana abierta (16avos 100% finalizados, antes del kickoff del primer Octavos)**
+
+- Grilla con los 16 equipos clasificados a Octavos (ya no hace falta el filtro del estado 1, todos los 16avos están resueltos).
+- Header grande: **"¿Qué selección consideras que ganará el mundial?"**
+- Subtítulo: **"Si le atinas a quien gana el mundial puedes llevarte 10 puntos adicionales"**
+- Debajo de la grilla, un botón para guardar el resultado.
+- El jugador puede tocar una bandera para seleccionarla y cambiar de selección las veces que quiera mientras la ventana siga abierta.
+
+**3. Ventana cerrada (ya inició el primer partido de Octavos)**
+
+- Ya no se puede modificar la selección.
+- Si el equipo elegido **sigue con vida**: se muestra solo su bandera (grande) con el texto **"Tu pronóstico es:"** seguido de la bandera.
+- Si el equipo elegido **ya fue eliminado**: se muestra la misma bandera pero en **escala de grises**, con el texto **"JAJA no le atinaste"**.
+
+### Grilla de banderas — layout responsivo
+
+- **Desktop:** 4 banderas por fila (`grid-template-columns: repeat(4, 1fr)`).
+- **Mobile:** 2 banderas por fila (`grid-template-columns: repeat(2, 1fr)`).
+- Cada celda: bandera + nombre corto del equipo; celda seleccionada con borde/resaltado distintivo.
 
 ### Esquema nuevo
 
@@ -1184,15 +1219,62 @@ public class ChampionPrediction
 
 Agregar en `Pool`:
 ```csharp
-public int  PtsChampion       { get; set; } = 10;   // puntos por acertar al campeón
-public DateTime? ChampionDeadline { get; set; }     // NULL = abierto
+public int PtsChampion { get; set; } = 10;   // puntos por acertar al campeón
 ```
 
 Migración: `AddChampionPrediction`
 
+### Cálculo de la ventana (nuevo método en ChampionService)
+
+```csharp
+public enum ChampionWindowState { NotYetOpen, Open, Closed }
+
+public async Task<ChampionWindowState> GetWindowStateAsync()
+{
+    var allDieciseisavosFinalized = await db.Matches
+        .Where(m => m.Stage == MatchStage.Dieciseisavos)
+        .AllAsync(m => m.Status == MatchStatus.Finalizado);
+
+    if (!allDieciseisavosFinalized) return ChampionWindowState.NotYetOpen;
+
+    var firstOctavosKickoff = await db.Matches
+        .Where(m => m.Stage == MatchStage.Octavos)
+        .OrderBy(m => m.KickoffUtc)
+        .Select(m => (DateTime?)m.KickoffUtc)
+        .FirstOrDefaultAsync();
+
+    return firstOctavosKickoff is null || DateTime.UtcNow < firstOctavosKickoff
+        ? ChampionWindowState.Open
+        : ChampionWindowState.Closed;
+}
+```
+
+Elegibilidad de equipos en el estado `NotYetOpen` (equipos ya eliminados en 16avos ya finalizados quedan fuera):
+
+```csharp
+public async Task<List<Team>> GetEligibleTeamsAsync()
+{
+    var dieciseisavos = await db.Matches
+        .Where(m => m.Stage == MatchStage.Dieciseisavos)
+        .ToListAsync();
+
+    var eliminated = dieciseisavos
+        .Where(m => m.Status == MatchStatus.Finalizado)
+        .Select(m => m.HomeScore > m.AwayScore ? m.AwayTeamId : m.HomeTeamId)
+        .ToHashSet();
+
+    var allTeamIds = dieciseisavos.SelectMany(m => new[] { m.HomeTeamId, m.AwayTeamId })
+        .Where(id => id != null).Select(id => id!.Value).ToHashSet();
+
+    return await db.Teams.Where(t => allTeamIds.Contains(t.Id) && !eliminated.Contains(t.Id)).ToListAsync();
+}
+```
+
+Eliminación de un equipo ya seleccionado (para el estado `Closed`, mostrar "JAJA no le atinaste"): un equipo está eliminado si perdió cualquier partido de fase eliminatoria ya finalizado (mismo criterio de `WinnerSide` que usa `BracketService`).
+
 ### Vista
 
-`/pools/{poolId}/champion` — lista de selecciones disponibles (solo equipos clasificados a Octavos si el deadline no pasó, o todos si es antes), con botón de selección y confirmación. Al guardar, muestra "Tu pronóstico: 🇲🇽 México".
+`/pools/{poolId}/champion` — implementa los tres estados descritos arriba. Al guardar (solo en estado `Open`), confirma con un mensaje corto y deja el botón visible por si el jugador quiere cambiar su elección.
 
 En Standings, una columna o fila extra "Pronóstico campeón" que muestra el equipo elegido por cada jugador (visible para todos en la sala).
 
@@ -1200,26 +1282,35 @@ En Standings, una columna o fila extra "Pronóstico campeón" que muestra el equ
 
 Cuando se finaliza el partido de la Final, `ScoringService` llama a un método que compara `ChampionPrediction.TeamId` con el ganador de la Final y asigna `PtsChampion` a quien acertó.
 
+### Integración con el Bracket (Módulo C) — banderas en escala de grises
+
+Requisito transversal: en `/bracket`, las banderas de los equipos **eliminados** también deben mostrarse en escala de grises (hoy `BracketMatchCard.razor.css` solo atenúa el texto vía `.bmc-loser`, no la bandera). Agregar `filter: grayscale(1)` a `.bmc-loser .bmc-flag` en `Components/Shared/BracketMatchCard.razor.css`.
+
 ### Archivos a crear / modificar
 
 | Archivo | Cambio |
 |---|---|
 | `Entities/ChampionPrediction.cs` | **Nueva entidad** |
-| `Entities/Pool.cs` | + `PtsChampion`, `ChampionDeadline` |
+| `Entities/Pool.cs` | + `PtsChampion` (sin `ChampionDeadline`, la ventana se calcula) |
 | `Migrations/` | `AddChampionPrediction` |
-| `Services/ChampionService.cs` | **Nuevo** — upsert + recálculo |
-| `Components/Pages/Champion/Index.razor` | **Nueva página** |
+| `Services/ChampionService.cs` | **Nuevo** — `GetWindowStateAsync`, `GetEligibleTeamsAsync`, upsert + recálculo tras la Final |
+| `Components/Pages/Champion/Index.razor(.css)` | **Nueva página** — header/subtítulo, grilla de banderas (4 cols desktop / 2 cols mobile), 3 estados (NotYetOpen/Open/Closed), estado "JAJA no le atinaste" en gris |
 | `Services/ScoringService.cs` | Recálculo tras partido de Final |
 | `Program.cs` | Registrar `ChampionService` |
+| `Components/Shared/BracketMatchCard.razor.css` | Agregar `filter: grayscale(1)` a la bandera del equipo perdedor/eliminado |
 
 ### Criterio de aceptación
 
-- Antes del `ChampionDeadline`: el usuario puede elegir y cambiar su campeón.
-- Después del deadline: solo lectura.
-- Si el admin no configura deadline: queda abierto hasta que se resuelva.
+- Con partidos de 16avos pendientes: no se puede guardar selección; la grilla solo muestra equipos ya clasificados a Octavos o que aún no juegan su 16avo.
+- Con todos los 16avos finalizados y antes del kickoff del primer Octavos: el jugador puede elegir/cambiar su campeón libremente y guardar.
+- Desde el kickoff del primer Octavos en adelante: la selección queda bloqueada (solo lectura).
+- En modo solo-lectura, si el equipo elegido sigue con vida: se muestra "Tu pronóstico es:" + bandera a color.
+- En modo solo-lectura, si el equipo elegido ya fue eliminado: se muestra "JAJA no le atinaste" + bandera en escala de grises.
+- Grilla de banderas: 4 por fila en desktop, 2 por fila en mobile.
 - Al finalizar la Final: se calculan los puntos y se suman al total de cada jugador.
+- En `/bracket`, los equipos eliminados muestran su bandera en escala de grises.
 
-### Estimación: 4–6 horas
+### Estimación: 5–7 horas
 
 ---
 
@@ -1257,4 +1348,4 @@ A (tabs dinámicos, 2h)
                                             └─> H (predicción campeón, 5h)
 ```
 
-Total estimado: **~33–47 horas** de trabajo.
+Total estimado: **~34–48 horas** de trabajo.

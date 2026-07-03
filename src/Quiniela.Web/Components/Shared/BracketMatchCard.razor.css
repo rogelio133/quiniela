@@ -54,6 +54,10 @@
     color: #94A3B8;
 }
 
+.bmc-loser .bmc-flag {
+    filter: grayscale(1);
+}
+
 .bmc-divider {
     height: 1px;
     background: #F1F5F9;

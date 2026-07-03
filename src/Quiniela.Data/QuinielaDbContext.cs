@@ -16,6 +16,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
     public DbSet<PoolMember> PoolMembers => Set<PoolMember>();
     public DbSet<Prediction> Predictions => Set<Prediction>();
     public DbSet<StandingsSnapshot> StandingsSnapshots => Set<StandingsSnapshot>();
+    public DbSet<ChampionPrediction> ChampionPredictions => Set<ChampionPrediction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -117,6 +118,24 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
             e.HasOne(s => s.Match)
                 .WithMany()
                 .HasForeignKey(s => s.MatchId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ChampionPrediction>(e =>
+        {
+            e.HasIndex(c => new { c.UserId, c.PoolId }).IsUnique();
+            // Restrict to avoid multiple cascade paths (Users→Pools→ChampionPredictions AND Users→ChampionPredictions)
+            e.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(c => c.Pool)
+                .WithMany()
+                .HasForeignKey(c => c.PoolId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(c => c.Team)
+                .WithMany()
+                .HasForeignKey(c => c.TeamId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

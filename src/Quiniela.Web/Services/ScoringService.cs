@@ -37,7 +37,28 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
         }
 
         await db.SaveChangesAsync();
+
+        if (match.Stage == MatchStage.Final)
+            await ResolveChampionAsync(db, match);
+
         await SaveSnapshotAsync(db, matchId);
+    }
+
+    private static async Task ResolveChampionAsync(QuinielaDbContext db, Match final)
+    {
+        if (final.HomeTeamId is null || final.AwayTeamId is null) return;
+
+        int championTeamId = final.HomeScore > final.AwayScore ? final.HomeTeamId.Value : final.AwayTeamId.Value;
+
+        var championPredictions = await db.ChampionPredictions.ToListAsync();
+        if (championPredictions.Count == 0) return;
+
+        var poolPts = await db.Pools.ToDictionaryAsync(p => p.Id, p => p.PtsChampion);
+
+        foreach (var cp in championPredictions)
+            cp.Points = cp.TeamId == championTeamId ? poolPts.GetValueOrDefault(cp.PoolId) : 0;
+
+        await db.SaveChangesAsync();
     }
 
     private async Task SaveSnapshotAsync(QuinielaDbContext db, int matchId)

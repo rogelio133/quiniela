@@ -8,6 +8,7 @@ public class Pool
     public int OwnerId { get; set; }
     public int PtsCorrect { get; set; } = 3;
     public int PtsBonusKO { get; set; } = 2;
+    public int PtsChampion { get; set; } = 10;
     public DateTime CreatedAt { get; set; }
 
     public User Owner { get; set; } = null!;

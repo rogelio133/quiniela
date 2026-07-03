@@ -107,15 +107,20 @@ else
             <div class="card">
                 <div class="card-body">
                     <small class="text-muted d-block mb-2">Puntos por jornada</small>
-                    <div class="stats-bar-chart">
-                        @foreach (var day in stats.PointsByDay)
-                        {
-                            var pct = maxDayPoints > 0 ? (day.Points * 100 / maxDayPoints) : 0;
-                            <div class="stats-bar-col" title="@day.Date.ToString("dd/MM"): @day.Points pts">
-                                <div class="stats-bar" style="height: @(pct)%"></div>
-                                <span class="stats-bar-label">@day.Date.ToString("dd/MM")</span>
-                            </div>
-                        }
+                    <div class="stats-bar-chart-wrap">
+                        <div class="stats-bar-chart">
+                            @foreach (var day in stats.PointsByDay)
+                            {
+                                var pct = maxDayPoints > 0 ? (day.Points * 100 / maxDayPoints) : 0;
+                                <div class="stats-bar-col" title="@day.Date.ToString("dd/MM"): @day.Points pts">
+                                    <span class="stats-bar-value">@day.Points</span>
+                                    <div class="stats-bar-track">
+                                        <div class="stats-bar" style="height: @(pct)%"></div>
+                                    </div>
+                                    <span class="stats-bar-label">@day.Date.ToString("dd/MM")</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>

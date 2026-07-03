@@ -66,6 +66,7 @@ builder.Services.AddScoped<KnockoutService>();
 builder.Services.AddScoped<MatchPredictionsService>();
 builder.Services.AddScoped<BracketService>();
 builder.Services.AddScoped<PlayerStatsService>();
+builder.Services.AddScoped<ChampionService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

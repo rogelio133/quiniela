@@ -6,6 +6,7 @@
 
 @inject PoolService PoolService
 @inject StandingsService StandingsService
+@inject ChampionService ChampionService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 
@@ -117,6 +118,12 @@ else
                             <small class="@deltaClass fw-semibold flex-shrink-0" style="font-size:.68rem;">@deltaText</small>
                         </div>
                         <small class="text-muted" style="font-size:.68rem;">@entry.CorrectPredictions ✓ / @entry.TotalPredictions pronósticos</small>
+                        @if (championPicks.TryGetValue(entry.UserId, out var champTeamTop))
+                        {
+                            <small class="d-block text-muted" style="font-size:.65rem;">
+                                👑 <span class="fi fi-@champTeamTop.FlagCode.ToLower()" style="width:14px !important;height:11px !important;border-radius:2px;"></span> @(champTeamTop.ShortCode ?? champTeamTop.Name)
+                            </small>
+                        }
                     </div>
 
                     <div class="text-end flex-shrink-0">
@@ -167,6 +174,12 @@ else
                                     @{ var (deltaClass, deltaText) = DeltaFor(entry.UserId, pos); }
                                     <small class="@deltaClass fw-semibold flex-shrink-0" style="font-size:.68rem;">@deltaText</small>
                                 </div>
+                                @if (championPicks.TryGetValue(entry.UserId, out var champTeamRest))
+                                {
+                                    <small class="d-block text-muted" style="font-size:.65rem;">
+                                        👑 <span class="fi fi-@champTeamRest.FlagCode.ToLower()" style="width:14px !important;height:11px !important;border-radius:2px;"></span> @(champTeamRest.ShortCode ?? champTeamRest.Name)
+                                    </small>
+                                }
                                 <div class="progress mt-1" style="height:3px;border-radius:2px;">
                                     <div class="progress-bar bg-primary"
                                          role="progressbar"
@@ -201,6 +214,7 @@ else
     private int  finalizedCount;
     private List<StandingsService.StandingEntry> standings = [];
     private Dictionary<int, int> previousPositions = [];
+    private Dictionary<int, Team> championPicks = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -226,6 +240,7 @@ else
         finalizedCount     = await StandingsService.GetFinalizedMatchCountAsync();
         standings          = await StandingsService.GetStandingsAsync(PoolId);
         previousPositions  = await StandingsService.GetLastSnapshotPositionsAsync(PoolId);
+        championPicks      = await ChampionService.GetAllPredictionsForPoolAsync(PoolId);
     }
 
     private async Task RefreshAsync()

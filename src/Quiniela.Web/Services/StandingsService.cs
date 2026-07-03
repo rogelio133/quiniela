@@ -40,15 +40,20 @@ public class StandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
             })
             .ToDictionaryAsync(x => x.UserId);
 
+        var championPoints = await db.ChampionPredictions
+            .Where(c => c.PoolId == poolId)
+            .ToDictionaryAsync(c => c.UserId, c => c.Points);
+
         return [.. members
             .Select(m =>
             {
                 aggregates.TryGetValue(m.UserId, out var agg);
+                championPoints.TryGetValue(m.UserId, out var champPts);
                 return new StandingEntry(
                     m.UserId,
                     m.DisplayName,
                     m.ProfilePicturePath,
-                    agg?.TotalPoints ?? 0,
+                    (agg?.TotalPoints ?? 0) + champPts,
                     agg?.CorrectPredictions ?? 0,
                     agg?.TotalPredictions ?? 0);
             })

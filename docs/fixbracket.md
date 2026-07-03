@@ -259,6 +259,71 @@ Philadelphia Stadium (Lincoln Financial Field)
 
 ---
 
+## Error 4 — "Puntos por jornada" (Mis estadísticas) poco legible en mobile
+
+### Síntoma
+
+En `/pools/{poolId}/my-stats` (`Components/Pages/Stats/Index.razor`), la
+tarjeta "Puntos por jornada" muestra una gráfica de barras (una barra por
+día con partidos finalizados). En mobile, con varias jornadas ya jugadas,
+las barras y sus etiquetas de fecha quedan demasiado angostas y pequeñas
+para leerse cómodamente, y el valor exacto de puntos de cada barra solo es
+visible vía el atributo `title` (tooltip de `hover`), que no funciona con
+touch — así que en mobile no hay forma de saber cuántos puntos se hicieron
+en un día dado sin adivinar por la altura de la barra.
+
+### Causa raíz
+
+`Index.razor` (líneas 104-122) renderiza `stats.PointsByDay` dentro de un
+`<div class="stats-bar-chart">`, con un `title="@day.Date...: @day.Points
+pts"` como única forma de exponer el valor exacto (línea 114).
+
+`Index.razor.css` (líneas 15-46):
+
+- `.stats-bar-chart` usa `overflow-x: auto`, pero no hay ninguna señal
+  visual (scroll hint, sombra, flechas) de que el contenido se puede
+  desplazar horizontalmente.
+- `.stats-bar-col` tiene `flex: 1 0 auto; min-width: 18px`, por lo que con
+  muchas jornadas cada columna se comprime al mínimo (18px), dejando barras
+  y separación muy angostas para un dedo/touch target.
+- `.stats-bar-label` usa `font-size: 0.5rem`, ilegible en pantallas
+  pequeñas (por debajo del mínimo recomendado de ~12px/0.75rem).
+- El valor numérico de puntos nunca se imprime en el DOM visible — solo
+  vive en el atributo `title`, que los navegadores mobile no exponen sin un
+  `touchstart`/`long-press` explícito (no implementado aquí).
+
+### Impacto
+
+- Solo afecta la visualización de `/pools/{poolId}/my-stats` en viewports
+  angostos (mobile). No afecta el cálculo de `PlayerStatsService` (los
+  datos de `PointsByDay` ya son correctos, ver discusión de
+  `BestStreak`/`CurrentStreak` más abajo en este documento).
+- Empeora conforme avanza el torneo (más jornadas finalizadas → columnas
+  más angostas).
+
+### Solución propuesta
+
+1. Mostrar el valor de puntos de forma visible (no solo en `title`), por
+   ejemplo como texto pequeño encima de cada barra o en un badge, para no
+   depender de hover/tooltip en touch.
+2. Dar más espacio horizontal a cada columna en mobile — reducir el número
+   de jornadas visibles a la vez (ej. mostrar solo las últimas N y permitir
+   scroll) en vez de comprimir todas las barras a `min-width: 18px`.
+3. Aumentar `.stats-bar-label` a un tamaño legible en mobile (≥0.7rem) y
+   considerar rotar o abreviar la fecha si sigue sin caber.
+4. Agregar una señal visual de que la gráfica se puede desplazar
+   horizontalmente cuando el contenido excede el ancho visible (ej. sombra
+   de scroll (`fade`) en el borde derecho).
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---|---|
+| `src/Quiniela.Web/Components/Pages/Stats/Index.razor` | Mostrar el valor de puntos de forma visible por barra (no solo `title`) |
+| `src/Quiniela.Web/Components/Pages/Stats/Index.razor.css` | Ajustar `.stats-bar-chart`/`.stats-bar-col`/`.stats-bar-label` para mejorar legibilidad y usabilidad en mobile (ancho mínimo de columna, tamaño de fuente, indicador de scroll) |
+
+---
+
 ## Resumen
 
 | # | Hecho | Error | Alcance | Fix propuesto |
@@ -266,5 +331,6 @@ Philadelphia Stadium (Lincoln Financial Field)
 | 1 | [x] | Orden visual Octavos vs. 16avos en `/bracket` | Solo visualización | Extender `ComputeBracketOrders` con matching por nombre de equipo (Opción A) + actualizar `BackfillBracketOrderAsync` |
 | 2 | [x] | "Ver pronósticos de todos" no calcula bien en finalizados | Modal `MatchPredictionsSheet`, partidos finalizados antes del 2026-06-28 | Backfill retroactivo de `PtsResult`/`PtsInstance` para partidos ya finalizados |
 | 3 | [x] | Tab Bracket del admin no muestra venue/fecha | Solo visualización, `/admin` tab Bracket | Mostrar `Venue` + `KickoffUtc` local en el header de cada tarjeta placeholder |
+| 4 | [x] | "Puntos por jornada" poco legible en mobile | Solo visualización, `/pools/{poolId}/my-stats` | Mostrar valor de puntos visible (no solo tooltip) + ajustar CSS de la gráfica de barras para mobile |
 
-Los tres fixes de este documento ya están implementados.
+Los cuatro fixes de este documento ya están implementados.

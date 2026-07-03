@@ -264,8 +264,7 @@ Philadelphia Stadium (Lincoln Financial Field)
 | # | Hecho | Error | Alcance | Fix propuesto |
 |---|---|---|---|---|
 | 1 | [x] | Orden visual Octavos vs. 16avos en `/bracket` | Solo visualización | Extender `ComputeBracketOrders` con matching por nombre de equipo (Opción A) + actualizar `BackfillBracketOrderAsync` |
-| 2 | [ ] | "Ver pronósticos de todos" no calcula bien en finalizados | Modal `MatchPredictionsSheet`, partidos finalizados antes del 2026-06-28 | Backfill retroactivo de `PtsResult`/`PtsInstance` para partidos ya finalizados |
-| 3 | [ ] | Tab Bracket del admin no muestra venue/fecha | Solo visualización, `/admin` tab Bracket | Mostrar `Venue` + `KickoffUtc` local en el header de cada tarjeta placeholder |
+| 2 | [x] | "Ver pronósticos de todos" no calcula bien en finalizados | Modal `MatchPredictionsSheet`, partidos finalizados antes del 2026-06-28 | Backfill retroactivo de `PtsResult`/`PtsInstance` para partidos ya finalizados |
+| 3 | [x] | Tab Bracket del admin no muestra venue/fecha | Solo visualización, `/admin` tab Bracket | Mostrar `Venue` + `KickoffUtc` local en el header de cada tarjeta placeholder |
 
-Este documento es solo diagnóstico y plan — la implementación de los tres
-fixes queda pendiente para un siguiente paso.
+Los tres fixes de este documento ya están implementados.

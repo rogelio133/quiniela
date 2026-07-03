@@ -234,6 +234,52 @@ public static class DbInitializer
         await SeedTeamInfoAsync(context, logger);
         await SeedHistorialAsync(context, logger);
         await SeedUsersAsync(userManager, roleManager, configuration, logger);
+        await BackfillPredictionPointsAsync(context, logger);
+    }
+
+    // Corrige PtsResult/PtsInstance de predicciones en partidos ya finalizados que se calcularon
+    // antes de la migración AddPredictionPointsBreakdown (Módulo 8): quedaron con Points correcto
+    // pero PtsResult/PtsInstance en 0. Recalcula directo aquí (misma lógica que
+    // ScoringService.RecalculateForMatchAsync) en vez de invocar ese servicio, para no generar
+    // StandingsSnapshot fuera de tiempo para partidos históricos (mismo criterio ya aplicado a
+    // snapshots: no se hace backfill retroactivo del historial de posiciones).
+    private static async Task BackfillPredictionPointsAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var predictions = await context.Predictions
+            .Include(p => p.Match)
+            .Include(p => p.Pool)
+            .Where(p => p.Match.Status == MatchStatus.Finalizado
+                     && p.Match.HomeScore != null && p.Match.AwayScore != null)
+            .ToListAsync();
+
+        int updated = 0;
+        foreach (var pred in predictions)
+        {
+            var match = pred.Match;
+            char realOutcome = match.HomeScore > match.AwayScore ? 'H'
+                             : match.HomeScore < match.AwayScore ? 'A'
+                             : 'D';
+
+            bool isKnockout = match.Stage != MatchStage.Grupos;
+
+            int ptsResult = pred.PredOutcome == realOutcome ? pred.Pool.PtsCorrect : 0;
+            int ptsInstance = isKnockout && match.DecidedIn is not null && pred.PredInstance == match.DecidedIn
+                ? pred.Pool.PtsBonusKO
+                : 0;
+
+            if (pred.PtsResult != ptsResult || pred.PtsInstance != ptsInstance)
+            {
+                pred.PtsResult = ptsResult;
+                pred.PtsInstance = ptsInstance;
+                pred.Points = ptsResult + ptsInstance;
+                updated++;
+            }
+        }
+
+        if (updated == 0) return;
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("Backfilled PtsResult/PtsInstance for {Count} predictions.", updated);
     }
 
     private static async Task SeedDieciseisavosAsync(QuinielaDbContext context, ILogger logger)

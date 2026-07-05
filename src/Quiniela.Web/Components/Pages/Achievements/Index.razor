@@ -1,0 +1,218 @@
+@page "/pools/{poolId:int}/achievements"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject StandingsService StandingsService
+@inject AchievementsService AchievementsService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Logros — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    @* ── Breadcrumb ─────────────────────────────────────────── *@
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId/standings">Tabla de posiciones</a></li>
+            <li class="breadcrumb-item active">Logros</li>
+        </ol>
+    </nav>
+
+    @* ── Header ─────────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <div>
+            <h2 class="mb-0 fw-bold">🏆 Logros</h2>
+            <small class="text-muted">@pool.Name</small>
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="ToggleCatalog">
+            @(showCatalog ? "← Volver a vitrina" : "¿Qué significa cada insignia? ℹ️")
+        </button>
+    </div>
+
+    @if (showCatalog)
+    {
+        <p class="text-muted small mb-3">Catálogo completo de insignias. Toca cualquiera para ver su criterio — las que ya obtuviste se ven a color.</p>
+        <div class="ach-grid anim-fade-in-up">
+            @foreach (var badge in AchievementCatalog.All)
+            {
+                var earned = myBadgeKeys.Contains(badge.Key);
+                <div class="ach-cell ach-cat-@badge.Category.ToString().ToLower() @(earned ? "" : "ach-cell-locked")"
+                     @key="badge.Key"
+                     @onclick="() => OpenDetail(badge)">
+                    <span class="ach-cell-icon">@badge.Icon</span>
+                    <span class="ach-cell-name">@badge.Name</span>
+                </div>
+            }
+        </div>
+    }
+    else if (ordered.Count == 0)
+    {
+        <p class="text-muted text-center py-4">No hay jugadores en esta sala.</p>
+    }
+    else
+    {
+        <div class="ach-list">
+            @for (int idx = 0; idx < ordered.Count; idx++)
+            {
+                var (entry, keys) = ordered[idx];
+                var isMe  = entry.UserId == currentUserId;
+                var delay = $"anim-d{Math.Min(idx + 1, 6)}";
+                var earnedBadges = AchievementCatalog.All.Where(b => keys.Contains(b.Key)).ToList();
+
+                <div class="ach-player-card @delay anim-fade-in-up" @key="entry.UserId">
+                    <div class="ach-player-header">
+                        @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+                        {
+                            <img src="@entry.ProfilePicturePath" class="ach-avatar" alt="@entry.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="ach-avatar ach-avatar-fallback">⚽</div>
+                        }
+                        <div class="ach-name-block">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="ach-name">@entry.DisplayName</span>
+                                @if (isMe) { <span class="badge bg-primary" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                            </div>
+                            <span class="ach-count">@keys.Count / @AchievementCatalog.All.Count insignias</span>
+                        </div>
+                    </div>
+
+                    @if (earnedBadges.Count == 0)
+                    {
+                        <p class="ach-empty">Aún no ha ganado ninguna insignia.</p>
+                    }
+                    else
+                    {
+                        <div class="ach-grid">
+                            @foreach (var badge in earnedBadges)
+                            {
+                                var justUnlocked = isMe && seenKeysLoaded && !previouslySeenKeys.Contains(badge.Key);
+                                <div class="ach-cell ach-cat-@badge.Category.ToString().ToLower() @(justUnlocked ? "ach-cell-new" : "")"
+                                     @key="badge.Key"
+                                     @onclick="() => OpenDetail(badge)">
+                                    <span class="ach-cell-icon">@badge.Icon</span>
+                                    <span class="ach-cell-name">@badge.Name</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (sheetOpen && selectedBadge is not null)
+{
+    <div class="ach-sheet-overlay" @onclick="CloseDetail">
+        <div class="ach-sheet-panel" @onclick:stopPropagation="true">
+            <div class="ach-sheet-handle"></div>
+            <div class="ach-sheet-body">
+                <div class="ach-sheet-icon">@selectedBadge.Icon</div>
+                <div class="ach-sheet-name">@selectedBadge.Name</div>
+                <div class="ach-sheet-desc">@selectedBadge.Description</div>
+            </div>
+            <button type="button" class="btn btn-outline-light btn-sm ach-sheet-close" @onclick="CloseDetail">Cerrar</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+    private bool showCatalog;
+
+    private Dictionary<int, List<Achievement>> achievementsByUser = [];
+    private List<(StandingsService.StandingEntry Entry, HashSet<string> Keys)> ordered = [];
+    private HashSet<string> myBadgeKeys = [];
+    private HashSet<string> previouslySeenKeys = [];
+    private bool seenKeysLoaded;
+
+    private bool sheetOpen;
+    private Achievement? selectedBadge;
+
+    private string SeenStorageKey => $"quiniela_ach_seen_{PoolId}_{currentUserId}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        pool     = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+
+        if (pool is not null && isMember)
+            await LoadDataAsync();
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && isMember)
+        {
+            var seenList = await JS.InvokeAsync<string[]>("quiniela.getStoredList", SeenStorageKey);
+            previouslySeenKeys = seenList.ToHashSet();
+            seenKeysLoaded = true;
+            StateHasChanged();
+
+            await JS.InvokeVoidAsync("quiniela.setStoredList", SeenStorageKey, myBadgeKeys.ToArray());
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var standings = await StandingsService.GetStandingsAsync(PoolId);
+        achievementsByUser = await AchievementsService.GetForPoolAsync(PoolId);
+
+        ordered = standings
+            .Select(entry => (
+                Entry: entry,
+                Keys: achievementsByUser.GetValueOrDefault(entry.UserId, []).Select(a => a.Key).ToHashSet()))
+            .OrderByDescending(x => x.Keys.Count)
+            .ThenBy(x => x.Entry.DisplayName)
+            .ToList();
+
+        myBadgeKeys = achievementsByUser.GetValueOrDefault(currentUserId, []).Select(a => a.Key).ToHashSet();
+    }
+
+    private void ToggleCatalog() => showCatalog = !showCatalog;
+
+    private void OpenDetail(Achievement badge)
+    {
+        selectedBadge = badge;
+        sheetOpen = true;
+    }
+
+    private void CloseDetail() => sheetOpen = false;
+}

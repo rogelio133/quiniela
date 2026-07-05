@@ -12,7 +12,7 @@
 |---|--------|----------|----------|---------|--------|
 | I | Gráfica de evolución de posición | 🟡 Media | ~5–6 h | Medio | ✅ Finalizado |
 | J | Head-to-head entre dos jugadores | 🟢 Baja | ~5–7 h | Medio | ✅ Finalizado |
-| K | Achievements / insignias | 🟢 Baja | ~7–9 h | Medio | |
+| K | Achievements / insignias | 🟢 Baja | ~7–9 h | Medio | ✅ Finalizado |
 
 **Orden de implementación sugerido:** I → J → K (I es el que más aprovecha infraestructura ya construida).
 
@@ -207,7 +207,7 @@ Desde `Standings/Index.razor`: un botón "Comparar" que en mobile abre el select
 
 ---
 
-## Módulo K — Achievements / insignias
+## Módulo K — Achievements / insignias ✅ Finalizado
 
 ### Objetivo
 

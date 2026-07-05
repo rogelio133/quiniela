@@ -20,6 +20,9 @@ public static class AchievementCatalog
         new("turtle", "🐢", "Modo tortuga", "Ni un solo acierto de resultado, con al menos 10 pronósticos hechos", AchievementCategory.Ironic),
         new("bipolar", "🎪", "El Bipolar", "Alternó acierto y fallo de resultado en 5 o más partidos consecutivos", AchievementCategory.Ironic),
         new("traitor", "🪦", "El Traidor", "Apostó en contra del equipo que terminó siendo campeón del mundial", AchievementCategory.Ironic),
+        new("last-minute", "⏱️", "Gol Agónico", "Envió el cambio final de su pronóstico a 30 minutos o menos del kickoff, en 2 o más partidos", AchievementCategory.Ironic),
+        new("slot-machine", "🎰", "Modo Tragamonedas", "Cambió su pronóstico 3 veces o más en el mismo partido, en 2 o más partidos distintos", AchievementCategory.Ironic),
+        new("sure-shot", "🗿", "Dicho y Hecho", "Nunca cambió ninguno de sus pronósticos, con al menos 10 hechos", AchievementCategory.Positive),
     ];
 
     public static Achievement Get(string key) => All.First(a => a.Key == key);
@@ -70,6 +73,23 @@ public class AchievementsService(
             .GroupBy(p => p.UserId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        var historyRows = await db.PredictionHistories
+            .Include(h => h.Prediction).ThenInclude(p => p.Match)
+            .Where(h => h.Prediction.PoolId == poolId)
+            .ToListAsync();
+
+        var changesByUser = historyRows
+            .GroupBy(h => h.Prediction.UserId)
+            .ToDictionary(g => g.Key, g => g
+                .GroupBy(h => h.PredictionId)
+                .Select(pg => new
+                {
+                    ChangeCount = pg.Count() - 1, // filas totales - la inicial
+                    FinalChangeAt = pg.Max(h => h.ChangedAt),
+                    pg.First().Prediction.Match.KickoffUtc
+                })
+                .ToList());
+
         var result = new Dictionary<int, List<Achievement>>();
         foreach (var userId in members)
         {
@@ -101,6 +121,17 @@ public class AchievementsService(
             if (championTeamId is not null &&
                 championMatchPredictions.Any(p => p.UserId == userId && BetAgainstChampion(p, championTeamId.Value)))
                 badges.Add(AchievementCatalog.Get("traitor"));
+
+            var changes = changesByUser.GetValueOrDefault(userId, []);
+
+            if (changes.Count(c => c.KickoffUtc - c.FinalChangeAt <= TimeSpan.FromMinutes(30)) >= 2)
+                badges.Add(AchievementCatalog.Get("last-minute"));
+
+            if (changes.Count(c => c.ChangeCount > 2) >= 2)
+                badges.Add(AchievementCatalog.Get("slot-machine"));
+
+            if (changes.Count >= 10 && changes.All(c => c.ChangeCount == 0))
+                badges.Add(AchievementCatalog.Get("sure-shot"));
 
             result[userId] = badges;
         }

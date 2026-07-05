@@ -78,13 +78,25 @@ public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory)
         var now = DateTime.UtcNow;
         if (existing is not null)
         {
+            bool realChange = existing.PredOutcome != outcome || existing.PredInstance != predInstance;
             existing.PredOutcome = outcome;
             existing.PredInstance = predInstance;
             existing.UpdatedAt = now;
+
+            if (realChange)
+                db.PredictionHistories.Add(new PredictionHistory
+                {
+                    PredictionId = existing.Id,
+                    PredOutcome = outcome,
+                    PredInstance = predInstance,
+                    ChangedAt = now
+                });
+
+            await db.SaveChangesAsync();
         }
         else
         {
-            db.Predictions.Add(new Prediction
+            var prediction = new Prediction
             {
                 UserId = userId,
                 PoolId = poolId,
@@ -94,10 +106,20 @@ public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory)
                 Points = 0,
                 CreatedAt = now,
                 UpdatedAt = now
+            };
+            db.Predictions.Add(prediction);
+            await db.SaveChangesAsync(); // necesario para obtener prediction.Id antes de crear el historial
+
+            db.PredictionHistories.Add(new PredictionHistory
+            {
+                PredictionId = prediction.Id,
+                PredOutcome = outcome,
+                PredInstance = predInstance,
+                ChangedAt = now
             });
+            await db.SaveChangesAsync();
         }
 
-        await db.SaveChangesAsync();
         return (true, null);
     }
 

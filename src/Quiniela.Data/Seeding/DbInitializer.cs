@@ -235,6 +235,7 @@ public static class DbInitializer
         await SeedHistorialAsync(context, logger);
         await SeedUsersAsync(userManager, roleManager, configuration, logger);
         await BackfillPredictionPointsAsync(context, logger);
+        await BackfillStandingsSnapshotsAsync(context, logger);
     }
 
     // Corrige PtsResult/PtsInstance de predicciones en partidos ya finalizados que se calcularon
@@ -280,6 +281,112 @@ public static class DbInitializer
 
         await context.SaveChangesAsync();
         logger.LogInformation("Backfilled PtsResult/PtsInstance for {Count} predictions.", updated);
+    }
+
+    // Corrige StandingsSnapshot rows guardados con la lógica vieja de ScoringService.SaveSnapshotAsync
+    // (docs/fixes.md Fix 3), que calculaba cada snapshot con el standings "de hoy" en vez del standings
+    // acotado al KickoffUtc del propio partido — esto hacía que corregir cualquier resultado reescribiera
+    // snapshots viejos con la posición casi-final, aplanando la gráfica de evolución. Recalcula, para cada
+    // snapshot ya existente, el standings tal como era hasta el KickoffUtc de su partido (misma fórmula que
+    // StandingsService.GetStandingsAsync/ComputePositions, reimplementada aquí en vez de invocar el servicio
+    // por la misma razón que BackfillPredictionPointsAsync: Quiniela.Data no depende de Quiniela.Web).
+    private static async Task BackfillStandingsSnapshotsAsync(QuinielaDbContext context, ILogger logger)
+    {
+        var snapshotKeys = await context.StandingsSnapshots
+            .Select(s => new { s.PoolId, s.MatchId })
+            .Distinct()
+            .ToListAsync();
+
+        if (snapshotKeys.Count == 0) return;
+
+        var finalKickoff = await context.Matches
+            .Where(m => m.Stage == MatchStage.Final)
+            .Select(m => (DateTime?)m.KickoffUtc)
+            .FirstOrDefaultAsync();
+
+        int updated = 0;
+
+        foreach (var poolGroup in snapshotKeys.GroupBy(x => x.PoolId))
+        {
+            int poolId = poolGroup.Key;
+            var matchIds = poolGroup.Select(x => x.MatchId).ToList();
+
+            var members = await context.PoolMembers
+                .Where(m => m.PoolId == poolId)
+                .Select(m => m.UserId)
+                .ToListAsync();
+
+            var kickoffsByMatch = await context.Matches
+                .Where(m => matchIds.Contains(m.Id))
+                .Select(m => new { m.Id, m.KickoffUtc })
+                .ToDictionaryAsync(x => x.Id, x => x.KickoffUtc);
+
+            foreach (var matchId in matchIds.OrderBy(id => kickoffsByMatch[id]))
+            {
+                var asOf = kickoffsByMatch[matchId];
+
+                var aggregates = await context.Predictions
+                    .Where(p => p.PoolId == poolId && p.Match.KickoffUtc <= asOf)
+                    .GroupBy(p => p.UserId)
+                    .Select(g => new
+                    {
+                        UserId = g.Key,
+                        TotalPoints = g.Sum(p => p.Points),
+                        CorrectPredictions = g.Count(p => p.PtsResult > 0)
+                    })
+                    .ToDictionaryAsync(x => x.UserId);
+
+                bool includeChampion = finalKickoff is not null && finalKickoff.Value <= asOf;
+                var championPoints = includeChampion
+                    ? await context.ChampionPredictions.Where(c => c.PoolId == poolId).ToDictionaryAsync(c => c.UserId, c => c.Points)
+                    : [];
+
+                var ranked = members
+                    .Select(uid =>
+                    {
+                        aggregates.TryGetValue(uid, out var agg);
+                        championPoints.TryGetValue(uid, out var champPts);
+                        return (UserId: uid, TotalPoints: (agg?.TotalPoints ?? 0) + champPts, Correct: agg?.CorrectPredictions ?? 0);
+                    })
+                    .OrderByDescending(e => e.TotalPoints)
+                    .ThenByDescending(e => e.Correct)
+                    .ToList();
+
+                var positionByUser = new Dictionary<int, int>();
+                var pointsByUser = new Dictionary<int, int>();
+                for (int i = 0; i < ranked.Count; i++)
+                {
+                    int position = i == 0 ? 1
+                        : ranked[i].TotalPoints == ranked[i - 1].TotalPoints && ranked[i].Correct == ranked[i - 1].Correct
+                            ? positionByUser[ranked[i - 1].UserId]
+                            : i + 1;
+                    positionByUser[ranked[i].UserId] = position;
+                    pointsByUser[ranked[i].UserId] = ranked[i].TotalPoints;
+                }
+
+                var rows = await context.StandingsSnapshots
+                    .Where(s => s.PoolId == poolId && s.MatchId == matchId)
+                    .ToListAsync();
+
+                foreach (var row in rows)
+                {
+                    if (!positionByUser.TryGetValue(row.UserId, out var correctPosition)) continue;
+                    var correctPoints = pointsByUser[row.UserId];
+
+                    if (row.Points != correctPoints || row.Position != correctPosition)
+                    {
+                        row.Points = correctPoints;
+                        row.Position = correctPosition;
+                        updated++;
+                    }
+                }
+            }
+        }
+
+        if (updated == 0) return;
+
+        await context.SaveChangesAsync();
+        logger.LogInformation("Backfilled {Count} standings snapshot rows to use kickoff-bounded standings.", updated);
     }
 
     private static async Task SeedDieciseisavosAsync(QuinielaDbContext context, ILogger logger)

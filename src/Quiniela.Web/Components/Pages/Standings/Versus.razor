@@ -1,0 +1,279 @@
+@page "/pools/{poolId:int}/standings/vs"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject HeadToHeadService HeadToHeadService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Comparación — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else if (playerA is null || playerB is null)
+{
+    <div class="alert alert-info">
+        Elige dos jugadores desde la Tabla de posiciones para compararlos.
+        <a href="/pools/@PoolId/standings" class="alert-link ms-2">Ir a Tabla de posiciones</a>
+    </div>
+}
+else
+{
+    @* ── Breadcrumb ─────────────────────────────────────────── *@
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId/standings">Tabla de posiciones</a></li>
+            <li class="breadcrumb-item active">Comparar</li>
+        </ol>
+    </nav>
+
+    @* ── Sticky player header ────────────────────────────────── *@
+    <div class="h2h-header">
+        <div class="h2h-player">
+            @if (!string.IsNullOrEmpty(playerA.ProfilePicturePath))
+            {
+                <img src="@playerA.ProfilePicturePath" class="h2h-avatar" alt="@playerA.DisplayName" />
+            }
+            else
+            {
+                <div class="h2h-avatar h2h-avatar-fallback">⚽</div>
+            }
+            <span class="h2h-player-name">@playerA.DisplayName</span>
+        </div>
+        <span class="h2h-vs-badge">VS</span>
+        <div class="h2h-player h2h-player-right">
+            <span class="h2h-player-name">@playerB.DisplayName</span>
+            @if (!string.IsNullOrEmpty(playerB.ProfilePicturePath))
+            {
+                <img src="@playerB.ProfilePicturePath" class="h2h-avatar" alt="@playerB.DisplayName" />
+            }
+            else
+            {
+                <div class="h2h-avatar h2h-avatar-fallback">⚽</div>
+            }
+        </div>
+    </div>
+
+    @if (rows.Count == 0)
+    {
+        <div class="alert alert-info mt-3">Sin partidos para comparar.</div>
+    }
+    else
+    {
+        @* ── Mobile: stacked cards ────────────────────────────── *@
+        <div class="h2h-list">
+            @for (int i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var (cellA, cellB) = BuildCells(row);
+                var oneSided = row.PredA is null || row.PredB is null;
+                var delay = $"anim-d{(i % 6) + 1}";
+
+                <div class="h2h-card @delay anim-fade-in-up @(oneSided ? "h2h-card-onesided" : "")" @key="row.MatchId">
+                    <div class="h2h-card-header">
+                        <span class="h2h-card-match">@row.MatchLabel</span>
+                        <span class="h2h-card-date">@FormatKickoff(row.KickoffUtc)</span>
+                    </div>
+                    <div class="h2h-card-body">
+                        @RenderCell(cellA)
+                        <span class="h2h-card-vs">VS</span>
+                        @RenderCell(cellB)
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ── Desktop: two-column table ────────────────────────── *@
+        <table class="h2h-table">
+            <thead>
+                <tr>
+                    <th>Partido</th>
+                    <th>@playerA.DisplayName</th>
+                    <th>@playerB.DisplayName</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in rows)
+                {
+                    var (cellA, cellB) = BuildCells(row);
+                    var oneSided = row.PredA is null || row.PredB is null;
+
+                    <tr class="@(oneSided ? "h2h-row-onesided" : "")" @key="row.MatchId">
+                        <td class="h2h-td-match">
+                            <span class="h2h-td-match-label">@row.MatchLabel</span>
+                            <span class="h2h-td-match-date">@FormatKickoff(row.KickoffUtc)</span>
+                        </td>
+                        <td>@RenderCell(cellA)</td>
+                        <td>@RenderCell(cellB)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @* ── Sticky totals bar ────────────────────────────────── *@
+        <div class="h2h-totals-bar">
+            <div class="h2h-totals-row">
+                <span class="h2h-totals-pts" id="h2h-total-a">0</span>
+                <span class="h2h-totals-label">pts</span>
+                <span class="h2h-totals-label">pts</span>
+                <span class="h2h-totals-pts" id="h2h-total-b">0</span>
+            </div>
+            <div class="h2h-totals-sub">
+                <span><span id="h2h-wins-a">0</span> ganados</span>
+                <span>•</span>
+                <span><span id="h2h-ties">0</span> empates</span>
+                <span>•</span>
+                <span><span id="h2h-wins-b">0</span> ganados</span>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "a")] public int? A { get; set; }
+    [SupplyParameterFromQuery(Name = "b")] public int? B { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+    private TimeZoneInfo clientTz = TimeZoneInfo.Utc;
+
+    private User? playerA;
+    private User? playerB;
+    private List<HeadToHeadService.H2HRow> rows = [];
+
+    private int totalA, totalB, winsA, winsB, ties;
+    private bool totalsAnimated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        pool     = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+
+        if (pool is not null && isMember)
+            await LoadDataAsync();
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
+            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { clientTz = TimeZoneInfo.Utc; }
+            StateHasChanged();
+        }
+
+        if (!totalsAnimated && playerA is not null && playerB is not null && rows.Count > 0)
+        {
+            totalsAnimated = true;
+            await JS.InvokeVoidAsync("quiniela.countUp", "h2h-total-a", totalA, 700);
+            await JS.InvokeVoidAsync("quiniela.countUp", "h2h-total-b", totalB, 700);
+            await JS.InvokeVoidAsync("quiniela.countUp", "h2h-wins-a", winsA, 700);
+            await JS.InvokeVoidAsync("quiniela.countUp", "h2h-wins-b", winsB, 700);
+            await JS.InvokeVoidAsync("quiniela.countUp", "h2h-ties", ties, 700);
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (A is null || B is null || A == B) return;
+
+        var memberA = pool!.Members.FirstOrDefault(m => m.UserId == A);
+        var memberB = pool!.Members.FirstOrDefault(m => m.UserId == B);
+        if (memberA is null || memberB is null) return;
+
+        playerA = memberA.User;
+        playerB = memberB.User;
+        rows = await HeadToHeadService.CompareAsync(PoolId, A.Value, B.Value);
+
+        var comparable = rows.Where(r => r.PredA is not null && r.PredB is not null).ToList();
+        totalA = rows.Sum(r => r.PtsA);
+        totalB = rows.Sum(r => r.PtsB);
+        winsA  = comparable.Count(r => r.PtsA > r.PtsB);
+        winsB  = comparable.Count(r => r.PtsB > r.PtsA);
+        ties   = comparable.Count(r => r.PtsA == r.PtsB);
+    }
+
+    private record CellVm(bool HasPrediction, bool IsDraw, string? FlagCode, string? Code, int Points, bool IsWinner);
+
+    private static (CellVm A, CellVm B) BuildCells(HeadToHeadService.H2HRow r)
+    {
+        bool both  = r.PredA is not null && r.PredB is not null;
+        bool aWins = both && r.PtsA > r.PtsB;
+        bool bWins = both && r.PtsB > r.PtsA;
+
+        static CellVm Build(char? pred, int pts, bool isWinner, string? homeFlag, string? homeCode, string? awayFlag, string? awayCode)
+        {
+            if (pred is null) return new CellVm(false, false, null, null, 0, false);
+            bool isDraw = pred == 'D';
+            var flag = pred == 'H' ? homeFlag : pred == 'A' ? awayFlag : null;
+            var code = pred == 'H' ? homeCode : pred == 'A' ? awayCode : null;
+            return new CellVm(true, isDraw, flag, code, pts, isWinner);
+        }
+
+        var a = Build(r.PredA, r.PtsA, aWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode);
+        var b = Build(r.PredB, r.PtsB, bWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode);
+        return (a, b);
+    }
+
+    private RenderFragment RenderCell(CellVm cell) => @<div class="h2h-cell">
+    @if (!cell.HasPrediction)
+    {
+        <span class="h2h-cell-none">—</span>
+    }
+    else if (cell.IsDraw)
+    {
+        <span class="h2h-pill @(cell.IsWinner ? "h2h-pill-win" : "")">🤝 Empate</span>
+    }
+    else
+    {
+        <span class="h2h-pill @(cell.IsWinner ? "h2h-pill-win" : "")">
+            @if (!string.IsNullOrEmpty(cell.FlagCode))
+            {
+                <span class="fi fi-@cell.FlagCode.ToLower() h2h-pill-flag"></span>
+            }
+            @cell.Code
+        </span>
+    }
+    @if (cell.HasPrediction)
+    {
+        <span class="h2h-cell-pts @(cell.Points > 0 ? "h2h-cell-pts-pos" : "")">@(cell.Points > 0 ? $"+{cell.Points}" : "0")</span>
+    }
+</div>;
+
+    private string FormatKickoff(DateTime kickoffUtc)
+    {
+        var local = TimeZoneInfo.ConvertTimeFromUtc(kickoffUtc, clientTz);
+        return local.ToString("dd MMM • HH:mm", new CultureInfo("es-MX")).ToUpperInvariant();
+    }
+}

@@ -42,16 +42,27 @@ else
             <h2 class="mb-0 fw-bold">🏆 Tabla de posiciones</h2>
             <small class="text-muted">@pool.Name</small>
         </div>
-        <button class="btn btn-outline-secondary btn-sm"
-                @onclick="RefreshAsync"
-                disabled="@isRefreshing">
-            @if (isRefreshing)
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <a href="/pools/@PoolId/standings/history" class="btn btn-outline-secondary btn-sm">
+                📈 Ver evolución
+            </a>
+            @if (standings.Count >= 2)
             {
-                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="OpenComparePicker">
+                    🆚 Comparar
+                </button>
             }
-            else { <span>🔄</span> }
-            Actualizar
-        </button>
+            <button class="btn btn-outline-secondary btn-sm"
+                    @onclick="RefreshAsync"
+                    disabled="@isRefreshing">
+                @if (isRefreshing)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                }
+                else { <span>🔄</span> }
+                Actualizar
+            </button>
+        </div>
     </div>
 
     @* ── Context strip ───────────────────────────────────────── *@
@@ -203,6 +214,42 @@ else
     }
 }
 
+@if (comparePickerOpen)
+{
+    <div class="cmp-sheet-overlay" @onclick="CloseComparePicker">
+        <div class="cmp-sheet-panel" @onclick:stopPropagation="true">
+            <div class="cmp-sheet-handle"></div>
+            <div class="cmp-sheet-title">Elige dos jugadores para comparar</div>
+            <div class="cmp-sheet-list">
+                @foreach (var entry in standings)
+                {
+                    var role = pickA == entry.UserId ? 1 : (pickB == entry.UserId ? 2 : 0);
+                    <div class="cmp-sheet-row @(role == 1 ? "cmp-sheet-row-a" : role == 2 ? "cmp-sheet-row-b" : "")"
+                         @key="entry.UserId"
+                         @onclick="() => TogglePick(entry.UserId)">
+                        @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+                        {
+                            <img src="@entry.ProfilePicturePath" class="cmp-sheet-avatar" alt="@entry.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="cmp-sheet-avatar cmp-sheet-avatar-fallback">⚽</div>
+                        }
+                        <span class="cmp-sheet-name">@entry.DisplayName</span>
+                        @if (role == 1) { <span class="cmp-sheet-tag cmp-sheet-tag-a">1</span> }
+                        else if (role == 2) { <span class="cmp-sheet-tag cmp-sheet-tag-b">2</span> }
+                    </div>
+                }
+            </div>
+            <button type="button" class="btn btn-primary w-100 cmp-sheet-go"
+                    disabled="@(pickA is null || pickB is null)"
+                    @onclick="GoToComparison">
+                Comparar
+            </button>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public int PoolId { get; set; }
 
@@ -215,6 +262,10 @@ else
     private List<StandingsService.StandingEntry> standings = [];
     private Dictionary<int, int> previousPositions = [];
     private Dictionary<int, Team> championPicks = [];
+
+    private bool comparePickerOpen;
+    private int? pickA;
+    private int? pickB;
 
     protected override async Task OnInitializedAsync()
     {
@@ -272,6 +323,30 @@ else
     }
 
     private static int PointsPct(int pts, int max) => max > 0 ? (int)(pts * 100.0 / max) : 0;
+
+    private void OpenComparePicker()
+    {
+        pickA = null;
+        pickB = null;
+        comparePickerOpen = true;
+    }
+
+    private void CloseComparePicker() => comparePickerOpen = false;
+
+    private void TogglePick(int userId)
+    {
+        if (pickA == userId) pickA = null;
+        else if (pickB == userId) pickB = null;
+        else if (pickA is null) pickA = userId;
+        else if (pickB is null) pickB = userId;
+        else pickB = userId;
+    }
+
+    private void GoToComparison()
+    {
+        if (pickA is null || pickB is null) return;
+        NavigationManager.NavigateTo($"/pools/{PoolId}/standings/vs?a={pickA}&b={pickB}");
+    }
 
     private (string CssClass, string Text) DeltaFor(int userId, int currentPos)
     {

@@ -21,15 +21,28 @@ public class StandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
     public async Task<List<StandingEntry>> GetStandingsAsync(int poolId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
+        return await GetStandingsAsync(db, poolId, asOfKickoffUtc: null);
+    }
 
+    /// <summary>
+    /// Same as <see cref="GetStandingsAsync(int)"/> but usable with a caller-owned db context, and
+    /// optionally bounded to only count predictions for matches kicked off at or before <paramref name="asOfKickoffUtc"/>.
+    /// Used by <see cref="ScoringService"/> to compute "standings as of match X" for historical snapshots,
+    /// as opposed to "standings as of today".
+    /// </summary>
+    public async Task<List<StandingEntry>> GetStandingsAsync(QuinielaDbContext db, int poolId, DateTime? asOfKickoffUtc)
+    {
         var members = await db.PoolMembers
             .Where(m => m.PoolId == poolId)
             .Select(m => new { m.UserId, m.User.DisplayName, m.User.ProfilePicturePath })
             .ToListAsync();
 
+        var predictionsQuery = db.Predictions.Where(p => p.PoolId == poolId);
+        if (asOfKickoffUtc is not null)
+            predictionsQuery = predictionsQuery.Where(p => p.Match.KickoffUtc <= asOfKickoffUtc.Value);
+
         // Aggregate in SQL: SUM(Points), COUNT(Points > 0), COUNT(*)
-        var aggregates = await db.Predictions
-            .Where(p => p.PoolId == poolId)
+        var aggregates = await predictionsQuery
             .GroupBy(p => p.UserId)
             .Select(g => new
             {
@@ -40,9 +53,17 @@ public class StandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
             })
             .ToDictionaryAsync(x => x.UserId);
 
-        var championPoints = await db.ChampionPredictions
-            .Where(c => c.PoolId == poolId)
-            .ToDictionaryAsync(c => c.UserId, c => c.Points);
+        // Champion points only ever exist once the Final match is finalized; when bounding by
+        // date, only count them if the Final's kickoff already happened by that point in time.
+        bool includeChampionPoints = asOfKickoffUtc is null || await db.Matches
+            .Where(m => m.Stage == MatchStage.Final && m.KickoffUtc <= asOfKickoffUtc.Value)
+            .AnyAsync();
+
+        var championPoints = includeChampionPoints
+            ? await db.ChampionPredictions
+                .Where(c => c.PoolId == poolId)
+                .ToDictionaryAsync(c => c.UserId, c => c.Points)
+            : [];
 
         return [.. members
             .Select(m =>

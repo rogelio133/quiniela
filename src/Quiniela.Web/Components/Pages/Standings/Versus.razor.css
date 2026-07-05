@@ -67,11 +67,59 @@
     animation: pulseGold 1.8s ease-in-out infinite;
 }
 
+/* ── Accordion per fase ──────────────────────────────────────── */
+.h2h-stage-item {
+    border-radius: var(--q-r, 14px);
+    border: 1px solid var(--q-border, #E2E8F0);
+    overflow: hidden;
+    box-shadow: var(--q-sh-sm, 0 1px 4px rgba(0,0,0,.05));
+    background: var(--q-surface, #fff);
+}
+
+.h2h-stage-btn {
+    font-size: 0.88rem;
+    padding: 13px 14px;
+    background: var(--q-surface, #fff);
+    border-radius: 0 !important;
+    transition: background-color 0.2s ease;
+}
+
+.h2h-stage-btn:not(.collapsed) {
+    background: #F0F5FF;
+    color: var(--q-blue, #1A56DB);
+    box-shadow: none;
+    border-bottom: 1px solid #DBEAFE;
+}
+
+.h2h-stage-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--q-text);
+    letter-spacing: 0.04em;
+    flex: 1;
+}
+
+.h2h-stage-btn:not(.collapsed) .h2h-stage-title {
+    color: var(--q-blue, #1A56DB);
+}
+
+.h2h-stage-count {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94A3B8;
+    background: #F1F5F9;
+    border-radius: 20px;
+    padding: 3px 9px;
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+
 /* ── Match cards (mobile) ───────────────────────────────────── */
 .h2h-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 12px;
 }
 
 .h2h-card {

@@ -76,55 +76,78 @@ else
     }
     else
     {
-        @* ── Mobile: stacked cards ────────────────────────────── *@
-        <div class="h2h-list">
-            @for (int i = 0; i < rows.Count; i++)
+        @* ── Accordion per fase ─────────────────────────────────── *@
+        <div class="accordion h2h-accordion" id="accordion-h2h">
+            @foreach (var group in stageGroups)
             {
-                var row = rows[i];
-                var (cellA, cellB) = BuildCells(row);
-                var oneSided = row.PredA is null || row.PredB is null;
-                var delay = $"anim-d{(i % 6) + 1}";
+                var isOpen = openStages.Contains(group.Stage);
 
-                <div class="h2h-card @delay anim-fade-in-up @(oneSided ? "h2h-card-onesided" : "")" @key="row.MatchId">
-                    <div class="h2h-card-header">
-                        <span class="h2h-card-match">@row.MatchLabel</span>
-                        <span class="h2h-card-date">@FormatKickoff(row.KickoffUtc)</span>
-                    </div>
-                    <div class="h2h-card-body">
-                        @RenderCell(cellA)
-                        <span class="h2h-card-vs">VS</span>
-                        @RenderCell(cellB)
+                <div class="accordion-item h2h-stage-item mb-2" @key="group.Stage">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button h2h-stage-btn @(isOpen ? "" : "collapsed")"
+                                type="button"
+                                @onclick="() => ToggleStage(group.Stage)">
+                            <span class="h2h-stage-title">@group.Label</span>
+                            <span class="h2h-stage-count">@group.Rows.Count</span>
+                        </button>
+                    </h2>
+
+                    <div class="accordion-collapse collapse @(isOpen ? "show" : "")">
+                        <div class="accordion-body p-0">
+                            @* ── Mobile: stacked cards ────────────────── *@
+                            <div class="h2h-list">
+                                @for (int i = 0; i < group.Rows.Count; i++)
+                                {
+                                    var row = group.Rows[i];
+                                    var (cellA, cellB) = BuildCells(row);
+                                    var oneSided = row.PredA is null || row.PredB is null;
+                                    var delay = $"anim-d{(i % 6) + 1}";
+
+                                    <div class="h2h-card @delay anim-fade-in-up @(oneSided ? "h2h-card-onesided" : "")" @key="row.MatchId">
+                                        <div class="h2h-card-header">
+                                            <span class="h2h-card-match">@row.MatchLabel</span>
+                                            <span class="h2h-card-date">@FormatKickoff(row.KickoffUtc)</span>
+                                        </div>
+                                        <div class="h2h-card-body">
+                                            @RenderCell(cellA)
+                                            <span class="h2h-card-vs">VS</span>
+                                            @RenderCell(cellB)
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            @* ── Desktop: two-column table ────────────── *@
+                            <table class="h2h-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partido</th>
+                                        <th>@playerA.DisplayName</th>
+                                        <th>@playerB.DisplayName</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in group.Rows)
+                                    {
+                                        var (cellA, cellB) = BuildCells(row);
+                                        var oneSided = row.PredA is null || row.PredB is null;
+
+                                        <tr class="@(oneSided ? "h2h-row-onesided" : "")" @key="row.MatchId">
+                                            <td class="h2h-td-match">
+                                                <span class="h2h-td-match-label">@row.MatchLabel</span>
+                                                <span class="h2h-td-match-date">@FormatKickoff(row.KickoffUtc)</span>
+                                            </td>
+                                            <td>@RenderCell(cellA)</td>
+                                            <td>@RenderCell(cellB)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             }
         </div>
-
-        @* ── Desktop: two-column table ────────────────────────── *@
-        <table class="h2h-table">
-            <thead>
-                <tr>
-                    <th>Partido</th>
-                    <th>@playerA.DisplayName</th>
-                    <th>@playerB.DisplayName</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var row in rows)
-                {
-                    var (cellA, cellB) = BuildCells(row);
-                    var oneSided = row.PredA is null || row.PredB is null;
-
-                    <tr class="@(oneSided ? "h2h-row-onesided" : "")" @key="row.MatchId">
-                        <td class="h2h-td-match">
-                            <span class="h2h-td-match-label">@row.MatchLabel</span>
-                            <span class="h2h-td-match-date">@FormatKickoff(row.KickoffUtc)</span>
-                        </td>
-                        <td>@RenderCell(cellA)</td>
-                        <td>@RenderCell(cellB)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
 
         @* ── Sticky totals bar ────────────────────────────────── *@
         <div class="h2h-totals-bar">
@@ -160,6 +183,20 @@ else
     private User? playerA;
     private User? playerB;
     private List<HeadToHeadService.H2HRow> rows = [];
+
+    private static readonly (MatchStage Stage, string Label)[] StageOrder =
+    [
+        (MatchStage.Grupos,        "Grupos"),
+        (MatchStage.Dieciseisavos, "Dieciseisavos"),
+        (MatchStage.Octavos,       "Octavos"),
+        (MatchStage.Cuartos,       "Cuartos"),
+        (MatchStage.Semifinal,     "Semifinal"),
+        (MatchStage.TercerLugar,   "Tercer Lugar"),
+        (MatchStage.Final,         "Final"),
+    ];
+
+    private List<(MatchStage Stage, string Label, List<HeadToHeadService.H2HRow> Rows)> stageGroups = [];
+    private HashSet<MatchStage> openStages = [];
 
     private int totalA, totalB, winsA, winsB, ties;
     private bool totalsAnimated;
@@ -222,6 +259,22 @@ else
         winsA  = comparable.Count(r => r.PtsA > r.PtsB);
         winsB  = comparable.Count(r => r.PtsB > r.PtsA);
         ties   = comparable.Count(r => r.PtsA == r.PtsB);
+
+        stageGroups = [.. StageOrder
+            .Select(so => (so.Stage, so.Label, Rows: rows
+                .Where(r => r.Stage == so.Stage)
+                .OrderByDescending(r => r.KickoffUtc)
+                .ToList()))
+            .Where(g => g.Rows.Count > 0)];
+
+        if (stageGroups.Count > 0)
+            openStages.Add(stageGroups[^1].Stage);
+    }
+
+    private void ToggleStage(MatchStage stage)
+    {
+        if (!openStages.Remove(stage))
+            openStages.Add(stage);
     }
 
     private record CellVm(bool HasPrediction, bool IsDraw, string? FlagCode, string? Code, int Points, bool IsWinner);

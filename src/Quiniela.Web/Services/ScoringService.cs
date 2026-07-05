@@ -69,6 +69,10 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
             .Distinct()
             .ToListAsync();
 
+        await db.StandingsSnapshots
+            .Where(s => s.MatchId == matchId && poolIds.Contains(s.PoolId))
+            .ExecuteDeleteAsync();
+
         var now = DateTime.UtcNow;
         foreach (var poolId in poolIds)
         {

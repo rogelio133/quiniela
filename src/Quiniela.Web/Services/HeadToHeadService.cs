@@ -8,6 +8,7 @@ public class HeadToHeadService(IDbContextFactory<QuinielaDbContext> dbFactory)
 {
     public record H2HRow(
         int MatchId,
+        MatchStage Stage,
         string MatchLabel,
         DateTime KickoffUtc,
         string? HomeFlagCode, string? HomeCode,
@@ -46,6 +47,7 @@ public class HeadToHeadService(IDbContextFactory<QuinielaDbContext> dbFactory)
             var predB = preds.FirstOrDefault(p => p.MatchId == m.Id && p.UserId == userBId);
             return new H2HRow(
                 m.Id,
+                m.Stage,
                 $"{m.HomeTeam?.ShortCode ?? m.HomeSlotLabel ?? "?"} vs {m.AwayTeam?.ShortCode ?? m.AwaySlotLabel ?? "?"}",
                 m.KickoffUtc,
                 m.HomeTeam?.FlagCode, m.HomeTeam?.ShortCode ?? m.HomeTeam?.Name,

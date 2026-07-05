@@ -94,22 +94,21 @@ else
                         var pts    = string.Join(" ", points.Select(p =>
                             $"{p.X.ToString(CultureInfo.InvariantCulture)},{p.Y.ToString(CultureInfo.InvariantCulture)}"));
 
-                        <svg class="ph-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <polyline class="ph-line"
-                                      points="@pts"
-                                      style="--ph-len:@len.ToString(CultureInfo.InvariantCulture)px; stroke-dasharray:@len.ToString(CultureInfo.InvariantCulture);" />
+                        <div class="ph-chart">
+                            <svg class="ph-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                <polyline class="ph-line"
+                                          points="@pts"
+                                          style="--ph-len:@len.ToString(CultureInfo.InvariantCulture)px; stroke-dasharray:@len.ToString(CultureInfo.InvariantCulture);" />
+                            </svg>
                             @for (int i = 0; i < points.Count; i++)
                             {
                                 var p = points[i];
                                 var sp = series[i];
-                                <circle class="ph-point"
-                                        cx="@p.X.ToString(CultureInfo.InvariantCulture)"
-                                        cy="@p.Y.ToString(CultureInfo.InvariantCulture)"
-                                        r="3"
-                                        style="animation-delay:@((i * 0.05).ToString("0.00", CultureInfo.InvariantCulture))s;"
-                                        @onclick="() => OpenDetail(entry.DisplayName, sp)" />
+                                <div class="ph-point"
+                                     style="left:@(p.X.ToString(CultureInfo.InvariantCulture))%; top:@(p.Y.ToString(CultureInfo.InvariantCulture))%; animation-delay:@((i * 0.05).ToString("0.00", CultureInfo.InvariantCulture))s;"
+                                     @onclick="() => OpenDetail(entry.DisplayName, sp)"></div>
                             }
-                        </svg>
+                        </div>
                     }
                 </div>
             }

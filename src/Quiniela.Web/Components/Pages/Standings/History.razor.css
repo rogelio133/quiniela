@@ -78,10 +78,18 @@
 }
 
 /* ── Mini line chart ───────────────────────────────────────── */
-.ph-svg {
+.ph-chart {
+    position: relative;
     width: 100%;
     height: 64px;
     margin-top: 10px;
+}
+
+.ph-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     overflow: visible;
 }
 
@@ -99,15 +107,25 @@
     to   { stroke-dashoffset: 0; }
 }
 
+/* Positioned as plain HTML dots (not SVG shapes) so they stay round
+   regardless of the chart's aspect ratio — the SVG's preserveAspectRatio="none"
+   stretches X/Y non-uniformly, which turned <circle> markers into flattened
+   ellipses that merged into an unreadable blur when many points were close together. */
 .ph-point {
-    fill: var(--q-blue);
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    background: var(--q-blue);
     cursor: pointer;
     animation: popIn 0.35s ease both;
-    transition: fill 0.15s;
+    transition: background 0.15s;
 }
 
 .ph-point:hover {
-    fill: var(--q-blue-lt);
+    background: var(--q-blue-lt);
 }
 
 /* ── Desktop: 2-column grid ────────────────────────────────── */

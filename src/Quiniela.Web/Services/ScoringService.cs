@@ -61,35 +61,64 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Saves the standings snapshot for <paramref name="matchId"/>, bounded to the standings as they
+    /// were at that match's kickoff (not "as of today"). When correcting a result, this also cascades:
+    /// any already-saved later snapshot in the same pool (KickoffUtc &gt;= this match's) is recomputed
+    /// too, since a correction to an earlier match changes every standings cut taken after it.
+    /// </summary>
     private async Task SaveSnapshotAsync(QuinielaDbContext db, int matchId)
     {
-        var poolIds = await db.Predictions
+        var kickoff = await db.Matches
+            .Where(m => m.Id == matchId)
+            .Select(m => m.KickoffUtc)
+            .SingleAsync();
+
+        var affectedPoolIds = await db.Predictions
             .Where(p => p.MatchId == matchId)
             .Select(p => p.PoolId)
             .Distinct()
             .ToListAsync();
 
-        await db.StandingsSnapshots
-            .Where(s => s.MatchId == matchId && poolIds.Contains(s.PoolId))
-            .ExecuteDeleteAsync();
-
         var now = DateTime.UtcNow;
-        foreach (var poolId in poolIds)
-        {
-            var standings = await standingsService.GetStandingsAsync(poolId);
-            var positions = StandingsService.ComputePositions(standings);
-            var snapshots = standings.Select((row, idx) => new StandingsSnapshot
-            {
-                PoolId = poolId,
-                MatchId = matchId,
-                UserId = row.UserId,
-                Position = positions[idx],
-                Points = row.TotalPoints,
-                SavedAt = now,
-            });
-            db.StandingsSnapshots.AddRange(snapshots);
-        }
 
-        await db.SaveChangesAsync();
+        foreach (var poolId in affectedPoolIds)
+        {
+            var matchIdsToRefresh = await db.StandingsSnapshots
+                .Where(s => s.PoolId == poolId && s.Match.KickoffUtc >= kickoff)
+                .Select(s => s.MatchId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!matchIdsToRefresh.Contains(matchId))
+                matchIdsToRefresh.Add(matchId);
+
+            var kickoffsByMatch = await db.Matches
+                .Where(m => matchIdsToRefresh.Contains(m.Id))
+                .Select(m => new { m.Id, m.KickoffUtc })
+                .ToDictionaryAsync(x => x.Id, x => x.KickoffUtc);
+
+            await db.StandingsSnapshots
+                .Where(s => s.PoolId == poolId && matchIdsToRefresh.Contains(s.MatchId))
+                .ExecuteDeleteAsync();
+
+            foreach (var mId in matchIdsToRefresh)
+            {
+                var standings = await standingsService.GetStandingsAsync(db, poolId, kickoffsByMatch[mId]);
+                var positions = StandingsService.ComputePositions(standings);
+                var snapshots = standings.Select((row, idx) => new StandingsSnapshot
+                {
+                    PoolId = poolId,
+                    MatchId = mId,
+                    UserId = row.UserId,
+                    Position = positions[idx],
+                    Points = row.TotalPoints,
+                    SavedAt = now,
+                });
+                db.StandingsSnapshots.AddRange(snapshots);
+            }
+
+            await db.SaveChangesAsync();
+        }
     }
 }

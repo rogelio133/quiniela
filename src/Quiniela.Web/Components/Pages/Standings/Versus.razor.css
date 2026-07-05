@@ -205,6 +205,21 @@
     flex-shrink: 0;
 }
 
+.h2h-inst-chip {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--q-muted);
+    background: var(--q-bg);
+    border-radius: 999px;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+
+.h2h-inst-chip-hit {
+    color: var(--q-green);
+    background: rgba(5,150,105,0.12);
+}
+
 .h2h-cell-pts {
     font-size: 0.68rem;
     font-weight: 700;

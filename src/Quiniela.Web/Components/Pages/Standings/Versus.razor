@@ -277,7 +277,7 @@ else
             openStages.Add(stage);
     }
 
-    private record CellVm(bool HasPrediction, bool IsDraw, string? FlagCode, string? Code, int Points, bool IsWinner);
+    private record CellVm(bool HasPrediction, bool IsDraw, string? FlagCode, string? Code, int Points, bool IsWinner, MatchDecidedIn? Instance, bool InstanceCorrect);
 
     private static (CellVm A, CellVm B) BuildCells(HeadToHeadService.H2HRow r)
     {
@@ -285,19 +285,27 @@ else
         bool aWins = both && r.PtsA > r.PtsB;
         bool bWins = both && r.PtsB > r.PtsA;
 
-        static CellVm Build(char? pred, int pts, bool isWinner, string? homeFlag, string? homeCode, string? awayFlag, string? awayCode)
+        static CellVm Build(char? pred, int pts, bool isWinner, string? homeFlag, string? homeCode, string? awayFlag, string? awayCode, MatchDecidedIn? instance, int ptsInstance)
         {
-            if (pred is null) return new CellVm(false, false, null, null, 0, false);
+            if (pred is null) return new CellVm(false, false, null, null, 0, false, null, false);
             bool isDraw = pred == 'D';
             var flag = pred == 'H' ? homeFlag : pred == 'A' ? awayFlag : null;
             var code = pred == 'H' ? homeCode : pred == 'A' ? awayCode : null;
-            return new CellVm(true, isDraw, flag, code, pts, isWinner);
+            return new CellVm(true, isDraw, flag, code, pts, isWinner, instance, ptsInstance > 0);
         }
 
-        var a = Build(r.PredA, r.PtsA, aWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode);
-        var b = Build(r.PredB, r.PtsB, bWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode);
+        var a = Build(r.PredA, r.PtsA, aWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode, r.PredInstanceA, r.PtsInstanceA);
+        var b = Build(r.PredB, r.PtsB, bWins, r.HomeFlagCode, r.HomeCode, r.AwayFlagCode, r.AwayCode, r.PredInstanceB, r.PtsInstanceB);
         return (a, b);
     }
+
+    private static string InstanceLabel(MatchDecidedIn instance) => instance switch
+    {
+        MatchDecidedIn.Regular90 => "90'",
+        MatchDecidedIn.ExtraTime => "T.Extra",
+        MatchDecidedIn.Penalties => "Penales",
+        _ => instance.ToString()
+    };
 
     private RenderFragment RenderCell(CellVm cell) => @<div class="h2h-cell">
     @if (!cell.HasPrediction)
@@ -316,6 +324,12 @@ else
                 <span class="fi fi-@cell.FlagCode.ToLower() h2h-pill-flag"></span>
             }
             @cell.Code
+        </span>
+    }
+    @if (cell.Instance is not null)
+    {
+        <span class="h2h-inst-chip @(cell.InstanceCorrect ? "h2h-inst-chip-hit" : "")">
+            @InstanceLabel(cell.Instance.Value) @(cell.InstanceCorrect ? "✓" : "✗")
         </span>
     }
     @if (cell.HasPrediction)

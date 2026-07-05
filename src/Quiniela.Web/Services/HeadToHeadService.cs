@@ -14,7 +14,9 @@ public class HeadToHeadService(IDbContextFactory<QuinielaDbContext> dbFactory)
         string? HomeFlagCode, string? HomeCode,
         string? AwayFlagCode, string? AwayCode,
         char? PredA, int PtsA,
-        char? PredB, int PtsB);
+        char? PredB, int PtsB,
+        MatchDecidedIn? PredInstanceA, int PtsInstanceA,
+        MatchDecidedIn? PredInstanceB, int PtsInstanceB);
 
     /// <summary>
     /// Compares two pool members match by match (finalized matches only), ordered by KickoffUtc.
@@ -53,7 +55,9 @@ public class HeadToHeadService(IDbContextFactory<QuinielaDbContext> dbFactory)
                 m.HomeTeam?.FlagCode, m.HomeTeam?.ShortCode ?? m.HomeTeam?.Name,
                 m.AwayTeam?.FlagCode, m.AwayTeam?.ShortCode ?? m.AwayTeam?.Name,
                 predA?.PredOutcome, predA?.Points ?? 0,
-                predB?.PredOutcome, predB?.Points ?? 0);
+                predB?.PredOutcome, predB?.Points ?? 0,
+                predA?.PredInstance, predA?.PtsInstance ?? 0,
+                predB?.PredInstance, predB?.PtsInstance ?? 0);
         }).ToList();
     }
 }

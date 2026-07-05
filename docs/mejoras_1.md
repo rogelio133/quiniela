@@ -13,8 +13,9 @@
 | I | Gráfica de evolución de posición | 🟡 Media | ~5–6 h | Medio | ✅ Finalizado |
 | J | Head-to-head entre dos jugadores | 🟢 Baja | ~5–7 h | Medio | ✅ Finalizado |
 | K | Achievements / insignias | 🟢 Baja | ~7–9 h | Medio | ✅ Finalizado |
+| K.1 | Insignias de comportamiento (última hora / indecisión / confianza) | 🟢 Baja | ~5–7 h | Bajo | ✅ Finalizado |
 
-**Orden de implementación sugerido:** I → J → K (I es el que más aprovecha infraestructura ya construida).
+**Orden de implementación sugerido:** I → J → K (I es el que más aprovecha infraestructura ya construida). K.1 depende de que K ya esté implementado (lo está).
 
 Los tres módulos se diseñan **mobile-first** (base = layout de teléfono, se expande con `@media (min-width: 641px)`, mismo breakpoint que ya usan `Champion/Index.razor.css` y `MatchPredictionsSheet.razor.css`) y reutilizan el sistema visual ya existente en el proyecto en vez de inventar uno nuevo:
 - **Tokens de diseño:** `wwwroot/css/theme.css` (`--q-navy`, `--q-gold`, `--q-blue`, `--q-green`, `--q-red`, `--q-sh-*` sombras, `--q-r-*` radios, `--q-g-*` gradientes).
@@ -308,6 +309,170 @@ Se deja fuera de la tabla de Standings (ya cargada) para no saturarla; un link "
 - El grid es de 2 columnas en mobile y 4 en desktop (≥641px); una insignia recién obtenida se distingue visualmente de las ya vistas anteriormente.
 
 ### Estimación: 7–9 horas
+
+---
+
+## Apéndice K.1 — Insignias de comportamiento (Última hora / Indecisión / Confianza) ✅ Finalizado
+
+### Objetivo
+
+Tres insignias nuevas que, a diferencia de las 8 originales, no miden acierto/desempeño sino **comportamiento al pronosticar**:
+
+| Insignia | Criterio |
+|---|---|
+| ⏱️ **Gol Agónico** | El cambio final de su pronóstico ocurrió a 30 minutos o menos del kickoff, en 2 o más partidos |
+| 🎰 **Modo Tragamonedas** | Cambió realmente su pronóstico 3 veces o más en el mismo partido, en 2 o más partidos distintos |
+| 🗿 **Dicho y Hecho** | Nunca cambió ninguno de sus pronósticos, con al menos 10 hechos |
+
+Nombres alternativos si alguno no convence: para Gol Agónico, "El Bombero" 🚒; para Modo Tragamonedas, "El Indeciso" 🔄; para Dicho y Hecho, "Sangre Fría" 🧊 o "Roca Firme" ✅.
+
+### Por qué se necesita una tabla nueva (a diferencia del resto del Módulo K)
+
+Las 8 insignias originales se calculan on-demand porque toda la información que necesitan ya existe en `Predictions`, `StandingsSnapshot` y `ChampionPrediction`. Estas 3 insignias son distintas: dependen de **cuántas veces y cuándo** un jugador tocó su pronóstico, y hoy esa información no se conserva.
+
+`Prediction` (`src/Quiniela.Data/Entities/Prediction.cs`) es una fila por `(UserId, PoolId, MatchId)` con solo `CreatedAt`/`UpdatedAt`. `PredictionService.UpsertAsync` (`src/Quiniela.Web/Services/PredictionService.cs:74-98`) ya hace upsert real (inserta la primera vez, actualiza en el sitio las siguientes) — **ese comportamiento no cambia**. Lo que falta es un registro histórico de cada valor que pasó por ahí, porque `UpdatedAt` se sobrescribe en cada guardado y no dice cuántos cambios reales hubo ni cuáles fueron.
+
+Importante: hoy `UpsertAsync` sobreescribe `PredOutcome`/`PredInstance`/`UpdatedAt` en **cada** guardado, incluso si el jugador reenvía el mismo valor sin modificarlo. Para que "Modo Tragamonedas" no se infle con reenvíos accidentales, un "cambio" solo cuenta cuando el valor nuevo es distinto al que estaba guardado.
+
+### Nueva entidad: `PredictionHistory`
+
+Tabla de solo-inserción (append-only): cada fila es un valor que estuvo vigente en algún momento. La primera fila (creación) y cada cambio real generan una fila nueva; un reenvío del mismo valor no genera fila.
+
+```csharp
+// src/Quiniela.Data/Entities/PredictionHistory.cs
+public class PredictionHistory
+{
+    public int Id { get; set; }
+    public int PredictionId { get; set; }
+    public char PredOutcome { get; set; }
+    public MatchDecidedIn? PredInstance { get; set; }
+    public DateTime ChangedAt { get; set; }
+
+    public Prediction Prediction { get; set; } = null!;
+}
+```
+
+Registro en `QuinielaDbContext.cs` (mismo patrón que las entidades existentes):
+
+```csharp
+public DbSet<PredictionHistory> PredictionHistories => Set<PredictionHistory>();
+
+// en OnModelCreating:
+modelBuilder.Entity<PredictionHistory>(e =>
+{
+    e.Property(h => h.PredOutcome).HasColumnType("char(1)");
+    e.HasIndex(h => h.PredictionId);
+    e.HasOne(h => h.Prediction)
+        .WithMany()
+        .HasForeignKey(h => h.PredictionId)
+        .OnDelete(DeleteBehavior.Cascade); // único padre posible, sin conflicto de cascada múltiple
+});
+```
+
+Migración: `dotnet ef migrations add AddPredictionHistory --project src/Quiniela.Data --startup-project src/Quiniela.Web`. Como el resto del proyecto, se aplica sola en el arranque (`Program.cs` ya llama `Database.MigrateAsync()`).
+
+### Modificación a `PredictionService.UpsertAsync`
+
+Se agrega una fila de historial en la creación y, en la actualización, solo si el valor realmente cambió:
+
+```csharp
+if (existing is not null)
+{
+    bool realChange = existing.PredOutcome != outcome || existing.PredInstance != predInstance;
+    existing.PredOutcome = outcome;
+    existing.PredInstance = predInstance;
+    existing.UpdatedAt = now;
+
+    if (realChange)
+        db.PredictionHistories.Add(new PredictionHistory
+        {
+            PredictionId = existing.Id,
+            PredOutcome = outcome,
+            PredInstance = predInstance,
+            ChangedAt = now
+        });
+}
+else
+{
+    var prediction = new Prediction { /* ...como hoy... */ };
+    db.Predictions.Add(prediction);
+    await db.SaveChangesAsync(); // necesario para obtener prediction.Id antes de crear el historial
+
+    db.PredictionHistories.Add(new PredictionHistory
+    {
+        PredictionId = prediction.Id,
+        PredOutcome = outcome,
+        PredInstance = predInstance,
+        ChangedAt = now
+    });
+    await db.SaveChangesAsync();
+}
+```
+
+### Cálculo de las insignias en `AchievementsService`
+
+Se agrega el catálogo y una consulta agrupada por predicción, sin nuevo servicio:
+
+```csharp
+new("last-minute", "⏱️", "Gol Agónico", "Envió el cambio final de su pronóstico a 30 minutos o menos del kickoff, en 2 o más partidos", AchievementCategory.Ironic),
+new("slot-machine", "🎰", "Modo Tragamonedas", "Cambió su pronóstico 3 veces o más en el mismo partido, en 2 o más partidos distintos", AchievementCategory.Ironic),
+new("sure-shot", "🗿", "Dicho y Hecho", "Nunca cambió ninguno de sus pronósticos, con al menos 10 hechos", AchievementCategory.Positive),
+```
+
+```csharp
+var historyRows = await db.PredictionHistories
+    .Include(h => h.Prediction).ThenInclude(p => p.Match)
+    .Where(h => h.Prediction.PoolId == poolId)
+    .ToListAsync();
+
+var changesByUser = historyRows
+    .GroupBy(h => h.Prediction.UserId)
+    .ToDictionary(g => g.Key, g => g
+        .GroupBy(h => h.PredictionId)
+        .Select(pg => new
+        {
+            ChangeCount = pg.Count() - 1, // filas totales - la inicial
+            FinalChangeAt = pg.Max(h => h.ChangedAt),
+            KickoffUtc = pg.First().Prediction.Match.KickoffUtc
+        })
+        .ToList());
+
+// dentro del foreach (userId in members):
+var changes = changesByUser.GetValueOrDefault(userId, []);
+
+if (changes.Count(c => c.KickoffUtc - c.FinalChangeAt <= TimeSpan.FromMinutes(30)) >= 2)
+    badges.Add(AchievementCatalog.Get("last-minute"));
+
+if (changes.Count(c => c.ChangeCount > 2) >= 2)
+    badges.Add(AchievementCatalog.Get("slot-machine"));
+
+if (changes.Count >= 10 && changes.All(c => c.ChangeCount == 0))
+    badges.Add(AchievementCatalog.Get("sure-shot"));
+```
+
+Nota de diseño: a diferencia de "Modo tortuga"/"Francotirador KO" (que usan `PlayerStatsService.TotalPredictions`, limitado a partidos ya finalizados porque necesitan saber si acertó), estas 3 insignias son sobre el **comportamiento al pronosticar**, no sobre acierto — por eso cuentan sobre **todos** los pronósticos del jugador en la sala, hayan finalizado o no. Esto es una decisión de diseño razonable pero no explícitamente confirmada contigo; si prefieres limitarlo solo a partidos finalizados (por consistencia estricta con el resto del catálogo), es un cambio de una línea (agregar `&& h.Prediction.Match.Status == MatchStatus.Finalizado` al `Where`).
+
+No requiere cambios en `Components/Pages/Achievements/Index.razor`: la vista ya renderiza el catálogo y las insignias obtenidas de forma genérica a partir de `AchievementCatalog.All`, así que las 3 nuevas entradas aparecen automáticamente en el grid y en el catálogo completo.
+
+### Archivos a crear / modificar
+
+| Archivo | Cambio |
+|---|---|
+| `Entities/PredictionHistory.cs` | **Nuevo** |
+| `QuinielaDbContext.cs` | `DbSet<PredictionHistory>` + configuración en `OnModelCreating` |
+| Migración EF (`AddPredictionHistory`) | **Nueva** |
+| `Services/PredictionService.cs` | `UpsertAsync` registra historial en insert y en cambios reales |
+| `Services/AchievementsService.cs` | 3 entradas nuevas en `AchievementCatalog.All` + lógica de cálculo |
+
+### Criterio de aceptación
+
+- Reenviar el mismo H/D/A (o la misma instancia en KO) sin cambiarlo no genera fila de historial ni cuenta como "cambio" para ninguna de las 3 insignias.
+- "Gol Agónico" y "Modo Tragamonedas" requieren que el patrón ocurra en 2 o más partidos distintos (no se otorgan por una sola coincidencia).
+- "Dicho y Hecho" requiere el mínimo de 10 pronósticos hechos (igual que "Modo tortuga") y que **ninguno** haya sido editado.
+- No hay backfill retroactivo: el historial empieza a contar desde que se despliega este cambio, igual que el resto de módulos basados en series temporales (Módulo I, F). Pronósticos ya guardados antes del deploy cuentan como "1 sola vez" (fila inicial sintética) o quedan fuera del cálculo hasta su próxima edición — a definir al implementar, pero no bloquea el resto del criterio.
+- Las 3 insignias nuevas se integran al mismo catálogo/vitrina del Módulo K sin cambios de UI.
+
+### Estimación: 5–7 horas
 
 ---
 

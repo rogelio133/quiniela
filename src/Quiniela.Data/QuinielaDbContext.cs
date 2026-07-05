@@ -17,6 +17,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
     public DbSet<Prediction> Predictions => Set<Prediction>();
     public DbSet<StandingsSnapshot> StandingsSnapshots => Set<StandingsSnapshot>();
     public DbSet<ChampionPrediction> ChampionPredictions => Set<ChampionPrediction>();
+    public DbSet<PredictionHistory> PredictionHistories => Set<PredictionHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -137,6 +138,16 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
                 .WithMany()
                 .HasForeignKey(c => c.TeamId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PredictionHistory>(e =>
+        {
+            e.Property(h => h.PredOutcome).HasColumnType("char(1)");
+            e.HasIndex(h => h.PredictionId);
+            e.HasOne(h => h.Prediction)
+                .WithMany()
+                .HasForeignKey(h => h.PredictionId)
+                .OnDelete(DeleteBehavior.Cascade); // único padre posible, sin conflicto de cascada múltiple
         });
     }
 }

@@ -61,4 +61,12 @@ window.quiniela = {
         }
         requestAnimationFrame(frame);
     },
+    getStoredList: (key) => {
+        try { return JSON.parse(localStorage.getItem(key) ?? '[]'); }
+        catch { return []; }
+    },
+    setStoredList: (key, list) => {
+        try { localStorage.setItem(key, JSON.stringify(list)); }
+        catch { }
+    },
 };

@@ -1,0 +1,289 @@
+/* ── Head-to-head ───────────────────────────────────────────── */
+
+.h2h-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r);
+    box-shadow: var(--q-sh-sm);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+}
+
+.h2h-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.h2h-player-right {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.h2h-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.h2h-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 1.05rem;
+}
+
+.h2h-player-name {
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: var(--q-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.h2h-vs-badge {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: var(--q-g-gold);
+    border-radius: 999px;
+    padding: 4px 10px;
+    animation: pulseGold 1.8s ease-in-out infinite;
+}
+
+/* ── Match cards (mobile) ───────────────────────────────────── */
+.h2h-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.h2h-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r);
+    box-shadow: var(--q-sh-sm);
+    padding: 10px 12px;
+}
+
+.h2h-card-onesided {
+    opacity: 0.6;
+}
+
+.h2h-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.h2h-card-match {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--q-text);
+}
+
+.h2h-card-date {
+    font-size: 0.65rem;
+    color: var(--q-muted);
+}
+
+.h2h-card-body {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.h2h-card-vs {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--q-muted);
+}
+
+/* ── Prediction cell (shared between card + table) ──────────── */
+.h2h-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.h2h-cell-none {
+    color: var(--q-muted);
+    font-size: 0.85rem;
+    opacity: 0.5;
+}
+
+.h2h-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--q-bg);
+    color: var(--q-text-sm);
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.h2h-pill-win {
+    background: rgba(5,150,105,0.12);
+    color: var(--q-green);
+    animation: popIn 0.3s ease both;
+}
+
+.h2h-pill-flag {
+    width: 16px !important;
+    height: 12px !important;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.h2h-cell-pts {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--q-muted);
+}
+
+.h2h-cell-pts-pos {
+    color: var(--q-green);
+}
+
+/* ── Desktop: two-column table ───────────────────────────────── */
+.h2h-table {
+    display: none;
+}
+
+@media (min-width: 641px) {
+    .h2h-header {
+        top: 3.5rem;
+    }
+
+    .h2h-list {
+        display: none;
+    }
+
+    .h2h-table {
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--q-surface);
+        border: 1px solid var(--q-border);
+        border-radius: var(--q-r);
+        overflow: hidden;
+        box-shadow: var(--q-sh-sm);
+    }
+
+    .h2h-table th {
+        text-align: center;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--q-muted);
+        padding: 10px;
+        border-bottom: 1px solid var(--q-border);
+    }
+
+    .h2h-table th:first-child {
+        text-align: left;
+    }
+
+    .h2h-table td {
+        padding: 10px;
+        border-bottom: 1px solid var(--q-border);
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .h2h-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .h2h-row-onesided {
+        opacity: 0.6;
+    }
+
+    .h2h-td-match {
+        display: flex;
+        flex-direction: column;
+        text-align: left !important;
+    }
+
+    .h2h-td-match-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--q-text);
+    }
+
+    .h2h-td-match-date {
+        font-size: 0.68rem;
+        color: var(--q-muted);
+    }
+}
+
+/* ── Sticky totals bar ───────────────────────────────────────── */
+.h2h-totals-bar {
+    position: sticky;
+    bottom: 0;
+    margin-top: 14px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, var(--q-bg) 70%, rgba(238,242,247,0));
+}
+
+.h2h-totals-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r) var(--q-r) 0 0;
+    box-shadow: var(--q-sh-sm);
+    padding: 10px 16px 4px;
+}
+
+.h2h-totals-pts {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--q-text);
+    text-align: center;
+}
+
+.h2h-totals-label {
+    font-size: 0.7rem;
+    color: var(--q-muted);
+    text-align: center;
+}
+
+.h2h-totals-sub {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-top: none;
+    border-radius: 0 0 var(--q-r) var(--q-r);
+    padding: 2px 16px 10px;
+    font-size: 0.72rem;
+    color: var(--q-muted);
+    font-weight: 600;
+}

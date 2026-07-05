@@ -49,4 +49,16 @@ window.quiniela = {
         try { const m = await import('/js/three-ball.js'); m.disposeBall(id); }
         catch { }
     },
+    countUp: (elementId, endValue, durationMs) => {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const start = performance.now();
+        function frame(now) {
+            const t = Math.min((now - start) / durationMs, 1);
+            const eased = 1 - Math.pow(1 - t, 3);
+            el.textContent = Math.round(eased * endValue).toString();
+            if (t < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+    },
 };

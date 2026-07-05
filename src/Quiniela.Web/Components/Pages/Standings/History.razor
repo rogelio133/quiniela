@@ -1,0 +1,253 @@
+@page "/pools/{poolId:int}/standings/history"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject StandingsService StandingsService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Evolución de posiciones — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+    <SkeletonLoader ShowCard="true" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    @* ── Breadcrumb ─────────────────────────────────────────── *@
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId/standings">Tabla de posiciones</a></li>
+            <li class="breadcrumb-item active">Evolución</li>
+        </ol>
+    </nav>
+
+    @* ── Header ─────────────────────────────────────────────── *@
+    <div class="mb-3">
+        <h2 class="mb-0 fw-bold">📈 Evolución de posiciones</h2>
+        <small class="text-muted">@pool.Name</small>
+    </div>
+
+    @if (maxSeriesLength < 2)
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+            <span style="font-size:1.1rem;">ℹ️</span>
+            <span class="small">Aún no hay suficiente historial. Se necesitan al menos 2 partidos finalizados con snapshot.</span>
+        </div>
+    }
+    else
+    {
+        <div class="ph-list">
+            @for (int idx = 0; idx < ordered.Count; idx++)
+            {
+                var (entry, pos, series) = ordered[idx];
+                var isMe   = entry.UserId == currentUserId;
+                var delay  = $"anim-d{Math.Min(idx + 1, 6)}";
+                var firstPos = series.Count > 0 ? series[0].Position : pos;
+                var (deltaClass, deltaText) = DeltaFor(firstPos, pos);
+
+                <div class="ph-card @delay anim-fade-in-up" @key="entry.UserId">
+                    <div class="ph-card-header">
+                        @if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+                        {
+                            <img src="@entry.ProfilePicturePath" class="ph-avatar" alt="@entry.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="ph-avatar ph-avatar-fallback">⚽</div>
+                        }
+                        <div class="ph-name-block">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="ph-name">@entry.DisplayName</span>
+                                @if (isMe) { <span class="badge bg-primary" style="font-size:.55rem;padding:2px 5px;">TÚ</span> }
+                            </div>
+                            <span class="ph-badge @deltaClass @(pos == 1 ? "ph-badge-gold" : "")">
+                                #@firstPos → #@pos @deltaText
+                            </span>
+                        </div>
+                    </div>
+
+                    @if (series.Count < 2)
+                    {
+                        <p class="ph-empty">Sin historial suficiente para este jugador.</p>
+                    }
+                    else
+                    {
+                        var points = ComputePoints(series, memberCount);
+                        var len    = PolylineLength(points);
+                        var pts    = string.Join(" ", points.Select(p =>
+                            $"{p.X.ToString(CultureInfo.InvariantCulture)},{p.Y.ToString(CultureInfo.InvariantCulture)}"));
+
+                        <svg class="ph-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <polyline class="ph-line"
+                                      points="@pts"
+                                      style="--ph-len:@len.ToString(CultureInfo.InvariantCulture)px; stroke-dasharray:@len.ToString(CultureInfo.InvariantCulture);" />
+                            @for (int i = 0; i < points.Count; i++)
+                            {
+                                var p = points[i];
+                                var sp = series[i];
+                                <circle class="ph-point"
+                                        cx="@p.X.ToString(CultureInfo.InvariantCulture)"
+                                        cy="@p.Y.ToString(CultureInfo.InvariantCulture)"
+                                        r="3"
+                                        style="animation-delay:@((i * 0.05).ToString("0.00", CultureInfo.InvariantCulture))s;"
+                                        @onclick="() => OpenDetail(entry.DisplayName, sp)" />
+                            }
+                        </svg>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (sheetOpen && selectedPoint is not null)
+{
+    <div class="ph-sheet-overlay" @onclick="CloseDetail">
+        <div class="ph-sheet-panel" @onclick:stopPropagation="true">
+            <div class="ph-sheet-handle"></div>
+            <div class="ph-sheet-body">
+                <div class="ph-sheet-player">@selectedPlayerName</div>
+                <div class="ph-sheet-match">@selectedPoint.MatchLabel</div>
+                <div class="ph-sheet-date">@FormatKickoff(selectedPoint.KickoffUtc)</div>
+                <div class="ph-sheet-position">Posición <strong>#@selectedPoint.Position</strong></div>
+            </div>
+            <button type="button" class="btn btn-outline-light btn-sm ph-sheet-close" @onclick="CloseDetail">Cerrar</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+    private int memberCount;
+    private int maxSeriesLength;
+    private TimeZoneInfo clientTz = TimeZoneInfo.Utc;
+
+    private List<StandingsService.StandingEntry> standings = [];
+    private Dictionary<int, List<StandingsService.PositionPoint>> history = [];
+    private List<(StandingsService.StandingEntry Entry, int Pos, List<StandingsService.PositionPoint> Series)> ordered = [];
+
+    private bool sheetOpen;
+    private string? selectedPlayerName;
+    private StandingsService.PositionPoint? selectedPoint;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        pool     = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+
+        if (pool is not null && isMember)
+            await LoadDataAsync();
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
+            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { clientTz = TimeZoneInfo.Utc; }
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        standings = await StandingsService.GetStandingsAsync(PoolId);
+        history   = await StandingsService.GetPositionHistoryAsync(PoolId);
+        memberCount = standings.Count;
+        maxSeriesLength = history.Values.Select(v => v.Count).DefaultIfEmpty(0).Max();
+
+        var positions = StandingsService.ComputePositions(standings);
+        ordered = standings
+            .Select((entry, i) => (Entry: entry, Pos: positions[i], Series: history.GetValueOrDefault(entry.UserId, [])))
+            .OrderBy(x => x.Pos)
+            .ToList();
+    }
+
+    private static List<(double X, double Y)> ComputePoints(List<StandingsService.PositionPoint> series, int memberCount)
+    {
+        var pts = new List<(double, double)>();
+        int n = series.Count;
+        for (int i = 0; i < n; i++)
+        {
+            double x = n <= 1 ? 50 : i / (double)(n - 1) * 100;
+            double y = memberCount <= 1 ? 50 : (series[i].Position - 1) / (double)(memberCount - 1) * 100;
+            pts.Add((x, y));
+        }
+        return pts;
+    }
+
+    private static double PolylineLength(List<(double X, double Y)> pts)
+    {
+        double len = 0;
+        for (int i = 1; i < pts.Count; i++)
+        {
+            var dx = pts[i].X - pts[i - 1].X;
+            var dy = pts[i].Y - pts[i - 1].Y;
+            len += Math.Sqrt(dx * dx + dy * dy);
+        }
+        return len;
+    }
+
+    private static (string CssClass, string Text) DeltaFor(int firstPos, int currentPos)
+    {
+        var delta = firstPos - currentPos; // positive = moved up
+        return delta switch
+        {
+            > 0 => ("ph-badge-up", $"▲+{delta}"),
+            < 0 => ("ph-badge-down", $"▼{delta}"),
+            _   => ("ph-badge-same", "─"),
+        };
+    }
+
+    private void OpenDetail(string playerName, StandingsService.PositionPoint point)
+    {
+        selectedPlayerName = playerName;
+        selectedPoint = point;
+        sheetOpen = true;
+    }
+
+    private void CloseDetail()
+    {
+        sheetOpen = false;
+    }
+
+    private string FormatKickoff(DateTime kickoffUtc)
+    {
+        var local = TimeZoneInfo.ConvertTimeFromUtc(kickoffUtc, clientTz);
+        return local.ToString("dd MMM yyyy • HH:mm 'HRS'",
+            new CultureInfo("es-MX")).ToUpperInvariant();
+    }
+}

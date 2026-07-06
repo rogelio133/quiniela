@@ -17,7 +17,7 @@ Las notificaciones se dividen en dos categorías según cómo se disparan:
 | Categoría | Disparador | Funciona en F1 sin cambios |
 |-----------|-----------|---------------------------|
 | **Por acción** (N1, N3, N4, N6, N7) | Admin guarda resultado / jugador pronostica → app ya está despierta | ✅ Sí |
-| **Por tiempo** (N2, N5) | Necesitan revisar cada 10 min aunque nadie esté en la app | ❌ No |
+| **Por tiempo** (N2, N5, N8) | Necesitan revisar cada 10 min aunque nadie esté en la app | ❌ No |
 
 Para las notificaciones por tiempo se agrega un **Azure Function con timer** (Consumption plan, gratis hasta 1M ejecuciones/mes) que pingea la Blazor app cada 10 minutos. El ping despierta la app y dispara la revisión — toda la lógica queda en la Blazor app, la Function solo actúa como reloj externo.
 
@@ -31,7 +31,8 @@ Azure Function (Consumption — gratis)
 App Service F1 (despierta si dormida, ~5 seg cold start)
       │
       ├── ¿Partidos sin pronosticar en <60 min? → push a usuarios   [N2]
-      └── ¿Ventana campeón abierta/cerrando?    → push a usuarios   [N5]
+      ├── ¿Ventana campeón abierta/cerrando?    → push a usuarios   [N5]
+      └── ¿Partido comenzó en últimos 10 min?   → push a usuarios   [N8]
 
 Eventos por acción del admin/jugador
       │
@@ -146,8 +147,9 @@ En la práctica casi todos los usuarios pertenecen a una sola sala, por lo que e
 | N5 | [ ] | Ventana de campeón abierta / cerrando | 🟡 Media | ~2 h | Medio |
 | N6 | [x] | Nuevo cruce KO disponible | 🟢 Baja | ~1–2 h | Medio |
 | N7 | [x] | Todos los jugadores ya pronosticaron | 🟢 Baja | ~1–2 h | Bajo |
+| N8 | [x] | Partido comenzado | 🟢 Baja | ~1–2 h | Medio |
 
-**Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7  
+**Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7 → N8  
 N0 es bloqueante: sin infraestructura base no se puede implementar ninguna otra.
 
 ---
@@ -312,7 +314,8 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
     public async Task CheckAndNotifyAsync()
     {
         await CheckUpcomingMatchesAsync();   // N2
-        await CheckChampionWindowAsync();   // N5
+        await CheckChampionWindowAsync();    // N5
+        await CheckStartedMatchesAsync();    // N8
     }
 
     private async Task CheckUpcomingMatchesAsync()
@@ -544,6 +547,65 @@ if (withPrediction == totalMembers)
 - [x] Notificación se envía solo cuando el **último** miembro completa su pronóstico
 - [x] No se envía si ya se había completado antes (cambio de pronóstico del último)
 - [x] Incluye el nombre del partido y de la sala
+
+---
+
+## Módulo N8 — Partido comenzado
+
+### Objetivo
+
+Notificar a los jugadores cuando un partido arranca (el kickoff ya pasó), para que sigan el marcador en vivo y vean cómo van sus pronósticos contra los del resto de la sala.
+
+### Mensaje
+
+> 🔴 **¡Arrancó México vs. Argentina!**  
+> El partido está en juego — mira los pronósticos de tu sala.
+
+El link lleva a `/pools/{id}/predictions` si el usuario pertenece a una sola sala, o a `/pools` si pertenece a varias (mismo criterio que N2).
+
+### Implementación
+
+Es un evento **por tiempo** (el kickoff ocurre aunque nadie esté usando la app), por lo que la lógica vive en `NotificationCheckService` junto a N2 y N5, invocada desde el endpoint `/api/notify/check` que pingea la Azure Function cada 10 minutos:
+
+```csharp
+// src/Quiniela.Web/Services/NotificationCheckService.cs
+private async Task CheckStartedMatchesAsync(QuinielaDbContext db, DateTime now)
+{
+    // Partidos cuyo kickoff cayó dentro de la ventana del último ping
+    var startedMatches = await db.Matches
+        .Where(m => m.KickoffUtc <= now && m.KickoffUtc > now.AddMinutes(-15)
+                    && m.Status == MatchStatus.Programado
+                    && m.HomeTeamId != null && m.AwayTeamId != null)
+        .Include(m => m.HomeTeam).Include(m => m.AwayTeam)
+        .ToListAsync();
+
+    foreach (var match in startedMatches)
+    {
+        // usuarios miembros de alguna sala, excluyendo los (userId, matchId)
+        // ya registrados en NotificationLog con Type = "MatchStarted"
+        foreach (var userId in usersToNotify)
+            await pushSvc.SendAsync(userId,
+                $"🔴 ¡Arrancó {label}!",
+                "El partido está en juego — mira los pronósticos de tu sala.",
+                url);
+    }
+}
+```
+
+Notas:
+- Ventana `[now - 15min, now]`: cubre el intervalo entre pings (10 min) con margen si un ping se retrasa o la app tarda en despertar (cold start F1). Solo se envían partidos con `KickoffUtc` ya pasado — nunca antes del arranque real.
+- Como es evento de **partido** (no de sala), un usuario en varias salas recibe **una sola notificación** sin nombre de sala (ver Consideración de diseño: multi-sala).
+- Deduplicación por `(userId, matchId, Type)` en `NotificationLog` — no en memoria, porque la app puede reiniciarse entre pings en F1.
+- Solo se notifica si el partido tiene equipos reales asignados (los placeholders KO sin `HomeTeamId`/`AwayTeamId` se omiten).
+
+### Criterios de aceptación
+
+- [x] Notificación llega dentro de los ~10 min posteriores al kickoff (siguiente ping)
+- [x] No se envía antes del kickoff
+- [x] No se envía dos veces al mismo usuario por el mismo partido
+- [x] Un usuario en varias salas recibe una sola notificación
+- [x] Partidos placeholder KO sin equipos asignados se omiten
+- [x] Usuarios sin suscripción activa se omiten silenciosamente
 
 ---
 

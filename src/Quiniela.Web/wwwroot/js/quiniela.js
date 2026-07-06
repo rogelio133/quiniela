@@ -69,4 +69,45 @@ window.quiniela = {
         try { localStorage.setItem(key, JSON.stringify(list)); }
         catch { }
     },
+    pushShouldPrompt: async () => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        if (Notification.permission === 'denied') return false;
+        try { if (localStorage.getItem('quiniela_push_dismissed') === '1') return false; } catch { }
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            return sub === null;
+        } catch { return false; }
+    },
+    pushMarkDismissed: () => {
+        try { localStorage.setItem('quiniela_push_dismissed', '1'); } catch { }
+    },
+    pushSubscribe: async (vapidPublicKey) => {
+        try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return null;
+
+            const reg = await navigator.serviceWorker.ready;
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                });
+            }
+            const json = sub.toJSON();
+            return { endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth };
+        } catch (e) {
+            console.warn('Push subscribe failed:', e);
+            return null;
+        }
+    },
 };
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}

@@ -1,0 +1,54 @@
+@using System.Security.Claims
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject PushNotificationService PushService
+@inject IConfiguration Config
+
+@if (_visible)
+{
+    <div class="notif-consent">
+        <span class="notif-consent-text">🔔 Activá las notificaciones para no perderte resultados ni avisos</span>
+        <div class="notif-consent-actions">
+            <button class="btn btn-sm btn-primary" @onclick="Subscribe">Activar</button>
+            <button class="btn btn-sm btn-link text-white-50" @onclick="Dismiss">Ahora no</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _visible;
+    private int _userId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idClaim is null || !int.TryParse(idClaim, out _userId)) return;
+
+        var shouldPrompt = await JS.InvokeAsync<bool>("quiniela.pushShouldPrompt");
+        if (!shouldPrompt) return;
+
+        _visible = true;
+        StateHasChanged();
+    }
+
+    private async Task Subscribe()
+    {
+        _visible = false;
+        var publicKey = Config["Push:VapidPublicKey"];
+        var result = await JS.InvokeAsync<PushSubscribeResult?>("quiniela.pushSubscribe", publicKey);
+        await JS.InvokeVoidAsync("quiniela.pushMarkDismissed");
+        if (result is not null)
+            await PushService.UpsertSubscriptionAsync(_userId, result.Endpoint, result.P256dh, result.Auth);
+    }
+
+    private async Task Dismiss()
+    {
+        _visible = false;
+        await JS.InvokeVoidAsync("quiniela.pushMarkDismissed");
+    }
+
+    private record PushSubscribeResult(string Endpoint, string P256dh, string Auth);
+}

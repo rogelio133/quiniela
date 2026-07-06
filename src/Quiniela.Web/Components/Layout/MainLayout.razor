@@ -26,6 +26,12 @@
         <article class="content px-4">
             @Body
         </article>
+
+        <AuthorizeView>
+            <Authorized>
+                <NotificationConsent @rendermode="InteractiveServer" />
+            </Authorized>
+        </AuthorizeView>
     </main>
 </div>
 

@@ -69,6 +69,8 @@ builder.Services.AddScoped<PlayerStatsService>();
 builder.Services.AddScoped<ChampionService>();
 builder.Services.AddScoped<HeadToHeadService>();
 builder.Services.AddScoped<AchievementsService>();
+builder.Services.AddScoped<PushNotificationService>();
+builder.Services.AddScoped<NotificationCheckService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
@@ -99,6 +101,24 @@ app.MapPost("/api/logout", async (SignInManager<User> signInManager) =>
     return Results.LocalRedirect("/login");
 }).RequireAuthorization()
   .DisableAntiforgery();
+
+app.MapPost("/api/notify/check", async (
+    HttpContext ctx,
+    IConfiguration config,
+    NotificationCheckService notifSvc) =>
+{
+    var secret = ctx.Request.Headers["X-Notify-Secret"].ToString();
+    if (string.IsNullOrEmpty(secret) || secret != config["Push:NotifySecret"])
+    {
+        // Evita que UseStatusCodePagesWithReExecute reejecute este 401 como un POST a
+        // /not-found (esa reejecución choca con antiforgery y devuelve un 400 confuso).
+        ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodePagesFeature>()!.Enabled = false;
+        return Results.Unauthorized();
+    }
+
+    await notifSvc.CheckAndNotifyAsync();
+    return Results.Ok();
+}).DisableAntiforgery();
 
 app.MapPost("/account/external-login", (
     HttpContext ctx,

@@ -4,8 +4,10 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory)
+public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory, PushNotificationService pushService)
 {
+    private const string AllPredictedType = "AllPredicted";
+
     public record MatchWithPrediction(Match Match, Prediction? Prediction);
 
     public async Task<(Pool? Pool, bool IsMember)> GetPoolContextAsync(int poolId, int userId)
@@ -118,9 +120,70 @@ public class PredictionService(IDbContextFactory<QuinielaDbContext> dbFactory)
                 ChangedAt = now
             });
             await db.SaveChangesAsync();
+
+            // N7: solo un pronóstico nuevo puede completar la sala; un cambio no altera el conteo.
+            await NotifyAllPredictedAsync(db, match, poolId);
         }
 
         return (true, null);
+    }
+
+    /// <summary>
+    /// N7: si con este pronóstico todos los miembros de la sala ya pronosticaron el partido,
+    /// avisa a toda la sala. NotificationLog evita repetir el aviso (p. ej. si un miembro nuevo
+    /// entra después y vuelve a completar). Best-effort: nunca falla el guardado del pronóstico.
+    /// </summary>
+    private async Task NotifyAllPredictedAsync(QuinielaDbContext db, Match match, int poolId)
+    {
+        try
+        {
+            var totalMembers = await db.PoolMembers.CountAsync(pm => pm.PoolId == poolId);
+            var withPrediction = await db.Predictions
+                .CountAsync(p => p.MatchId == match.Id && p.PoolId == poolId);
+
+            if (totalMembers == 0 || withPrediction < totalMembers) return;
+
+            var pool = await db.Pools.FindAsync(poolId);
+            if (pool is null) return;
+
+            var homeTeam = await db.Teams.FindAsync(match.HomeTeamId);
+            var awayTeam = await db.Teams.FindAsync(match.AwayTeamId);
+            var matchLabel = $"{homeTeam?.ShortCode ?? "?"} vs {awayTeam?.ShortCode ?? "?"}";
+
+            var memberIds = await db.PoolMembers
+                .Where(pm => pm.PoolId == poolId)
+                .Select(pm => pm.UserId)
+                .ToListAsync();
+
+            var alreadyNotified = await db.NotificationLogs
+                .Where(n => n.MatchId == match.Id && n.Type == AllPredictedType)
+                .Select(n => n.UserId)
+                .ToHashSetAsync();
+
+            var sentAt = DateTime.UtcNow;
+
+            foreach (var userId in memberIds.Where(id => !alreadyNotified.Contains(id)))
+            {
+                await pushService.SendAsync(userId,
+                    $"🎯 ¡Todos listos para {matchLabel}!",
+                    $"Todos en {pool.Name} ya pronosticaron — que gane el mejor.",
+                    $"/pools/{poolId}/predictions");
+
+                db.NotificationLogs.Add(new NotificationLog
+                {
+                    UserId = userId,
+                    MatchId = match.Id,
+                    Type = AllPredictedType,
+                    SentAt = sentAt,
+                });
+            }
+
+            await db.SaveChangesAsync();
+        }
+        catch
+        {
+            // best-effort: la notificación nunca debe romper el guardado del pronóstico
+        }
     }
 
     public async Task<int> GetPendingCountAsync(int userId, int poolId)

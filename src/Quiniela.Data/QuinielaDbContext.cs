@@ -19,6 +19,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
     public DbSet<ChampionPrediction> ChampionPredictions => Set<ChampionPrediction>();
     public DbSet<PredictionHistory> PredictionHistories => Set<PredictionHistory>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -161,6 +162,21 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade); // único padre posible (no hay PoolId), sin conflicto de cascada múltiple
+        });
+
+        modelBuilder.Entity<NotificationLog>(e =>
+        {
+            e.Property(n => n.Type).HasMaxLength(50);
+            e.HasIndex(n => new { n.UserId, n.MatchId, n.Type }).IsUnique();
+            // Restrict to avoid multiple cascade paths (Users→Pools→...→Matches AND Users→NotificationLogs)
+            e.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(n => n.Match)
+                .WithMany()
+                .HasForeignKey(n => n.MatchId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -139,9 +139,9 @@ En la práctica casi todos los usuarios pertenecen a una sola sala, por lo que e
 | # | Hecho | Módulo | Urgencia | Esfuerzo | Impacto |
 |---|:-----:|--------|----------|----------|---------|
 | N0 | [x] | Infraestructura base Web Push (VAPID) | 🔴 Alta | ~4–5 h | Bloqueante |
-| N1 | [ ] | Resultado capturado | 🔴 Alta | ~2–3 h | Muy alto |
-| N2 | [ ] | Pronóstico cerrando pronto | 🔴 Alta | ~3–4 h | Alto |
-| N3 | [ ] | Cambio de posición en la tabla | 🟡 Media | ~2–3 h | Alto |
+| N1 | [x] | Resultado capturado | 🔴 Alta | ~2–3 h | Muy alto |
+| N2 | [x] | Pronóstico cerrando pronto | 🔴 Alta | ~3–4 h | Alto |
+| N3 | [x] | Cambio de posición en la tabla | 🟡 Media | ~2–3 h | Alto |
 | N4 | [ ] | Insignia desbloqueada | 🟡 Media | ~2–3 h | Medio |
 | N5 | [ ] | Ventana de campeón abierta / cerrando | 🟡 Media | ~2 h | Medio |
 | N6 | [ ] | Nuevo cruce KO disponible | 🟢 Baja | ~1–2 h | Medio |
@@ -278,10 +278,10 @@ Un usuario en 3 salas recibe **una sola notificación** (los puntos son iguales 
 
 ### Criterios de aceptación
 
-- [ ] Notificación llega al celular dentro de los 5 segundos de que el admin guarda el resultado
-- [ ] Muestra correctamente si acertó o falló
-- [ ] El link lleva a la página de predicciones de su sala
-- [ ] Si el usuario no tiene suscripción activa, no lanza excepción (silent fail)
+- [x] Notificación llega al celular dentro de los 5 segundos de que el admin guarda el resultado
+- [x] Muestra correctamente si acertó o falló
+- [x] El link lleva a la página de predicciones de su sala
+- [x] Si el usuario no tiene suscripción activa, no lanza excepción (silent fail)
 
 ---
 
@@ -337,10 +337,10 @@ builder.Services.AddScoped<NotificationCheckService>();
 
 ### Criterios de aceptación
 
-- [ ] Notificación llega ~60 min antes del kickoff
-- [ ] No se envía si el jugador ya pronosticó
-- [ ] No se envía dos veces al mismo jugador por el mismo partido
-- [ ] Usuarios sin suscripción activa se omiten silenciosamente
+- [x] Notificación llega ~60 min antes del kickoff
+- [x] No se envía si el jugador ya pronosticó
+- [x] No se envía dos veces al mismo jugador por el mismo partido
+- [x] Usuarios sin suscripción activa se omiten silenciosamente
 
 ---
 
@@ -382,11 +382,11 @@ if (previous != null && previous.Position != currentPosition)
 
 ### Criterios de aceptación
 
-- [ ] Notificación llega tras cada finalización de partido que cambia posiciones
-- [ ] Muestra la posición nueva (no la delta)
-- [ ] Incluye el nombre de la sala
-- [ ] No se envía si la posición no cambió
-- [ ] Un usuario en 2 salas puede recibir 2 notificaciones distintas (una por sala)
+- [x] Notificación llega tras cada finalización de partido que cambia posiciones
+- [x] Muestra la posición nueva (no la delta)
+- [x] Incluye el nombre de la sala
+- [x] No se envía si la posición no cambió
+- [x] Un usuario en 2 salas puede recibir 2 notificaciones distintas (una por sala)
 
 ---
 

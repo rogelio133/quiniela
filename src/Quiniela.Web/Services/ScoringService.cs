@@ -4,7 +4,7 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, StandingsService standingsService)
+public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, StandingsService standingsService, PushNotificationService pushService)
 {
     public async Task RecalculateForMatchAsync(int matchId)
     {
@@ -38,10 +38,36 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
 
         await db.SaveChangesAsync();
 
+        await NotifyResultAsync(db, match, predictions);
+
         if (match.Stage == MatchStage.Final)
             await ResolveChampionAsync(db, match);
 
         await SaveSnapshotAsync(db, matchId);
+    }
+
+    /// <summary>
+    /// N1: notifica a cada jugador si acertó o falló el partido recién finalizado. Un usuario en
+    /// varias salas recibe una sola notificación (el partido es el mismo), usando la primera
+    /// predicción encontrada para el link y el desglose de puntos.
+    /// </summary>
+    private async Task NotifyResultAsync(QuinielaDbContext db, Match match, List<Prediction> predictions)
+    {
+        if (predictions.Count == 0) return;
+
+        var homeTeam = await db.Teams.FindAsync(match.HomeTeamId);
+        var awayTeam = await db.Teams.FindAsync(match.AwayTeamId);
+        var matchLabel = $"{homeTeam?.ShortCode ?? "?"} {match.HomeScore}-{match.AwayScore} {awayTeam?.ShortCode ?? "?"}";
+
+        foreach (var group in predictions.GroupBy(p => p.UserId))
+        {
+            var pred = group.OrderBy(p => p.PoolId).First();
+            var body = pred.PtsResult > 0
+                ? $"✅ Acertaste — +{pred.Points} pts"
+                : "❌ Fallaste esta vez";
+
+            await pushService.SendAsync(pred.UserId, $"⚽ {matchLabel}", body, $"/pools/{pred.PoolId}/predictions");
+        }
     }
 
     private static async Task ResolveChampionAsync(QuinielaDbContext db, Match final)
@@ -84,6 +110,15 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
 
         foreach (var poolId in affectedPoolIds)
         {
+            // N3: posiciones previas a este partido, para comparar tras el recálculo (por usuario).
+            var previousPositions = (await db.StandingsSnapshots
+                .Where(s => s.PoolId == poolId && s.Match.KickoffUtc < kickoff)
+                .OrderByDescending(s => s.Match.KickoffUtc)
+                .Select(s => new { s.UserId, s.Position })
+                .ToListAsync())
+                .GroupBy(s => s.UserId)
+                .ToDictionary(g => g.Key, g => g.First().Position);
+
             var matchIdsToRefresh = await db.StandingsSnapshots
                 .Where(s => s.PoolId == poolId && s.Match.KickoffUtc >= kickoff)
                 .Select(s => s.MatchId)
@@ -102,6 +137,8 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
                 .Where(s => s.PoolId == poolId && matchIdsToRefresh.Contains(s.MatchId))
                 .ExecuteDeleteAsync();
 
+            List<StandingsSnapshot>? triggeringSnapshots = null;
+
             foreach (var mId in matchIdsToRefresh)
             {
                 var standings = await standingsService.GetStandingsAsync(db, poolId, kickoffsByMatch[mId]);
@@ -114,11 +151,38 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
                     Position = positions[idx],
                     Points = row.TotalPoints,
                     SavedAt = now,
-                });
+                }).ToList();
                 db.StandingsSnapshots.AddRange(snapshots);
+
+                if (mId == matchId)
+                    triggeringSnapshots = snapshots;
             }
 
             await db.SaveChangesAsync();
+
+            // N3: solo se notifica el cambio de posición del partido que disparó este recálculo,
+            // no de los partidos futuros recomputados en cascada por una corrección.
+            if (triggeringSnapshots is not null)
+                await NotifyPositionChangesAsync(db, poolId, previousPositions, triggeringSnapshots);
+        }
+    }
+
+    private async Task NotifyPositionChangesAsync(
+        QuinielaDbContext db, int poolId, Dictionary<int, int> previousPositions, List<StandingsSnapshot> snapshots)
+    {
+        var pool = await db.Pools.FindAsync(poolId);
+        if (pool is null) return;
+
+        foreach (var snap in snapshots)
+        {
+            if (!previousPositions.TryGetValue(snap.UserId, out var prevPos) || prevPos == snap.Position)
+                continue;
+
+            var direction = snap.Position < prevPos ? "⬆️ Subiste" : "⬇️ Bajaste";
+            await pushService.SendAsync(snap.UserId,
+                $"{direction} al {snap.Position}° lugar",
+                $"Sala: {pool.Name}",
+                $"/pools/{poolId}/standings");
         }
     }
 }

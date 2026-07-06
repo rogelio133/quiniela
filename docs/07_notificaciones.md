@@ -142,10 +142,10 @@ En la práctica casi todos los usuarios pertenecen a una sola sala, por lo que e
 | N1 | [x] | Resultado capturado | 🔴 Alta | ~2–3 h | Muy alto |
 | N2 | [x] | Pronóstico cerrando pronto | 🔴 Alta | ~3–4 h | Alto |
 | N3 | [x] | Cambio de posición en la tabla | 🟡 Media | ~2–3 h | Alto |
-| N4 | [ ] | Insignia desbloqueada | 🟡 Media | ~2–3 h | Medio |
+| N4 | [x] | Insignia desbloqueada | 🟡 Media | ~2–3 h | Medio |
 | N5 | [ ] | Ventana de campeón abierta / cerrando | 🟡 Media | ~2 h | Medio |
-| N6 | [ ] | Nuevo cruce KO disponible | 🟢 Baja | ~1–2 h | Medio |
-| N7 | [ ] | Todos los jugadores ya pronosticaron | 🟢 Baja | ~1–2 h | Bajo |
+| N6 | [x] | Nuevo cruce KO disponible | 🟢 Baja | ~1–2 h | Medio |
+| N7 | [x] | Todos los jugadores ya pronosticaron | 🟢 Baja | ~1–2 h | Bajo |
 
 **Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7  
 N0 es bloqueante: sin infraestructura base no se puede implementar ninguna otra.
@@ -432,10 +432,10 @@ foreach (var member in poolMembers)
 
 ### Criterios de aceptación
 
-- [ ] Notificación llega la primera vez que el jugador gana cada insignia
-- [ ] No se repite si ya fue notificada
-- [ ] Muestra el nombre y sala correctos
-- [ ] Migración `AddNotifiedAchievements` aplicada
+- [x] Notificación llega la primera vez que el jugador gana cada insignia
+- [x] No se repite si ya fue notificada
+- [x] Muestra el nombre y sala correctos
+- [x] Migración `AddNotifiedAchievements` aplicada
 
 ---
 
@@ -503,9 +503,9 @@ foreach (var m in members)
 
 ### Criterios de aceptación
 
-- [ ] Notificación llega a todos los miembros de la sala cuando el admin asigna un cruce
-- [ ] Muestra los nombres/códigos de los dos equipos y la fase
-- [ ] El link lleva directamente a predicciones
+- [x] Notificación llega a todos los miembros de la sala cuando el admin asigna un cruce
+- [x] Muestra los nombres/códigos de los dos equipos y la fase
+- [x] El link lleva directamente a predicciones
 
 ---
 
@@ -541,9 +541,9 @@ if (withPrediction == totalMembers)
 
 ### Criterios de aceptación
 
-- [ ] Notificación se envía solo cuando el **último** miembro completa su pronóstico
-- [ ] No se envía si ya se había completado antes (cambio de pronóstico del último)
-- [ ] Incluye el nombre del partido y de la sala
+- [x] Notificación se envía solo cuando el **último** miembro completa su pronóstico
+- [x] No se envía si ya se había completado antes (cambio de pronóstico del último)
+- [x] Incluye el nombre del partido y de la sala
 
 ---
 

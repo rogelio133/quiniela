@@ -4,8 +4,10 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class KnockoutService(IDbContextFactory<QuinielaDbContext> dbFactory)
+public class KnockoutService(IDbContextFactory<QuinielaDbContext> dbFactory, PushNotificationService pushService)
 {
+    private const string KnockoutAssignedType = "KnockoutAssigned";
+
     public async Task<List<MatchStage>> GetStagesWithMatchesAsync()
     {
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -70,9 +72,72 @@ public class KnockoutService(IDbContextFactory<QuinielaDbContext> dbFactory)
             if (awayTaken) return (false, "El equipo visitante ya está asignado a otro partido de esta ronda.");
         }
 
+        bool wasComplete = match.HomeTeamId is not null && match.AwayTeamId is not null;
+
         match.HomeTeamId = homeTeamId;
         match.AwayTeamId = awayTeamId;
         await db.SaveChangesAsync();
+
+        if (!wasComplete && homeTeamId is not null && awayTeamId is not null)
+            await NotifyMatchAvailableAsync(db, match);
+
         return (true, null);
     }
+
+    /// <summary>
+    /// N6: avisa que un cruce KO ya tiene ambos equipos y se puede pronosticar. Se dispara solo
+    /// cuando el partido pasa de incompleto a completo. Los partidos aplican a todas las salas,
+    /// así que cada usuario recibe una sola notificación (con el nombre de su primera sala),
+    /// deduplicada vía NotificationLog para no repetir si el admin reasigna el cruce.
+    /// </summary>
+    private async Task NotifyMatchAvailableAsync(QuinielaDbContext db, Match match)
+    {
+        var homeTeam = await db.Teams.FindAsync(match.HomeTeamId);
+        var awayTeam = await db.Teams.FindAsync(match.AwayTeamId);
+        var body = $"{homeTeam?.ShortCode ?? "?"} vs. {awayTeam?.ShortCode ?? "?"} — {StageLabel(match.Stage)}";
+
+        var members = await db.PoolMembers
+            .OrderBy(pm => pm.PoolId)
+            .Select(pm => new { pm.UserId, pm.PoolId, pm.Pool.Name })
+            .ToListAsync();
+
+        var alreadyNotified = await db.NotificationLogs
+            .Where(n => n.MatchId == match.Id && n.Type == KnockoutAssignedType)
+            .Select(n => n.UserId)
+            .ToHashSetAsync();
+
+        var now = DateTime.UtcNow;
+
+        foreach (var group in members.GroupBy(m => m.UserId))
+        {
+            if (alreadyNotified.Contains(group.Key)) continue;
+
+            var first = group.First();
+            await pushService.SendAsync(group.Key,
+                "🆕 Nuevo cruce disponible",
+                $"{body}\nSala: {first.Name}",
+                $"/pools/{first.PoolId}/predictions");
+
+            db.NotificationLogs.Add(new NotificationLog
+            {
+                UserId = group.Key,
+                MatchId = match.Id,
+                Type = KnockoutAssignedType,
+                SentAt = now,
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static string StageLabel(MatchStage stage) => stage switch
+    {
+        MatchStage.Dieciseisavos => "Dieciseisavos",
+        MatchStage.Octavos       => "Octavos de Final",
+        MatchStage.Cuartos       => "Cuartos de Final",
+        MatchStage.Semifinal     => "Semifinal",
+        MatchStage.TercerLugar   => "Tercer Lugar",
+        MatchStage.Final         => "Final",
+        _                        => stage.ToString()
+    };
 }

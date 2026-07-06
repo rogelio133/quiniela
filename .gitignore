@@ -88,3 +88,6 @@ Desktop.ini
 *.p12
 secrets.json
 **/secrets/
+
+## Azure Functions ##
+local.settings.json

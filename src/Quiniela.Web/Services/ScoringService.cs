@@ -4,7 +4,11 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, StandingsService standingsService, PushNotificationService pushService)
+public class ScoringService(
+    IDbContextFactory<QuinielaDbContext> dbFactory,
+    StandingsService standingsService,
+    PushNotificationService pushService,
+    AchievementsService achievementsService)
 {
     public async Task RecalculateForMatchAsync(int matchId)
     {
@@ -44,6 +48,53 @@ public class ScoringService(IDbContextFactory<QuinielaDbContext> dbFactory, Stan
             await ResolveChampionAsync(db, match);
 
         await SaveSnapshotAsync(db, matchId);
+
+        var affectedPoolIds = predictions.Select(p => p.PoolId).Distinct().ToList();
+        foreach (var poolId in affectedPoolIds)
+            await NotifyNewAchievementsAsync(db, poolId);
+    }
+
+    /// <summary>
+    /// N4: notifica las insignias que cada miembro desbloqueó con este partido. El set actual
+    /// (calculado on-demand) se compara contra NotifiedAchievements; cualquier clave no registrada
+    /// es nueva. Corre después de SaveSnapshotAsync porque varias insignias dependen de snapshots.
+    /// </summary>
+    private async Task NotifyNewAchievementsAsync(QuinielaDbContext db, int poolId)
+    {
+        var pool = await db.Pools.FindAsync(poolId);
+        if (pool is null) return;
+
+        var achievementsByUser = await achievementsService.GetForPoolAsync(poolId);
+
+        var alreadyNotified = (await db.NotifiedAchievements
+            .Where(n => n.PoolId == poolId)
+            .Select(n => new { n.UserId, n.AchievementKey })
+            .ToListAsync())
+            .Select(n => (n.UserId, n.AchievementKey))
+            .ToHashSet();
+
+        var now = DateTime.UtcNow;
+
+        foreach (var (userId, achievements) in achievementsByUser)
+        {
+            foreach (var ach in achievements.Where(a => !alreadyNotified.Contains((userId, a.Key))))
+            {
+                await pushService.SendAsync(userId,
+                    $"{ach.Icon} ¡Insignia desbloqueada!",
+                    $"\"{ach.Name}\" en {pool.Name}",
+                    $"/pools/{poolId}/achievements");
+
+                db.NotifiedAchievements.Add(new NotifiedAchievement
+                {
+                    UserId = userId,
+                    PoolId = poolId,
+                    AchievementKey = ach.Key,
+                    NotifiedAt = now,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>

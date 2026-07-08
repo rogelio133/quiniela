@@ -77,18 +77,22 @@ public class ScoringService(
 
         foreach (var (userId, achievements) in achievementsByUser)
         {
-            foreach (var ach in achievements.Where(a => !alreadyNotified.Contains((userId, a.Key))))
+            // daily-best/daily-worst se comunican exclusivamente vía N10 (21:30):
+            // notificarlas aquí adelantaría el anuncio a media tarde con el día aún abierto.
+            foreach (var ach in achievements.Where(a =>
+                a.Badge.Key is not "daily-best" and not "daily-worst"
+                && !alreadyNotified.Contains((userId, a.Badge.Key))))
             {
                 await pushService.SendAsync(userId,
-                    $"{ach.Icon} ¡Insignia desbloqueada!",
-                    $"\"{ach.Name}\" en {pool.Name}",
+                    $"{ach.Badge.Icon} ¡Insignia desbloqueada!",
+                    $"\"{ach.Badge.Name}\" en {pool.Name}",
                     $"/pools/{poolId}/achievements");
 
                 db.NotifiedAchievements.Add(new NotifiedAchievement
                 {
                     UserId = userId,
                     PoolId = poolId,
-                    AchievementKey = ach.Key,
+                    AchievementKey = ach.Badge.Key,
                     NotifiedAt = now,
                 });
             }

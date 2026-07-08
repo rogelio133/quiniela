@@ -72,6 +72,7 @@ builder.Services.AddScoped<AchievementsService>();
 builder.Services.AddScoped<PushNotificationService>();
 builder.Services.AddScoped<NotificationCheckService>();
 builder.Services.AddScoped<DailySummaryService>();
+builder.Services.AddScoped<DailyAwardService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

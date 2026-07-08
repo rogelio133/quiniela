@@ -23,21 +23,27 @@ public static class AchievementCatalog
         new("last-minute", "⏱️", "Gol Agónico", "Envió el cambio final de su pronóstico a 30 minutos o menos del kickoff, en 2 o más partidos", AchievementCategory.Ironic),
         new("slot-machine", "🎰", "Modo Tragamonedas", "Cambió su pronóstico 3 veces o más en el mismo partido, en 2 o más partidos distintos", AchievementCategory.Ironic),
         new("sure-shot", "🗿", "Dicho y Hecho", "Nunca cambió ninguno de sus pronósticos, con al menos 10 hechos", AchievementCategory.Positive),
+        new("daily-best", "🌞", "Mejor del día", "Fue quien más puntos sumó en un día de partidos. Una medalla 🏅 por cada día ganado.", AchievementCategory.Positive),
+        new("daily-worst", "🥴", "Peor del día", "Fue quien menos puntos sumó en un día de partidos (no pronosticar cuenta como 0). Una medalla 🏅 por cada día... sufrido.", AchievementCategory.Ironic),
     ];
 
     public static Achievement Get(string key) => All.First(a => a.Key == key);
 }
 
+// Medals = 0 → sin fila de medallas (solo daily-best/daily-worst usan Medals > 0)
+public record EarnedBadge(Achievement Badge, int Medals);
+
 public class AchievementsService(
     IDbContextFactory<QuinielaDbContext> dbFactory,
     PlayerStatsService statsService,
-    StandingsService standingsService)
+    StandingsService standingsService,
+    DailyAwardService dailyAwardService)
 {
     /// <summary>
     /// Insignias obtenidas por cada miembro de la sala. Todo se calcula on-demand
     /// a partir de Predictions/StandingsSnapshot/ChampionPrediction, sin tabla nueva.
     /// </summary>
-    public async Task<Dictionary<int, List<Achievement>>> GetForPoolAsync(int poolId)
+    public async Task<Dictionary<int, List<EarnedBadge>>> GetForPoolAsync(int poolId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
@@ -90,7 +96,9 @@ public class AchievementsService(
                 })
                 .ToList());
 
-        var result = new Dictionary<int, List<Achievement>>();
+        var awardCounts = await dailyAwardService.GetCountsAsync(poolId);
+
+        var result = new Dictionary<int, List<EarnedBadge>>();
         foreach (var userId in members)
         {
             var stats = await statsService.GetAsync(userId, poolId);
@@ -133,7 +141,15 @@ public class AchievementsService(
             if (changes.Count >= 10 && changes.All(c => c.ChangeCount == 0))
                 badges.Add(AchievementCatalog.Get("sure-shot"));
 
-            result[userId] = badges;
+            var earned = badges.Select(b => new EarnedBadge(b, 0)).ToList();
+
+            var (best, worst) = awardCounts.GetValueOrDefault(userId);
+            if (best >= 1)
+                earned.Add(new EarnedBadge(AchievementCatalog.Get("daily-best"), best));
+            if (worst >= 1)
+                earned.Add(new EarnedBadge(AchievementCatalog.Get("daily-worst"), worst));
+
+            result[userId] = earned;
         }
         return result;
     }

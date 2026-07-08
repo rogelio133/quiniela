@@ -290,12 +290,26 @@ public static class DbInitializer
     // snapshot ya existente, el standings tal como era hasta el KickoffUtc de su partido (misma fórmula que
     // StandingsService.GetStandingsAsync/ComputePositions, reimplementada aquí en vez de invocar el servicio
     // por la misma razón que BackfillPredictionPointsAsync: Quiniela.Data no depende de Quiniela.Web).
+    //
+    // Además crea los snapshots que nunca existieron (docs/fixes.md Fix 5): los partidos finalizados
+    // antes del deploy del Módulo F — toda la fase de grupos — no tienen snapshot, así que la evolución
+    // de posiciones y el resumen diario empezaban recién en eliminatorias. Mismo criterio que
+    // ScoringService.SaveSnapshotAsync para decidir qué pools snapshotear: los que tengan al menos
+    // una predicción sobre el partido.
     private static async Task BackfillStandingsSnapshotsAsync(QuinielaDbContext context, ILogger logger)
     {
-        var snapshotKeys = await context.StandingsSnapshots
+        var existingKeys = await context.StandingsSnapshots
             .Select(s => new { s.PoolId, s.MatchId })
             .Distinct()
             .ToListAsync();
+
+        var expectedKeys = await context.Predictions
+            .Where(p => p.Match.Status == MatchStatus.Finalizado)
+            .Select(p => new { p.PoolId, p.MatchId })
+            .Distinct()
+            .ToListAsync();
+
+        var snapshotKeys = existingKeys.Union(expectedKeys).ToList();
 
         if (snapshotKeys.Count == 0) return;
 
@@ -305,6 +319,8 @@ public static class DbInitializer
             .FirstOrDefaultAsync();
 
         int updated = 0;
+        int inserted = 0;
+        var now = DateTime.UtcNow;
 
         foreach (var poolGroup in snapshotKeys.GroupBy(x => x.PoolId))
         {
@@ -368,25 +384,44 @@ public static class DbInitializer
                     .Where(s => s.PoolId == poolId && s.MatchId == matchId)
                     .ToListAsync();
 
-                foreach (var row in rows)
-                {
-                    if (!positionByUser.TryGetValue(row.UserId, out var correctPosition)) continue;
-                    var correctPoints = pointsByUser[row.UserId];
+                var rowsByUser = rows.ToDictionary(r => r.UserId);
 
-                    if (row.Points != correctPoints || row.Position != correctPosition)
+                foreach (var (userId, correctPosition) in positionByUser)
+                {
+                    var correctPoints = pointsByUser[userId];
+
+                    if (rowsByUser.TryGetValue(userId, out var row))
                     {
-                        row.Points = correctPoints;
-                        row.Position = correctPosition;
-                        updated++;
+                        if (row.Points != correctPoints || row.Position != correctPosition)
+                        {
+                            row.Points = correctPoints;
+                            row.Position = correctPosition;
+                            updated++;
+                        }
+                    }
+                    else
+                    {
+                        context.StandingsSnapshots.Add(new StandingsSnapshot
+                        {
+                            PoolId = poolId,
+                            MatchId = matchId,
+                            UserId = userId,
+                            Position = correctPosition,
+                            Points = correctPoints,
+                            SavedAt = now,
+                        });
+                        inserted++;
                     }
                 }
             }
         }
 
-        if (updated == 0) return;
+        if (updated == 0 && inserted == 0) return;
 
         await context.SaveChangesAsync();
-        logger.LogInformation("Backfilled {Count} standings snapshot rows to use kickoff-bounded standings.", updated);
+        logger.LogInformation(
+            "Backfilled standings snapshots: {Updated} rows corrected, {Inserted} rows created.",
+            updated, inserted);
     }
 
     private static async Task SeedDieciseisavosAsync(QuinielaDbContext context, ILogger logger)

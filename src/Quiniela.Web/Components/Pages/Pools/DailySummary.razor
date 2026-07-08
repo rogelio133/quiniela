@@ -1,6 +1,7 @@
 @page "/pools/{poolId:int}/daily-summary"
 @attribute [Authorize]
 @rendermode InteractiveServer
+@implements IDisposable
 
 @using System.Globalization
 @using System.Security.Claims
@@ -192,6 +193,9 @@ else
 
     private int _predictionsMatchId;
     private bool _predictionsSheetOpen;
+    private bool _disposed;
+
+    public void Dispose() => _disposed = true;
 
     private bool HasPrev => summary is not null && summary.AvailableDays.IndexOf(summary.Date) > 0;
     private bool HasNext => summary is not null
@@ -214,6 +218,11 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        // [SupplyParameterFromQuery] re-ejecuta este método con CUALQUIER cambio de URL,
+        // incluido el que sale de esta página (el dispose llega después): si la URL ya no
+        // es la de este componente, el usuario va de salida — no recargar ni re-navegar.
+        if (!IsOnThisPage()) return;
+
         if (pool is null || !isMember)
         {
             isLoading = false;
@@ -237,8 +246,19 @@ else
         hasLoadedOnce = true;
         isLoading = false;
 
+        // Re-verificar DESPUÉS del await: el usuario pudo salir (o el componente ser
+        // desechado) mientras cargaba el resumen — un NavigateTo aquí lo regresaría
+        // a esta página justo cuando iba llegando a la destino.
+        if (_disposed || !IsOnThisPage()) return;
+
         if (summary is not null && Date != lastLoadedDate)
             NavigateToDay(summary.Date);
+    }
+
+    private bool IsOnThisPage()
+    {
+        var path = new Uri(NavigationManager.Uri).AbsolutePath;
+        return path.Equals($"/pools/{PoolId}/daily-summary", StringComparison.OrdinalIgnoreCase);
     }
 
     private void PrevDay() => StepDay(-1);

@@ -142,9 +142,13 @@ public class StandingsService(IDbContextFactory<QuinielaDbContext> dbFactory)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
 
+        // Ordered by the match's kickoff, not by SavedAt: cascaded recomputes (Fix 3) and the
+        // group-stage backfill (Fix 5) rewrite/create many snapshots sharing one SavedAt, so
+        // SavedAt no longer identifies the chronologically latest match — KickoffUtc does.
         var lastMatchId = await db.StandingsSnapshots
             .Where(s => s.PoolId == poolId)
-            .OrderByDescending(s => s.SavedAt)
+            .OrderByDescending(s => s.Match.KickoffUtc)
+            .ThenByDescending(s => s.MatchId)
             .Select(s => (int?)s.MatchId)
             .FirstOrDefaultAsync();
 

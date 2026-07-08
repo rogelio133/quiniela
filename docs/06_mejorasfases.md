@@ -1,7 +1,7 @@
 # 06 — Mejoras de Fases y Funcionalidades Adicionales
 
 **Fecha:** 2026-07-02  
-**Estado:** Pendiente  
+**Estado:** Completado (todos los módulos implementados)  
 **Contexto:** Torneo en fase eliminatoria (Dieciseisavos activos). Módulos 0–8 completos. Este documento recoge las mejoras identificadas al analizar el estado del proyecto, ordenadas por urgencia.
 
 ---
@@ -19,8 +19,9 @@
 | E | [x] | Estadísticas personales | 🟡 Media | ~5–8 h | Medio |
 | F | [x] | Historial de posiciones en Standings | 🟡 Media | ~4–6 h | Medio |
 | H | [x] | Predicción especial "¿Quién gana el Mundial?" | 🟢 Baja | ~5–7 h | Bajo |
+| L | [x] | Resumen diario por sala | 🟡 Media | ~4–6 h | Alto |
 
-**Orden de implementación sugerido:** A → B → C → C1 → C2 → D → E → F → H
+**Orden de implementación sugerido:** A → B → C → C1 → C2 → D → E → F → H → L
 
 > **Nota:** C1/C2 son la continuación natural de C — sin ellos, `/bracket` y el tab "Fases" solo tienen datos reales hasta Dieciseisavos; Octavos→Final existen en el diseño pero no en BD.
 
@@ -1314,6 +1315,170 @@ Requisito transversal: en `/bracket`, las banderas de los equipos **eliminados**
 
 ---
 
+## Módulo L — Resumen diario por sala
+
+### Objetivo
+
+Una página dentro del detalle de una sala que le muestra al jugador **cómo le fue en un día concreto del torneo**: los pronósticos que tuvo ese día con sus puntos, el total de puntos obtenido en el día, la posición en la que cerró el día y si subió o bajó respecto al día anterior. Incluye un selector de fecha para navegar a otros días, y la fecha viaja por **querystring** para que una notificación push (ver N9 en `07_notificaciones.md`) pueda enlazar directamente al resumen de un día específico.
+
+### Ruta
+
+`/pools/{poolId}/daily-summary` con parámetro opcional `?date=2026-07-06`.
+
+- Sin `date` (o con fecha inválida/sin partidos): se muestra el **día más reciente con al menos un partido finalizado**.
+- `date` en formato `yyyy-MM-dd`, leída con `[SupplyParameterFromQuery]` — mismo patrón que `Standings/Versus.razor` (`?a=&b=`).
+- Al cambiar de día en el selector se actualiza la URL con `NavigationManager.NavigateTo(..., replace: true)` para que la vista sea compartible/deep-linkeable.
+
+### Definición de "día"
+
+Un partido pertenece al día en que cae su `KickoffUtc` convertido a **America/Mexico_City** — la misma zona horaria fija que ya usan `MyPredictions.razor`, `Predictions/Index.razor` y `MatchCard.razor` para agrupar por fecha. Así el agrupamiento del resumen diario coincide 1:1 con los grupos de fecha que el usuario ya ve en "Mis pronósticos".
+
+Solo cuentan partidos con `Status == Finalizado` (un partido del día aún en juego o programado no aparece en la lista de resultados; el día sigue "incompleto").
+
+### Diseño de la vista
+
+```
+◀  Sábado 6 de julio  ▶          [📅 selector]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TU DÍA                    +5 pts
+  Posición: #2 de 8         ▲ +1 (subiste desde #3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Partido            Tu pronóstico      Pts
+  ─────────────────────────────────────────
+  🇲🇽 MEX 2–1 POL 🇵🇱   MEX  ✓            +3
+  🇦🇷 ARG 0–0 FRA 🇫🇷   Empate ✓ (90min ✗) +2
+  🇧🇷 BRA 3–1 NOR 🇳🇴   —  (sin pronóstico) 0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  3 partidos · 2 aciertos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🏆 EL MEJOR DEL DÍA
+  jugador2 · +7 pts
+```
+
+- **Header del día:** flechas ◀/▶ para ir al día anterior/siguiente **con partidos finalizados** (se saltan días sin partidos) + un `<input type="date">` nativo acotado con `min`/`max` al rango del torneo.
+- **Bloque "Tu día":** puntos del día, posición al cierre del día y delta vs. cierre del día anterior con la misma convención ▲ verde / ▼ rojo / ─ gris del Módulo F.
+- **Lista de partidos:** una fila por partido finalizado del día; en KO se desglosa `PtsResult` + `PtsInstance` (mismo formato que `MatchPredictionsSheet`). Partidos sin pronóstico muestran `—` en gris con 0 pts.
+- Tocar una fila abre el `MatchPredictionsSheet` existente (Módulo B) para comparar contra el resto de la sala — reutilización directa, sin código nuevo.
+- **🏆 El mejor del día:** al pie, el miembro de la sala que más puntos sumó ese día (avatar + nombre + pts). Si hay empate se muestran todos los empatados; si nadie sumó puntos, el bloque no se muestra. Se calcula con la misma consulta de predicciones del día agregada por usuario (costo extra ~cero).
+
+### Cálculo de posición del día (reutiliza Módulo F)
+
+`StandingsSnapshots` ya guarda, por cada partido finalizado, la posición de cada miembro **al corte de ese partido** (`GetStandingsAsync(db, poolId, asOfKickoffUtc)` en `ScoringService.SaveSnapshotAsync`, con recomputación en cascada si el admin corrige un resultado). No se necesita esquema nuevo:
+
+- **Posición al cierre del día D** = posición del snapshot del **último partido (por `KickoffUtc`) con snapshot ≤ fin del día D** (fin del día en hora CDMX convertido a UTC).
+- **Posición al cierre del día anterior** = ídem con `KickoffUtc < inicio del día D`. Nota: no es "el día D−1" literal — es el último día *con partidos* antes de D, que es la comparación correcta cuando hay días de descanso.
+- **Delta** = anterior − actual (positivo = subió). Si no existe snapshot previo (primer día del torneo): mostrar `─` "primer día".
+- Empates de posición ya vienen resueltos por `StandingsService.ComputePositions` (tie-aware).
+
+### Nuevo servicio: DailySummaryService
+
+```csharp
+public class DailySummaryService(IDbContextFactory<QuinielaDbContext> dbFactory)
+{
+    private static readonly TimeZoneInfo Tz =
+        TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+
+    public record DailyRow(
+        Match Match,
+        char? PredOutcome,               // null = sin pronóstico
+        MatchDecidedIn? PredInstance,
+        int PtsResult, int PtsInstance)
+    {
+        public int Points => PtsResult + PtsInstance;
+    }
+
+    public record DailySummary(
+        DateOnly Date,
+        List<DailyRow> Rows,
+        int DayPoints,
+        int? Position,                   // null si aún no hay snapshot ese día
+        int? PreviousPosition,           // null si es el primer día con datos
+        int TotalMembers,
+        List<DayLeader> DayLeaders,      // "El mejor del día" (varios si hay empate; vacío si nadie sumó)
+        List<DateOnly> AvailableDays);   // días con >= 1 partido finalizado (para el selector)
+
+    public record DayLeader(int UserId, string DisplayName, string? ProfilePicturePath, int Points);
+
+    public async Task<DailySummary?> GetAsync(int poolId, int userId, DateOnly? date)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        // 1) Días disponibles: agrupar partidos finalizados por fecha local CDMX
+        //    (conversión en memoria — son ~100 partidos máximo, trivial)
+        var finalized = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finalizado)
+            .Select(m => new { m.Id, m.KickoffUtc })
+            .ToListAsync();
+
+        var availableDays = finalized
+            .Select(m => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.KickoffUtc, Tz)))
+            .Distinct().OrderBy(d => d).ToList();
+
+        if (availableDays.Count == 0) return null;
+
+        // 2) Resolver fecha efectiva: la pedida si tiene partidos, si no la más reciente
+        var day = date is not null && availableDays.Contains(date.Value)
+            ? date.Value
+            : availableDays[^1];
+
+        var dayStartUtc = TimeZoneInfo.ConvertTimeToUtc(
+            day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified), Tz);
+        var dayEndUtc = dayStartUtc.AddDays(1);
+
+        // 3) Partidos del día + predicción del usuario en esta sala (left join)
+        // 4) Posición al cierre: último snapshot del pool con Match.KickoffUtc < dayEndUtc
+        // 5) Posición previa: último snapshot con Match.KickoffUtc < dayStartUtc
+        // ...
+    }
+}
+```
+
+> **Nota DST:** América/Mexico_City ya no observa horario de verano desde 2022, así que la conversión `DateOnly → rango UTC` es estable (UTC−6 fijo). No hay casos raros de días de 23/25 horas.
+
+### Punto de entrada
+
+Botón nuevo en la fila de accesos rápidos de `Pools/Detail.razor` (junto a Pronosticar / Mis pronósticos / Tabla / Campeón):
+
+```razor
+<a href="/pools/@Id/daily-summary" class="btn btn-outline-info btn-sm">
+    📅 Resumen diario
+</a>
+```
+
+### Casos borde
+
+| Caso | Comportamiento |
+|---|---|
+| `?date=` inválida o sin partidos finalizados | Fallback silencioso al día más reciente con partidos |
+| Día con partidos pero usuario sin pronósticos | Lista con todas las filas en `—`, 0 pts del día, posición sí se muestra |
+| Torneo sin ningún partido finalizado | Mensaje "Aún no hay resultados" (summary `null`) |
+| Día de la Final | Fila extra "👑 Pronóstico campeón" con `PtsChampion` si acertó (los puntos de campeón ya entran al snapshot vía `StandingsService`) |
+| Admin corrige un resultado de un día pasado | El resumen se recalcula solo — todo se computa on-demand desde `Predictions` + `StandingsSnapshots` (que ya se recomputan en cascada) |
+| Usuario no miembro de la sala | Mismo guard que `Pools/Detail.razor` (mensaje "no tienes acceso") |
+
+### Archivos a crear / modificar
+
+| Archivo | Cambio |
+|---|---|
+| `Services/DailySummaryService.cs` | **Nuevo** |
+| `Components/Pages/Pools/DailySummary.razor(.css)` | **Nueva página** en `/pools/{poolId}/daily-summary` con `[SupplyParameterFromQuery] string? Date` |
+| `Components/Pages/Pools/Detail.razor` | Botón "📅 Resumen diario" |
+| `Program.cs` | Registrar `DailySummaryService` |
+
+### Criterio de aceptación
+
+- `/pools/{id}/daily-summary` sin querystring muestra el día más reciente con partidos finalizados.
+- `/pools/{id}/daily-summary?date=2026-07-06` muestra exactamente ese día (deep link desde push N9).
+- Muestra: lista de partidos del día con pronóstico y puntos por partido (desglose KO), total del día, posición al cierre del día y delta ▲/▼/─ vs. el día anterior con partidos.
+- El selector solo permite navegar a días con partidos finalizados; cambiar de día actualiza la URL.
+- Los partidos sin pronóstico del usuario aparecen con `—` y 0 pts (no se ocultan).
+- El bloque "🏆 El mejor del día" muestra al miembro con más puntos del día (todos los empatados si hay empate; oculto si nadie sumó puntos).
+- Solo accesible por miembros de la sala.
+
+### Estimación: 4–6 horas
+
+---
+
 ## Resumen de archivos nuevos del documento completo
 
 | Archivo | Módulo |
@@ -1331,6 +1496,8 @@ Requisito transversal: en `/bracket`, las banderas de los equipos **eliminados**
 | `Components/Shared/KnockoutStageView.razor` | A |
 | `Components/Shared/MatchPredictionsSheet.razor(.css)` | B |
 | `Quiniela.Data/Seeding/Data/matches.json` | C1 |
+| `Services/DailySummaryService.cs` | L |
+| `Components/Pages/Pools/DailySummary.razor(.css)` | L |
 
 ---
 
@@ -1346,6 +1513,7 @@ A (tabs dinámicos, 2h)
                                 └─> E (stats personales, 6h)
                                       └─> F (historial posiciones, 5h)
                                             └─> H (predicción campeón, 5h)
+                                                  └─> L (resumen diario, 4-6h)
 ```
 
-Total estimado: **~34–48 horas** de trabajo.
+Total estimado: **~38–54 horas** de trabajo.

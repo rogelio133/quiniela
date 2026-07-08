@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Quiniela.Data;
 using Quiniela.Data.Entities;
@@ -8,6 +9,11 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
 {
     private const string ReminderType = "MatchReminder";
     private const string MatchStartedType = "MatchStarted";
+    private const string DailySummaryType = "DailySummary";
+
+    // Misma zona fija que DailySummaryService: sin DST desde 2022, conversión estable.
+    private static readonly TimeZoneInfo Tz =
+        TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
 
     public async Task CheckAndNotifyAsync()
     {
@@ -16,6 +22,7 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
         var now = DateTime.UtcNow;
         await CheckUpcomingMatchesAsync(db, now);   // N2
         await CheckStartedMatchesAsync(db, now);    // N8
+        await CheckDailySummaryAsync(db, now);      // N9
     }
 
     private async Task CheckUpcomingMatchesAsync(QuinielaDbContext db, DateTime now)
@@ -138,6 +145,111 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
 
                 db.NotificationLogs.Add(new NotificationLog { UserId = userId, MatchId = match.Id, Type = MatchStartedType, SentAt = now });
             }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// N9: resumen diario a las 22:00 CDMX. El primer ping después de las 22:00 dispara el envío;
+    /// los siguientes quedan bloqueados por la dedup en NotificationLog (una fila por usuario y día,
+    /// con MatchId = último partido finalizado del día). Solo se envía en días con al menos un
+    /// partido finalizado. Es evento de sala: una notificación por sala, con nombre de sala.
+    /// </summary>
+    private async Task CheckDailySummaryAsync(QuinielaDbContext db, DateTime now)
+    {
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(now, Tz);
+        if (localNow.Hour < 22) return;
+
+        var day = DateOnly.FromDateTime(localNow);
+        var dayStartUtc = TimeZoneInfo.ConvertTimeToUtc(
+            day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified), Tz);
+        var dayEndUtc = dayStartUtc.AddDays(1);
+
+        var dayMatches = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finalizado
+                        && m.KickoffUtc >= dayStartUtc && m.KickoffUtc < dayEndUtc)
+            .Select(m => new { m.Id, m.KickoffUtc })
+            .ToListAsync();
+
+        if (dayMatches.Count == 0) return;
+
+        var dayMatchIds = dayMatches.Select(m => m.Id).ToList();
+        var lastMatchId = dayMatches.OrderByDescending(m => m.KickoffUtc).First().Id;
+
+        // Dedup por día local vía join a Match (no por MatchId exacto): si el usuario ya tiene
+        // un log DailySummary cuyo partido cae en este día, ya recibió el resumen de hoy.
+        var alreadyNotified = (await db.NotificationLogs
+            .Where(n => n.Type == DailySummaryType
+                        && n.Match.KickoffUtc >= dayStartUtc && n.Match.KickoffUtc < dayEndUtc)
+            .Select(n => n.UserId)
+            .ToListAsync())
+            .ToHashSet();
+
+        var members = await db.PoolMembers
+            .Select(pm => new { pm.PoolId, pm.UserId, PoolName = pm.Pool.Name })
+            .ToListAsync();
+
+        // Puntos del día por (sala, usuario); Count distingue "0 pts" de "no pronosticó"
+        var dayPoints = (await db.Predictions
+            .Where(p => dayMatchIds.Contains(p.MatchId))
+            .GroupBy(p => new { p.PoolId, p.UserId })
+            .Select(g => new { g.Key.PoolId, g.Key.UserId, Points = g.Sum(p => p.Points), Count = g.Count() })
+            .ToListAsync())
+            .ToDictionary(x => (x.PoolId, x.UserId), x => (x.Points, x.Count));
+
+        // Posiciones: actual = último snapshot antes del fin del día; previa = último antes del
+        // inicio del día (mismo criterio que N3/Módulo L, reutilizando StandingsSnapshots)
+        var snapshots = await db.StandingsSnapshots
+            .Where(s => s.Match.KickoffUtc < dayEndUtc)
+            .Select(s => new { s.PoolId, s.UserId, s.Position, s.Match.KickoffUtc })
+            .ToListAsync();
+
+        var currentPositions = snapshots
+            .GroupBy(s => (s.PoolId, s.UserId))
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.KickoffUtc).First().Position);
+
+        var previousPositions = snapshots
+            .Where(s => s.KickoffUtc < dayStartUtc)
+            .GroupBy(s => (s.PoolId, s.UserId))
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.KickoffUtc).First().Position);
+
+        var title = $"📅 Tu resumen del {day.ToDateTime(TimeOnly.MinValue).ToString("d 'de' MMMM", new CultureInfo("es-MX"))}";
+        var dateParam = day.ToString("yyyy-MM-dd");
+
+        foreach (var userGroup in members.GroupBy(m => m.UserId))
+        {
+            if (alreadyNotified.Contains(userGroup.Key)) continue;
+
+            // Todas las salas del usuario se envían en la misma corrida antes de registrar el log
+            foreach (var member in userGroup)
+            {
+                var (points, predCount) = dayPoints.GetValueOrDefault((member.PoolId, member.UserId));
+                var ptsPart = predCount > 0
+                    ? $"{(points > 0 ? $"+{points}" : "0")} pts hoy"
+                    : "Hoy no pronosticaste";
+
+                string? posPart = null;
+                if (currentPositions.TryGetValue((member.PoolId, member.UserId), out var pos))
+                {
+                    posPart = previousPositions.TryGetValue((member.PoolId, member.UserId), out var prev) && prev != pos
+                        ? (pos < prev ? $"⬆️ Subiste al {pos}° lugar" : $"⬇️ Bajaste al {pos}° lugar")
+                        : $"Sigues en {pos}° lugar";
+                }
+
+                var body = posPart is null ? ptsPart : $"{ptsPart} · {posPart}";
+                await pushService.SendAsync(member.UserId, title,
+                    $"{body}\nSala: {member.PoolName}",
+                    $"/pools/{member.PoolId}/daily-summary?date={dateParam}");
+            }
+
+            db.NotificationLogs.Add(new NotificationLog
+            {
+                UserId = userGroup.Key,
+                MatchId = lastMatchId,
+                Type = DailySummaryType,
+                SentAt = now,
+            });
         }
 
         await db.SaveChangesAsync();

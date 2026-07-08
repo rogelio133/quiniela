@@ -1,0 +1,324 @@
+@page "/pools/{poolId:int}/daily-summary"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject DailySummaryService DailySummaryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Resumen diario — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else if (summary is null)
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Resumen diario</li>
+        </ol>
+    </nav>
+    <div class="alert alert-info">
+        Aún no hay resultados. Vuelve cuando termine el primer partido.
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Resumen diario</li>
+        </ol>
+    </nav>
+
+    @* ── Header del día: ◀ fecha ▶ + selector ─────────────────── *@
+    <div class="ds-header">
+        <button class="ds-nav-btn" @onclick="PrevDay" disabled="@(!HasPrev)" aria-label="Día anterior">◀</button>
+        <span class="ds-day-label">@FormatDay(summary.Date)</span>
+        <button class="ds-nav-btn" @onclick="NextDay" disabled="@(!HasNext)" aria-label="Día siguiente">▶</button>
+        <input type="date"
+               class="form-control form-control-sm ds-date-input"
+               value="@summary.Date.ToString("yyyy-MM-dd")"
+               min="@summary.AvailableDays[0].ToString("yyyy-MM-dd")"
+               max="@summary.AvailableDays[^1].ToString("yyyy-MM-dd")"
+               @onchange="OnDatePicked" />
+    </div>
+
+    @* ── Bloque "Tu día" ──────────────────────────────────────── *@
+    <div class="ds-card ds-myday anim-fade-in-up">
+        <div class="ds-myday-row">
+            <span class="ds-myday-title">Tu día</span>
+            <span class="ds-myday-pts @(summary.DayPoints > 0 ? "ds-pts-pos" : "")">
+                @(summary.DayPoints > 0 ? $"+{summary.DayPoints}" : "0") pts
+            </span>
+        </div>
+        <div class="ds-myday-row">
+            <span class="ds-myday-pos">
+                Posición: @(summary.Position is null ? "—" : $"#{summary.Position} de {summary.TotalMembers}")
+            </span>
+            @{ var (deltaClass, deltaText) = DeltaFor(); }
+            <span class="ds-myday-delta @deltaClass">@deltaText</span>
+        </div>
+    </div>
+
+    @* ── Partidos del día ─────────────────────────────────────── *@
+    <div class="ds-card anim-fade-in-up">
+        <div class="ds-rows">
+            @foreach (var row in summary.Rows)
+            {
+                <button type="button" class="ds-row" @key="row.Match.Id"
+                        @onclick="() => OpenPredictionsSheet(row.Match.Id)">
+                    <span class="ds-row-match">
+                        @if (row.Match.HomeTeam is not null)
+                        {
+                            <span class="fi fi-@row.Match.HomeTeam.FlagCode.ToLower() ds-flag"></span>
+                            <span class="ds-team-code">@TeamCode(row.Match.HomeTeam)</span>
+                        }
+                        <span class="ds-score">@row.Match.HomeScore–@row.Match.AwayScore</span>
+                        @if (row.Match.AwayTeam is not null)
+                        {
+                            <span class="ds-team-code">@TeamCode(row.Match.AwayTeam)</span>
+                            <span class="fi fi-@row.Match.AwayTeam.FlagCode.ToLower() ds-flag"></span>
+                        }
+                    </span>
+                    <span class="ds-row-pred">
+                        @if (row.PredOutcome is null)
+                        {
+                            <span class="ds-pred-none">— sin pronóstico</span>
+                        }
+                        else
+                        {
+                            <span class="ds-pred-pick">
+                                @PredictionLabel(row)
+                                <span class="@(row.PtsResult > 0 ? "ds-hit" : "ds-miss")">
+                                    @(row.PtsResult > 0 ? "✓" : "✗")
+                                </span>
+                            </span>
+                            @if (row.PredInstance is not null)
+                            {
+                                <span class="ds-inst-chip @(row.PtsInstance > 0 ? "ds-inst-hit" : "")">
+                                    @InstanceLabel(row.PredInstance.Value) @(row.PtsInstance > 0 ? "✓" : "✗")
+                                </span>
+                            }
+                        }
+                    </span>
+                    <span class="ds-row-pts @(row.Points > 0 ? "ds-pts-pos" : "ds-pts-zero")">
+                        @(row.Points > 0 ? $"+{row.Points}" : "0")
+                    </span>
+                </button>
+            }
+
+            @if (summary.Champion is not null)
+            {
+                <div class="ds-row ds-row-champion">
+                    <span class="ds-row-match">
+                        👑 Pronóstico campeón:
+                        <span class="fi fi-@summary.Champion.FlagCode.ToLower() ds-flag"></span>
+                        <span class="ds-team-code">@(summary.Champion.ShortCode ?? summary.Champion.TeamName)</span>
+                        <span class="@(summary.Champion.Points > 0 ? "ds-hit" : "ds-miss")">
+                            @(summary.Champion.Points > 0 ? "✓" : "✗")
+                        </span>
+                    </span>
+                    <span class="ds-row-pts @(summary.Champion.Points > 0 ? "ds-pts-pos" : "ds-pts-zero")">
+                        @(summary.Champion.Points > 0 ? $"+{summary.Champion.Points}" : "0")
+                    </span>
+                </div>
+            }
+        </div>
+        <div class="ds-footer">
+            @summary.Rows.Count @(summary.Rows.Count == 1 ? "partido" : "partidos")
+            · @hits @(hits == 1 ? "acierto" : "aciertos")
+        </div>
+    </div>
+
+    @* ── El mejor del día ─────────────────────────────────────── *@
+    @if (summary.DayLeaders.Count > 0)
+    {
+        <div class="ds-card ds-best anim-fade-in-up">
+            <div class="ds-best-title">🏆 El mejor del día</div>
+            @foreach (var leader in summary.DayLeaders)
+            {
+                <div class="ds-best-row" @key="leader.UserId">
+                    @if (!string.IsNullOrEmpty(leader.ProfilePicturePath))
+                    {
+                        <img src="@leader.ProfilePicturePath" class="ds-best-avatar" alt="@leader.DisplayName" />
+                    }
+                    else
+                    {
+                        <div class="ds-best-avatar ds-best-avatar-fallback">⚽</div>
+                    }
+                    <span class="ds-best-name">@leader.DisplayName</span>
+                    <span class="ds-best-pts">+@leader.Points pts</span>
+                </div>
+            }
+        </div>
+    }
+
+    <MatchPredictionsSheet MatchId="_predictionsMatchId"
+                           PoolId="PoolId"
+                           IsOpen="_predictionsSheetOpen"
+                           OnClose="ClosePredictionsSheet" />
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "date")] public string? Date { get; set; }
+
+    private Pool? pool;
+    private bool isMember;
+    private bool isLoading = true;
+    private int currentUserId;
+
+    private DailySummaryService.DailySummary? summary;
+    private string? lastLoadedDate;
+    private bool hasLoadedOnce;
+    private int hits;
+
+    private int _predictionsMatchId;
+    private bool _predictionsSheetOpen;
+
+    private bool HasPrev => summary is not null && summary.AvailableDays.IndexOf(summary.Date) > 0;
+    private bool HasNext => summary is not null
+        && summary.AvailableDays.IndexOf(summary.Date) < summary.AvailableDays.Count - 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        pool = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (pool is null || !isMember)
+        {
+            isLoading = false;
+            return;
+        }
+
+        // Se recarga al entrar y cada vez que cambia ?date= (navegación replace en la misma página)
+        if (hasLoadedOnce && Date == lastLoadedDate)
+            return;
+
+        DateOnly? requested = DateOnly.TryParseExact(Date, "yyyy-MM-dd", out var parsed)
+            ? parsed
+            : null;
+
+        summary = await DailySummaryService.GetAsync(PoolId, currentUserId, requested);
+        hits = summary?.Rows.Count(r => r.PtsResult > 0) ?? 0;
+
+        // Fecha inválida o sin partidos: el servicio cae al día más reciente — se
+        // normaliza la URL para que refleje el día realmente mostrado.
+        lastLoadedDate = summary?.Date.ToString("yyyy-MM-dd") ?? Date;
+        hasLoadedOnce = true;
+        isLoading = false;
+
+        if (summary is not null && Date != lastLoadedDate)
+            NavigateToDay(summary.Date);
+    }
+
+    private void PrevDay() => StepDay(-1);
+    private void NextDay() => StepDay(+1);
+
+    private void StepDay(int delta)
+    {
+        if (summary is null) return;
+        var idx = summary.AvailableDays.IndexOf(summary.Date) + delta;
+        if (idx < 0 || idx >= summary.AvailableDays.Count) return;
+        NavigateToDay(summary.AvailableDays[idx]);
+    }
+
+    private void OnDatePicked(ChangeEventArgs e)
+    {
+        if (summary is null) return;
+        if (!DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", out var picked)) return;
+
+        // El input permite días sin partidos dentro del rango: se salta al día
+        // disponible más cercano en lugar de dejar que el servicio caiga al último.
+        var target = summary.AvailableDays.Contains(picked)
+            ? picked
+            : summary.AvailableDays.OrderBy(d => Math.Abs(d.DayNumber - picked.DayNumber)).First();
+
+        NavigateToDay(target);
+    }
+
+    private void NavigateToDay(DateOnly day)
+    {
+        NavigationManager.NavigateTo(
+            $"/pools/{PoolId}/daily-summary?date={day:yyyy-MM-dd}", replace: true);
+    }
+
+    private (string Class, string Text) DeltaFor()
+    {
+        if (summary?.Position is null) return ("ds-delta-flat", "");
+        if (summary.PreviousPosition is null) return ("ds-delta-flat", "─ primer día");
+
+        var delta = summary.PreviousPosition.Value - summary.Position.Value; // positivo = subió
+        return delta switch
+        {
+            > 0 => ("ds-delta-up", $"▲ +{delta} (subiste desde #{summary.PreviousPosition})"),
+            < 0 => ("ds-delta-down", $"▼ {delta} (bajaste desde #{summary.PreviousPosition})"),
+            _ => ("ds-delta-flat", "─ sin cambio"),
+        };
+    }
+
+    private string PredictionLabel(DailySummaryService.DailyRow row) => row.PredOutcome switch
+    {
+        'H' => TeamCode(row.Match.HomeTeam),
+        'A' => TeamCode(row.Match.AwayTeam),
+        'D' => "Empate",
+        _ => "?",
+    };
+
+    private static string TeamCode(Team? team) => team?.ShortCode ?? team?.Name ?? "?";
+
+    private static string InstanceLabel(MatchDecidedIn instance) => instance switch
+    {
+        MatchDecidedIn.Regular90 => "90'",
+        MatchDecidedIn.ExtraTime => "T.Extra",
+        MatchDecidedIn.Penalties => "Penales",
+        _ => instance.ToString()
+    };
+
+    private static string FormatDay(DateOnly date)
+    {
+        var text = date.ToDateTime(TimeOnly.MinValue)
+            .ToString("dddd d 'de' MMMM", new CultureInfo("es-MX"));
+        return char.ToUpper(text[0]) + text[1..];
+    }
+
+    private void OpenPredictionsSheet(int matchId)
+    {
+        _predictionsMatchId = matchId;
+        _predictionsSheetOpen = true;
+    }
+
+    private void ClosePredictionsSheet()
+    {
+        _predictionsSheetOpen = false;
+    }
+}

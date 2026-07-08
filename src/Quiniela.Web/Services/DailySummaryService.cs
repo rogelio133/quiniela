@@ -35,6 +35,7 @@ public class DailySummaryService(IDbContextFactory<QuinielaDbContext> dbFactory)
         int? PreviousPosition,           // null si es el primer día con datos
         int TotalMembers,
         List<DayLeader> DayLeaders,      // "El mejor del día" (varios si hay empate; vacío si nadie sumó)
+        List<DayLeader> DayWorst,        // "El peor del día" (varios si hay empate; vacío si todos empatan)
         List<DateOnly> AvailableDays,    // días con >= 1 partido finalizado (para el selector)
         ChampionRow? Champion);          // solo el día de la Final, si el usuario pronosticó campeón
 
@@ -92,7 +93,11 @@ public class DailySummaryService(IDbContextFactory<QuinielaDbContext> dbFactory)
         var position = await SnapshotPositionAsync(db, poolId, userId, dayEndUtc);
         var previousPosition = await SnapshotPositionAsync(db, poolId, userId, dayStartUtc);
 
-        var totalMembers = await db.PoolMembers.CountAsync(pm => pm.PoolId == poolId);
+        var memberList = await db.PoolMembers
+            .Where(pm => pm.PoolId == poolId)
+            .Select(pm => new { pm.UserId, pm.User.DisplayName, pm.User.ProfilePicturePath })
+            .ToListAsync();
+        var totalMembers = memberList.Count;
 
         // 6) Día de la Final: fila extra con el pronóstico de campeón del usuario, y
         //    puntos de campeón por usuario para incluirlos en los totales del día
@@ -111,8 +116,8 @@ public class DailySummaryService(IDbContextFactory<QuinielaDbContext> dbFactory)
                 .ToDictionaryAsync(c => c.UserId, c => c.Points);
         }
 
-        // 7) El mejor del día: misma consulta de predicciones del día agregada por usuario
-        //    (+ puntos de campeón el día de la Final)
+        // 7) El mejor / peor del día: misma consulta de predicciones del día agregada
+        //    por usuario (+ puntos de campeón el día de la Final)
         var totalsByUser = (await db.Predictions
             .Where(p => p.PoolId == poolId && matchIds.Contains(p.MatchId))
             .GroupBy(p => p.UserId)
@@ -127,25 +132,39 @@ public class DailySummaryService(IDbContextFactory<QuinielaDbContext> dbFactory)
         var maxPoints = totalsByUser.Count > 0 ? totalsByUser.Values.Max() : 0;
         if (maxPoints > 0)
         {
-            var leaderIds = totalsByUser
-                .Where(t => t.Value == maxPoints)
-                .Select(t => t.Key)
-                .ToList();
-
-            leaders = (await db.PoolMembers
-                .Where(pm => pm.PoolId == poolId && leaderIds.Contains(pm.UserId))
-                .Select(pm => new { pm.UserId, pm.User.DisplayName, pm.User.ProfilePicturePath })
-                .ToListAsync())
-                .Select(x => new DayLeader(x.UserId, x.DisplayName, x.ProfilePicturePath, maxPoints))
+            leaders = memberList
+                .Where(m => totalsByUser.GetValueOrDefault(m.UserId) == maxPoints)
+                .Select(m => new DayLeader(m.UserId, m.DisplayName, m.ProfilePicturePath, maxPoints))
                 .OrderBy(l => l.DisplayName)
                 .ToList();
+        }
+
+        // El peor del día: participan TODOS los miembros (sin pronóstico = 0 puntos,
+        // mismo criterio que DailyAwardService). Solo se muestra si el día tiene
+        // diferencias (max != min sobre todos los miembros); es informativo — la
+        // medalla del logro además exige que el peor sea único (sin empate).
+        var dayWorst = new List<DayLeader>();
+        if (memberList.Count > 0)
+        {
+            var perMember = memberList.ToDictionary(
+                m => m.UserId, m => totalsByUser.GetValueOrDefault(m.UserId));
+            var minPoints = perMember.Values.Min();
+            var maxAll = perMember.Values.Max();
+            if (maxAll != minPoints)
+            {
+                dayWorst = memberList
+                    .Where(m => perMember[m.UserId] == minPoints)
+                    .Select(m => new DayLeader(m.UserId, m.DisplayName, m.ProfilePicturePath, minPoints))
+                    .OrderBy(l => l.DisplayName)
+                    .ToList();
+            }
         }
 
         var dayPoints = rows.Sum(r => r.Points) + (champion?.Points ?? 0);
 
         return new DailySummary(
             day, rows, dayPoints, position, previousPosition,
-            totalMembers, leaders, availableDays, champion);
+            totalMembers, leaders, dayWorst, availableDays, champion);
     }
 
     /// <summary>

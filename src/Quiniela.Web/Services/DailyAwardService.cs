@@ -8,8 +8,11 @@ namespace Quiniela.Web.Services;
 /// Mejor/peor del día por sala, calculado siempre on-demand desde Predictions +
 /// Matches finalizados agrupados por fecha local CDMX (sin tabla nueva, se
 /// auto-corrige si el admin corrige un marcador viejo). Todos los miembros de
-/// la sala participan: no pronosticar un día cuenta como 0 puntos. Si max == min
-/// (todos empatados, incluye "nadie pronosticó") el día no otorga nada.
+/// la sala participan: no pronosticar un día cuenta como 0 puntos. Cada medalla
+/// exige un ganador único: si el máximo (o el mínimo) lo comparten 2+ jugadores,
+/// ese lado no se otorga ese día — los lados son independientes (puede haber
+/// mejor sin peor y viceversa). Si max == min (todos empatados, incluye "nadie
+/// pronosticó") el día no otorga nada.
 /// Consumido por AchievementsService (conteo de medallas) y N10 (día específico).
 /// </summary>
 public class DailyAwardService(IDbContextFactory<QuinielaDbContext> dbFactory)
@@ -20,14 +23,15 @@ public class DailyAwardService(IDbContextFactory<QuinielaDbContext> dbFactory)
 
     public record DayAwards(
         DateOnly Day,
-        List<int> BestUserIds,    // todos los empatados con el máximo
-        List<int> WorstUserIds,   // todos los empatados con el mínimo
+        int? BestUserId,     // null = empate en el máximo, ese lado no se otorga
+        int? WorstUserId,    // null = empate en el mínimo, ese lado no se otorga
         int MaxPoints,
         int MinPoints);
 
     /// <summary>
-    /// Todos los días con >= 1 partido finalizado que otorgaron premio (max != min),
-    /// incluido el día en curso. Base para el conteo de medallas.
+    /// Todos los días con >= 1 partido finalizado que otorgaron al menos una de las
+    /// dos medallas (mejor o peor únicos), incluido el día en curso. Base para el
+    /// conteo de medallas.
     /// </summary>
     public async Task<List<DayAwards>> GetAllAsync(int poolId)
     {
@@ -89,11 +93,15 @@ public class DailyAwardService(IDbContextFactory<QuinielaDbContext> dbFactory)
             var min = perMember.Values.Min();
             if (max == min) continue; // todos empatados: no se otorga nada
 
-            result.Add(new DayAwards(
-                day,
-                perMember.Where(kv => kv.Value == max).Select(kv => kv.Key).ToList(),
-                perMember.Where(kv => kv.Value == min).Select(kv => kv.Key).ToList(),
-                max, min));
+            // Medalla solo con ganador único: un empate en el máximo (o mínimo)
+            // anula ese lado; el otro lado se otorga de forma independiente.
+            var bestIds = perMember.Where(kv => kv.Value == max).Select(kv => kv.Key).ToList();
+            var worstIds = perMember.Where(kv => kv.Value == min).Select(kv => kv.Key).ToList();
+            int? bestUserId = bestIds.Count == 1 ? bestIds[0] : null;
+            int? worstUserId = worstIds.Count == 1 ? worstIds[0] : null;
+            if (bestUserId is null && worstUserId is null) continue; // ambos lados empatados
+
+            result.Add(new DayAwards(day, bestUserId, worstUserId, max, min));
         }
 
         return result;
@@ -105,21 +113,21 @@ public class DailyAwardService(IDbContextFactory<QuinielaDbContext> dbFactory)
         var counts = new Dictionary<int, (int Best, int Worst)>();
         foreach (var day in await GetAllAsync(poolId))
         {
-            foreach (var userId in day.BestUserIds)
+            if (day.BestUserId is int bestId)
             {
-                var c = counts.GetValueOrDefault(userId);
-                counts[userId] = (c.Best + 1, c.Worst);
+                var c = counts.GetValueOrDefault(bestId);
+                counts[bestId] = (c.Best + 1, c.Worst);
             }
-            foreach (var userId in day.WorstUserIds)
+            if (day.WorstUserId is int worstId)
             {
-                var c = counts.GetValueOrDefault(userId);
-                counts[userId] = (c.Best, c.Worst + 1);
+                var c = counts.GetValueOrDefault(worstId);
+                counts[worstId] = (c.Best, c.Worst + 1);
             }
         }
         return counts;
     }
 
-    /// <summary>Un día específico (lo usa N10 a las 21:30). Null si el día no otorga premio.</summary>
+    /// <summary>Un día específico (lo usa N10 a las 21:30). Null si el día no otorga ninguna medalla.</summary>
     public async Task<DayAwards?> GetForDayAsync(int poolId, DateOnly day)
     {
         var all = await GetAllAsync(poolId);

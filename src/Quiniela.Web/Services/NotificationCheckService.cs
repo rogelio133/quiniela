@@ -160,8 +160,9 @@ public class NotificationCheckService(
     /// ping después de las 21:30 dispara el envío; la dedup en NotificationLog (una fila por
     /// usuario y día, MatchId = último partido finalizado del día) bloquea los siguientes.
     /// Es evento de sala: en cada sala con premio (DailyAwardService.GetForDayAsync != null),
-    /// el mejor y el peor reciben su versión personal y el resto el anuncio con nombres.
-    /// Salas sin premio (todos empatados) no reciben nada. Resultados capturados después del
+    /// el mejor y el peor (únicos, sin empate — un lado empatado no se otorga) reciben su
+    /// versión personal y el resto el anuncio con los lados que sí hubo premio.
+    /// Salas sin ninguna medalla no reciben nada. Resultados capturados después del
     /// envío no provocan reenvío ni retractación — la vitrina on-demand es la verdad.
     /// </summary>
     private async Task CheckDailyAwardsAsync(QuinielaDbContext db, DateTime now)
@@ -206,17 +207,15 @@ public class NotificationCheckService(
 
         if (awardsByPool.Count == 0) return;
 
-        // Nombres para el anuncio, unidos con " y " cuando hay empate
-        var bestNamesByPool = awardsByPool.ToDictionary(
+        // Nombre del ganador único de cada lado para el anuncio (null = lado sin medalla)
+        var bestNameByPool = awardsByPool.ToDictionary(
             kv => kv.Key,
-            kv => string.Join(" y ", members
-                .Where(m => m.PoolId == kv.Key && kv.Value.BestUserIds.Contains(m.UserId))
-                .Select(m => m.DisplayName).OrderBy(n => n)));
-        var worstNamesByPool = awardsByPool.ToDictionary(
+            kv => members.FirstOrDefault(m =>
+                m.PoolId == kv.Key && m.UserId == kv.Value.BestUserId)?.DisplayName);
+        var worstNameByPool = awardsByPool.ToDictionary(
             kv => kv.Key,
-            kv => string.Join(" y ", members
-                .Where(m => m.PoolId == kv.Key && kv.Value.WorstUserIds.Contains(m.UserId))
-                .Select(m => m.DisplayName).OrderBy(n => n)));
+            kv => members.FirstOrDefault(m =>
+                m.PoolId == kv.Key && m.UserId == kv.Value.WorstUserId)?.DisplayName);
 
         foreach (var userGroup in members.GroupBy(m => m.UserId))
         {
@@ -230,14 +229,14 @@ public class NotificationCheckService(
 
                 var url = $"/pools/{member.PoolId}/achievements";
 
-                if (awards.BestUserIds.Contains(member.UserId))
+                if (awards.BestUserId == member.UserId)
                 {
                     await pushService.SendAsync(member.UserId,
                         "🔮 Hoy amaneciste brujo",
                         $"Fuiste el mejor del día en \"{member.PoolName}\".\nNadie te llegó ni a los talones.\nPasa a recoger tu medalla 🏅",
                         url);
                 }
-                else if (awards.WorstUserIds.Contains(member.UserId))
+                else if (awards.WorstUserId == member.UserId)
                 {
                     await pushService.SendAsync(member.UserId,
                         "🥴 Ouch… el peor del día",
@@ -246,12 +245,16 @@ public class NotificationCheckService(
                 }
                 else
                 {
-                    var bestLine = awards.BestUserIds.Count > 1
-                        ? $"{bestNamesByPool[member.PoolId]} son los mejores del día 👑"
-                        : $"{bestNamesByPool[member.PoolId]} es el mejor del día 👑";
+                    // Solo se anuncian los lados con medalla; el lado empatado se omite
+                    var lines = new List<string>();
+                    if (bestNameByPool[member.PoolId] is string bestName)
+                        lines.Add($"{bestName} es el mejor del día 👑");
+                    if (worstNameByPool[member.PoolId] is string worstName)
+                        lines.Add($"{worstName}… mejor ni preguntes 💀");
+
                     await pushService.SendAsync(member.UserId,
                         $"📰 Última hora en \"{member.PoolName}\"",
-                        $"{bestLine}\n{worstNamesByPool[member.PoolId]}… mejor ni preguntes 💀",
+                        string.Join("\n", lines),
                         url);
                 }
 

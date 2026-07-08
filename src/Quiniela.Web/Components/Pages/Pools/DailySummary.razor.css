@@ -1,0 +1,283 @@
+/* ── Header del día ────────────────────────────────────────── */
+.ds-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.ds-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-sm);
+    background: var(--q-surface);
+    color: var(--q-text);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.ds-nav-btn:hover:not(:disabled) {
+    background: var(--q-bg);
+}
+
+.ds-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.ds-day-label {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--q-text);
+    min-width: 0;
+}
+
+.ds-date-input {
+    max-width: 160px;
+    margin-left: auto;
+}
+
+/* ── Tarjetas ──────────────────────────────────────────────── */
+.ds-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r);
+    box-shadow: var(--q-sh-sm);
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+/* ── Bloque "Tu día" ───────────────────────────────────────── */
+.ds-myday {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ds-myday-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ds-myday-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--q-muted);
+}
+
+.ds-myday-pts {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--q-text);
+}
+
+.ds-myday-pos {
+    font-size: 0.88rem;
+    color: var(--q-text);
+}
+
+.ds-myday-delta {
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.ds-delta-up { color: var(--q-green); }
+.ds-delta-down { color: var(--q-red); }
+.ds-delta-flat { color: var(--q-muted); }
+
+/* ── Filas de partidos ─────────────────────────────────────── */
+.ds-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.ds-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    border-bottom: 1px solid var(--q-border);
+    background: transparent;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--q-text);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.ds-row:hover {
+    background: var(--q-bg);
+}
+
+.ds-row:last-child {
+    border-bottom: none;
+}
+
+.ds-row-champion {
+    cursor: default;
+    background: color-mix(in srgb, var(--q-gold) 8%, transparent);
+}
+
+.ds-row-champion:hover {
+    background: color-mix(in srgb, var(--q-gold) 8%, transparent);
+}
+
+.ds-row-match {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    min-width: 128px;
+}
+
+.ds-flag {
+    border-radius: 2px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.ds-team-code {
+    font-weight: 700;
+}
+
+.ds-score {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    padding: 0 2px;
+}
+
+.ds-row-pred {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-grow: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.ds-pred-none {
+    color: var(--q-muted);
+    font-size: 0.78rem;
+}
+
+.ds-pred-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.ds-hit { color: var(--q-green); font-weight: 800; }
+.ds-miss { color: var(--q-red); font-weight: 800; }
+
+.ds-inst-chip {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--q-border);
+    color: var(--q-muted);
+    white-space: nowrap;
+}
+
+.ds-inst-hit {
+    color: var(--q-green);
+    border-color: var(--q-green);
+}
+
+.ds-row-pts {
+    flex-shrink: 0;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    min-width: 32px;
+    text-align: right;
+}
+
+.ds-pts-pos { color: var(--q-green); }
+.ds-pts-zero { color: var(--q-muted); }
+
+.ds-footer {
+    padding: 8px 14px;
+    border-top: 1px solid var(--q-border);
+    font-size: 0.75rem;
+    color: var(--q-muted);
+    background: var(--q-bg);
+}
+
+/* ── El mejor del día ──────────────────────────────────────── */
+.ds-best {
+    padding: 12px 16px;
+}
+
+.ds-best-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--q-muted);
+    margin-bottom: 8px;
+}
+
+.ds-best-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.ds-best-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.ds-best-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 1rem;
+}
+
+.ds-best-name {
+    flex-grow: 1;
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ds-best-pts {
+    font-weight: 800;
+    color: var(--q-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+    .ds-row {
+        flex-wrap: wrap;
+    }
+
+    .ds-row-pred {
+        order: 3;
+        width: 100%;
+    }
+}

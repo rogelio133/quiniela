@@ -17,7 +17,7 @@ Las notificaciones se dividen en dos categorías según cómo se disparan:
 | Categoría | Disparador | Funciona en F1 sin cambios |
 |-----------|-----------|---------------------------|
 | **Por acción** (N1, N3, N4, N6, N7) | Admin guarda resultado / jugador pronostica → app ya está despierta | ✅ Sí |
-| **Por tiempo** (N2, N5, N8) | Necesitan revisar cada 10 min aunque nadie esté en la app | ❌ No |
+| **Por tiempo** (N2, N5, N8, N9) | Necesitan revisar cada 10 min aunque nadie esté en la app | ❌ No |
 
 Para las notificaciones por tiempo se agrega un **Azure Function con timer** (Consumption plan, gratis hasta 1M ejecuciones/mes) que pingea la Blazor app cada 10 minutos. El ping despierta la app y dispara la revisión — toda la lógica queda en la Blazor app, la Function solo actúa como reloj externo.
 
@@ -32,7 +32,8 @@ App Service F1 (despierta si dormida, ~5 seg cold start)
       │
       ├── ¿Partidos sin pronosticar en <60 min? → push a usuarios   [N2]
       ├── ¿Ventana campeón abierta/cerrando?    → push a usuarios   [N5]
-      └── ¿Partido comenzó en últimos 10 min?   → push a usuarios   [N8]
+      ├── ¿Partido comenzó en últimos 10 min?   → push a usuarios   [N8]
+      └── ¿Ya son las 22:00 CDMX?               → resumen diario    [N9]
 
 Eventos por acción del admin/jugador
       │
@@ -148,8 +149,9 @@ En la práctica casi todos los usuarios pertenecen a una sola sala, por lo que e
 | N6 | [x] | Nuevo cruce KO disponible | 🟢 Baja | ~1–2 h | Medio |
 | N7 | [x] | Todos los jugadores ya pronosticaron | 🟢 Baja | ~1–2 h | Bajo |
 | N8 | [x] | Partido comenzado | 🟢 Baja | ~1–2 h | Medio |
+| N9 | [x] | Resumen diario a las 22:00 (link al Módulo L) | 🟡 Media | ~2 h | Alto |
 
-**Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7 → N8  
+**Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7 → N8 → N9  
 N0 es bloqueante: sin infraestructura base no se puede implementar ninguna otra.
 
 ---
@@ -606,6 +608,86 @@ Notas:
 - [x] Un usuario en varias salas recibe una sola notificación
 - [x] Partidos placeholder KO sin equipos asignados se omiten
 - [x] Usuarios sin suscripción activa se omiten silenciosamente
+
+---
+
+## Módulo N9 — Resumen diario
+
+### Objetivo
+
+Todos los días **a las 22:00 hora CDMX**, enviar a cada jugador un push "Aquí está tu resumen diario" con sus puntos del día y su movimiento en la tabla, enlazando al **Módulo L — Resumen diario** (`06_mejorasfases.md`) con la fecha por querystring. Solo se envía en días con al menos un partido finalizado.
+
+**Depende del Módulo L** (la página destino debe existir primero).
+
+### Mensaje
+
+> 📅 **Tu resumen del 6 de julio**  
+> +5 pts hoy · ⬆️ Subiste al 2° lugar  
+> Sala: Quiniela Amigos 2026
+
+Variantes del cuerpo según el caso:
+- Con cambio de posición: `+5 pts hoy · ⬆️ Subiste al 2° lugar` / `⬇️ Bajaste al 4° lugar`
+- Sin cambio: `+5 pts hoy · Sigues en 2° lugar`
+- Sin pronósticos ese día: `Hoy no pronosticaste · Sigues en 3° lugar`
+
+El link lleva a `/pools/{poolId}/daily-summary?date=2026-07-06` — por eso el Módulo L acepta la fecha por querystring.
+
+### Categoría: evento de sala, disparado por tiempo (21:00 CDMX)
+
+- Es un evento de **sala** (la posición depende de la sala): una notificación por sala, **incluye nombre de sala** (ver Consideración de diseño: multi-sala). Los puntos del día son iguales en todas las salas, pero la posición no.
+- Es un evento **por tiempo**: se envía **una vez al día a las 22:00 hora CDMX** (decisión de producto), independientemente de si el admin ya capturó todos los resultados. La lógica vive en `NotificationCheckService` junto a N2/N5/N8, invocada por el ping de la Azure Function cada 10 minutos — en la práctica la notificación llega entre 22:00 y ~22:10.
+
+### Implementación
+
+Nuevo método en `NotificationCheckService`, registrado en `CheckAndNotifyAsync`:
+
+```csharp
+public async Task CheckAndNotifyAsync()
+{
+    await using var db = await dbFactory.CreateDbContextAsync();
+
+    var now = DateTime.UtcNow;
+    await CheckUpcomingMatchesAsync(db, now);   // N2
+    await CheckStartedMatchesAsync(db, now);    // N8
+    await CheckDailySummaryAsync(db, now);      // N9
+}
+```
+
+Lógica de `CheckDailySummaryAsync`:
+
+1. **¿Ya es hora?** Convertir `now` a America/Mexico_City. Si `localNow.Hour < 22`: return. (El primer ping después de las 22:00 dispara el envío; los siguientes quedan bloqueados por la dedup.)
+2. **¿Hay algo que resumir?** Buscar los partidos **finalizados** cuyo `KickoffUtc` cae en el día local actual. Si no hay ninguno: return (día sin jornada o sin resultados capturados → no se envía nada).
+3. **Deduplicación:** existe `NotificationLog` con `Type == "DailySummary"` para ese usuario cuyo `Match.KickoffUtc` cae en el mismo día local → ya se le envió hoy, omitir. La consulta es por día vía join a `Match` (no por `MatchId` exacto). Como `MatchId` de la fila de log se usa el **último partido finalizado del día** — siempre existe por el paso 2.
+4. **Por cada sala, por cada miembro** (incluidos los que no pronosticaron ese día — decisión de producto):
+   - Puntos del día = `SUM(Points)` de sus predicciones de los partidos del día en esa sala.
+   - Posición actual = snapshot más reciente del pool (`GetLastSnapshotPositionsAsync` o equivalente acotado a `KickoffUtc <= fin del día`); posición previa = último snapshot anterior al inicio del día local (misma consulta que usa `SaveSnapshotAsync` para N3).
+   - Armar cuerpo según variantes y enviar con URL `/pools/{poolId}/daily-summary?date={yyyy-MM-dd}`.
+   - Registrar **una fila** `NotificationLog { UserId, MatchId = últimoPartidoDelDía, Type = "DailySummary" }` por usuario (el log no tiene `PoolId`; las notificaciones de todas sus salas se envían dentro de la misma corrida antes de registrar).
+
+```csharp
+private const string DailySummaryType = "DailySummary";
+private static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+```
+
+### Limitaciones aceptadas (por el corte fijo a las 22:00)
+
+- **Partidos que terminan (o se capturan) después de las 22:00** no entran en la notificación de ese día y no provocan reenvío. La página del Módulo L sí los muestra siempre actualizados — la notificación es la invitación, la página es la verdad.
+- Si la Function/app estuviera caída todo el tramo 22:00–23:59 (muy improbable con pings cada 10 min), el resumen de ese día no se envía; no se "recupera" al día siguiente.
+
+### Relación con N3 (cambio de posición)
+
+N3 ya notifica el cambio de posición **por partido**. En un día con 4 partidos, un jugador puede recibir varios N3 y a las 22:00 un N9 que consolida el día. Se decidió mantener ambos por ahora (N3 es inmediato y emocional, N9 es el cierre del día). Si en la práctica resulta ruidoso, la mejora futura es suprimir N3 y dejar solo N9 — se deja anotado como decisión reversible.
+
+### Criterios de aceptación
+
+- [x] La notificación llega entre las 22:00 y ~22:10 CDMX, **una sola vez al día** por usuario
+- [x] Solo se envía si el día tiene al menos un partido finalizado (días sin jornada: silencio)
+- [x] Llega una notificación por sala, con nombre de sala, puntos del día y posición (con dirección del cambio)
+- [x] El link abre `/pools/{poolId}/daily-summary?date=yyyy-MM-dd` con el día correcto
+- [x] Miembros sin pronósticos ese día también la reciben (variante "Hoy no pronosticaste")
+- [x] Usuarios sin suscripción activa se omiten silenciosamente (comportamiento ya garantizado por `PushNotificationService`)
+
+### Estimación: ~2 horas (una vez implementado el Módulo L)
 
 ---
 

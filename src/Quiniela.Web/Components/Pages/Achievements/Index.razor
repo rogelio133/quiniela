@@ -33,7 +33,6 @@ else
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
             <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
-            <li class="breadcrumb-item"><a href="/pools/@PoolId/standings">Tabla de posiciones</a></li>
             <li class="breadcrumb-item active">Logros</li>
         </ol>
     </nav>
@@ -56,11 +55,18 @@ else
             @foreach (var badge in AchievementCatalog.All)
             {
                 var earned = myBadgeKeys.Contains(badge.Key);
+                var medals = myMedalsByKey.GetValueOrDefault(badge.Key);
                 <div class="ach-cell ach-cat-@badge.Category.ToString().ToLower() @(earned ? "" : "ach-cell-locked")"
                      @key="badge.Key"
-                     @onclick="() => OpenDetail(badge)">
+                     @onclick="() => OpenDetail(badge, medals)">
                     <span class="ach-cell-icon">@badge.Icon</span>
                     <span class="ach-cell-name">@badge.Name</span>
+                    @if (medals > 0)
+                    {
+                        <span class="ach-cell-medals">
+                            @for (int i = 0; i < medals; i++) { <span>🏅</span> }
+                        </span>
+                    }
                 </div>
             }
         </div>
@@ -78,6 +84,8 @@ else
                 var isMe  = entry.UserId == currentUserId;
                 var delay = $"anim-d{Math.Min(idx + 1, 6)}";
                 var earnedBadges = AchievementCatalog.All.Where(b => keys.Contains(b.Key)).ToList();
+                var medalsByKey = achievementsByUser.GetValueOrDefault(entry.UserId, [])
+                    .ToDictionary(e => e.Badge.Key, e => e.Medals);
 
                 <div class="ach-player-card @delay anim-fade-in-up" @key="entry.UserId">
                     <div class="ach-player-header">
@@ -108,11 +116,18 @@ else
                             @foreach (var badge in earnedBadges)
                             {
                                 var justUnlocked = isMe && seenKeysLoaded && !previouslySeenKeys.Contains(badge.Key);
+                                var medals = medalsByKey.GetValueOrDefault(badge.Key);
                                 <div class="ach-cell ach-cat-@badge.Category.ToString().ToLower() @(justUnlocked ? "ach-cell-new" : "")"
                                      @key="badge.Key"
-                                     @onclick="() => OpenDetail(badge)">
+                                     @onclick="() => OpenDetail(badge, medals)">
                                     <span class="ach-cell-icon">@badge.Icon</span>
                                     <span class="ach-cell-name">@badge.Name</span>
+                                    @if (medals > 0)
+                                    {
+                                        <span class="ach-cell-medals">
+                                            @for (int i = 0; i < medals; i++) { <span>🏅</span> }
+                                        </span>
+                                    }
                                 </div>
                             }
                         </div>
@@ -132,6 +147,12 @@ else
                 <div class="ach-sheet-icon">@selectedBadge.Icon</div>
                 <div class="ach-sheet-name">@selectedBadge.Name</div>
                 <div class="ach-sheet-desc">@selectedBadge.Description</div>
+                @if (selectedMedals > 0)
+                {
+                    <div class="ach-sheet-medals">
+                        @for (int i = 0; i < selectedMedals; i++) { <span>🏅</span> }
+                    </div>
+                }
             </div>
             <button type="button" class="btn btn-outline-light btn-sm ach-sheet-close" @onclick="CloseDetail">Cerrar</button>
         </div>
@@ -147,14 +168,16 @@ else
     private int currentUserId;
     private bool showCatalog;
 
-    private Dictionary<int, List<Achievement>> achievementsByUser = [];
+    private Dictionary<int, List<EarnedBadge>> achievementsByUser = [];
     private List<(StandingsService.StandingEntry Entry, HashSet<string> Keys)> ordered = [];
     private HashSet<string> myBadgeKeys = [];
+    private Dictionary<string, int> myMedalsByKey = [];
     private HashSet<string> previouslySeenKeys = [];
     private bool seenKeysLoaded;
 
     private bool sheetOpen;
     private Achievement? selectedBadge;
+    private int selectedMedals;
 
     private string SeenStorageKey => $"quiniela_ach_seen_{PoolId}_{currentUserId}";
 
@@ -198,19 +221,22 @@ else
         ordered = standings
             .Select(entry => (
                 Entry: entry,
-                Keys: achievementsByUser.GetValueOrDefault(entry.UserId, []).Select(a => a.Key).ToHashSet()))
+                Keys: achievementsByUser.GetValueOrDefault(entry.UserId, []).Select(a => a.Badge.Key).ToHashSet()))
             .OrderByDescending(x => x.Keys.Count)
             .ThenBy(x => x.Entry.DisplayName)
             .ToList();
 
-        myBadgeKeys = achievementsByUser.GetValueOrDefault(currentUserId, []).Select(a => a.Key).ToHashSet();
+        var mine = achievementsByUser.GetValueOrDefault(currentUserId, []);
+        myBadgeKeys = mine.Select(a => a.Badge.Key).ToHashSet();
+        myMedalsByKey = mine.ToDictionary(a => a.Badge.Key, a => a.Medals);
     }
 
     private void ToggleCatalog() => showCatalog = !showCatalog;
 
-    private void OpenDetail(Achievement badge)
+    private void OpenDetail(Achievement badge, int medals)
     {
         selectedBadge = badge;
+        selectedMedals = medals;
         sheetOpen = true;
     }
 

@@ -5,11 +5,15 @@ using Quiniela.Data.Entities;
 
 namespace Quiniela.Web.Services;
 
-public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFactory, PushNotificationService pushService)
+public class NotificationCheckService(
+    IDbContextFactory<QuinielaDbContext> dbFactory,
+    PushNotificationService pushService,
+    DailyAwardService dailyAwardService)
 {
     private const string ReminderType = "MatchReminder";
     private const string MatchStartedType = "MatchStarted";
     private const string DailySummaryType = "DailySummary";
+    private const string DailyAwardType = "DailyAward";
 
     // Misma zona fija que DailySummaryService: sin DST desde 2022, conversión estable.
     private static readonly TimeZoneInfo Tz =
@@ -22,6 +26,7 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
         var now = DateTime.UtcNow;
         await CheckUpcomingMatchesAsync(db, now);   // N2
         await CheckStartedMatchesAsync(db, now);    // N8
+        await CheckDailyAwardsAsync(db, now);       // N10 (21:30, antes del resumen de las 22:00)
         await CheckDailySummaryAsync(db, now);      // N9
     }
 
@@ -144,6 +149,124 @@ public class NotificationCheckService(IDbContextFactory<QuinielaDbContext> dbFac
                     "El partido está en juego — mira los pronósticos de tu sala.", url);
 
                 db.NotificationLogs.Add(new NotificationLog { UserId = userId, MatchId = match.Id, Type = MatchStartedType, SentAt = now });
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// N10: mejor/peor del día a las 21:30 CDMX (antes del resumen N9 de las 22:00). El primer
+    /// ping después de las 21:30 dispara el envío; la dedup en NotificationLog (una fila por
+    /// usuario y día, MatchId = último partido finalizado del día) bloquea los siguientes.
+    /// Es evento de sala: en cada sala con premio (DailyAwardService.GetForDayAsync != null),
+    /// el mejor y el peor reciben su versión personal y el resto el anuncio con nombres.
+    /// Salas sin premio (todos empatados) no reciben nada. Resultados capturados después del
+    /// envío no provocan reenvío ni retractación — la vitrina on-demand es la verdad.
+    /// </summary>
+    private async Task CheckDailyAwardsAsync(QuinielaDbContext db, DateTime now)
+    {
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(now, Tz);
+        if (localNow.Hour < 21 || (localNow.Hour == 21 && localNow.Minute < 30)) return;
+
+        var day = DateOnly.FromDateTime(localNow);
+        var dayStartUtc = TimeZoneInfo.ConvertTimeToUtc(
+            day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified), Tz);
+        var dayEndUtc = dayStartUtc.AddDays(1);
+
+        var dayMatches = await db.Matches
+            .Where(m => m.Status == MatchStatus.Finalizado
+                        && m.KickoffUtc >= dayStartUtc && m.KickoffUtc < dayEndUtc)
+            .Select(m => new { m.Id, m.KickoffUtc })
+            .ToListAsync();
+
+        if (dayMatches.Count == 0) return;
+
+        var lastMatchId = dayMatches.OrderByDescending(m => m.KickoffUtc).First().Id;
+
+        // Dedup por día local vía join a Match (mismo patrón que N9)
+        var alreadyNotified = (await db.NotificationLogs
+            .Where(n => n.Type == DailyAwardType
+                        && n.Match.KickoffUtc >= dayStartUtc && n.Match.KickoffUtc < dayEndUtc)
+            .Select(n => n.UserId)
+            .ToListAsync())
+            .ToHashSet();
+
+        var members = await db.PoolMembers
+            .Select(pm => new { pm.PoolId, pm.UserId, PoolName = pm.Pool.Name, pm.User.DisplayName })
+            .ToListAsync();
+
+        // Premio del día por sala; salas sin premio (null) se saltan por completo
+        var awardsByPool = new Dictionary<int, DailyAwardService.DayAwards>();
+        foreach (var poolId in members.Select(m => m.PoolId).Distinct())
+        {
+            var awards = await dailyAwardService.GetForDayAsync(poolId, day);
+            if (awards is not null) awardsByPool[poolId] = awards;
+        }
+
+        if (awardsByPool.Count == 0) return;
+
+        // Nombres para el anuncio, unidos con " y " cuando hay empate
+        var bestNamesByPool = awardsByPool.ToDictionary(
+            kv => kv.Key,
+            kv => string.Join(" y ", members
+                .Where(m => m.PoolId == kv.Key && kv.Value.BestUserIds.Contains(m.UserId))
+                .Select(m => m.DisplayName).OrderBy(n => n)));
+        var worstNamesByPool = awardsByPool.ToDictionary(
+            kv => kv.Key,
+            kv => string.Join(" y ", members
+                .Where(m => m.PoolId == kv.Key && kv.Value.WorstUserIds.Contains(m.UserId))
+                .Select(m => m.DisplayName).OrderBy(n => n)));
+
+        foreach (var userGroup in members.GroupBy(m => m.UserId))
+        {
+            if (alreadyNotified.Contains(userGroup.Key)) continue;
+
+            // Todas las salas del usuario se envían en la misma corrida antes de registrar el log
+            var sentAny = false;
+            foreach (var member in userGroup)
+            {
+                if (!awardsByPool.TryGetValue(member.PoolId, out var awards)) continue;
+
+                var url = $"/pools/{member.PoolId}/achievements";
+
+                if (awards.BestUserIds.Contains(member.UserId))
+                {
+                    await pushService.SendAsync(member.UserId,
+                        "🔮 Hoy amaneciste brujo",
+                        $"Fuiste el mejor del día en \"{member.PoolName}\".\nNadie te llegó ni a los talones.\nPasa a recoger tu medalla 🏅",
+                        url);
+                }
+                else if (awards.WorstUserIds.Contains(member.UserId))
+                {
+                    await pushService.SendAsync(member.UserId,
+                        "🥴 Ouch… el peor del día",
+                        $"Nadie pronosticó peor que tú hoy en \"{member.PoolName}\".\nUna moneda al aire lo hace mejor.\nMedalla de plomo a tu vitrina 🏅",
+                        url);
+                }
+                else
+                {
+                    var bestLine = awards.BestUserIds.Count > 1
+                        ? $"{bestNamesByPool[member.PoolId]} son los mejores del día 👑"
+                        : $"{bestNamesByPool[member.PoolId]} es el mejor del día 👑";
+                    await pushService.SendAsync(member.UserId,
+                        $"📰 Última hora en \"{member.PoolName}\"",
+                        $"{bestLine}\n{worstNamesByPool[member.PoolId]}… mejor ni preguntes 💀",
+                        url);
+                }
+
+                sentAny = true;
+            }
+
+            if (sentAny)
+            {
+                db.NotificationLogs.Add(new NotificationLog
+                {
+                    UserId = userGroup.Key,
+                    MatchId = lastMatchId,
+                    Type = DailyAwardType,
+                    SentAt = now,
+                });
             }
         }
 

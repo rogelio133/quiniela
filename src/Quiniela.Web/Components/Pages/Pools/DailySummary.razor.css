@@ -271,6 +271,11 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* ── El peor del día (reusa la estructura de .ds-best) ─────────── */
+.ds-worst-pts {
+    color: var(--q-red);
+}
+
 @media (max-width: 480px) {
     .ds-row {
         flex-wrap: wrap;

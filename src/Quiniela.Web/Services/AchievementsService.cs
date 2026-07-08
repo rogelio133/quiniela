@@ -23,8 +23,8 @@ public static class AchievementCatalog
         new("last-minute", "⏱️", "Gol Agónico", "Envió el cambio final de su pronóstico a 30 minutos o menos del kickoff, en 2 o más partidos", AchievementCategory.Ironic),
         new("slot-machine", "🎰", "Modo Tragamonedas", "Cambió su pronóstico 3 veces o más en el mismo partido, en 2 o más partidos distintos", AchievementCategory.Ironic),
         new("sure-shot", "🗿", "Dicho y Hecho", "Nunca cambió ninguno de sus pronósticos, con al menos 10 hechos", AchievementCategory.Positive),
-        new("daily-best", "🌞", "Mejor del día", "Fue quien más puntos sumó en un día de partidos. Una medalla 🏅 por cada día ganado.", AchievementCategory.Positive),
-        new("daily-worst", "🥴", "Peor del día", "Fue quien menos puntos sumó en un día de partidos (no pronosticar cuenta como 0). Una medalla 🏅 por cada día... sufrido.", AchievementCategory.Ironic),
+        new("daily-best", "🌞", "Mejor del día", "Fue quien más puntos sumó en un día de partidos, sin empatar con nadie. Una medalla 🏅 por cada día ganado.", AchievementCategory.Positive),
+        new("daily-worst", "🥴", "Peor del día", "Fue quien menos puntos sumó en un día de partidos, sin empatar con nadie (no pronosticar cuenta como 0). Una medalla 🏅 por cada día... sufrido.", AchievementCategory.Ironic),
     ];
 
     public static Achievement Get(string key) => All.First(a => a.Key == key);

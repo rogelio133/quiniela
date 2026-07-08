@@ -170,6 +170,29 @@ else
         </div>
     }
 
+    @* ── El peor del día ──────────────────────────────────────── *@
+    @if (summary.DayWorst.Count > 0)
+    {
+        <div class="ds-card ds-best ds-worst anim-fade-in-up">
+            <div class="ds-best-title">🥴 @(summary.DayWorst.Count > 1 ? "Los peores del día" : "El peor del día")</div>
+            @foreach (var worst in summary.DayWorst)
+            {
+                <div class="ds-best-row" @key="worst.UserId">
+                    @if (!string.IsNullOrEmpty(worst.ProfilePicturePath))
+                    {
+                        <img src="@worst.ProfilePicturePath" class="ds-best-avatar" alt="@worst.DisplayName" />
+                    }
+                    else
+                    {
+                        <div class="ds-best-avatar ds-best-avatar-fallback">⚽</div>
+                    }
+                    <span class="ds-best-name">@worst.DisplayName</span>
+                    <span class="ds-best-pts ds-worst-pts">@(worst.Points > 0 ? $"+{worst.Points}" : "0") pts</span>
+                </div>
+            }
+        </div>
+    }
+
     <MatchPredictionsSheet MatchId="_predictionsMatchId"
                            PoolId="PoolId"
                            IsOpen="_predictionsSheetOpen"

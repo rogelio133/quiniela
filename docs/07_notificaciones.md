@@ -150,9 +150,12 @@ En la práctica casi todos los usuarios pertenecen a una sola sala, por lo que e
 | N7 | [x] | Todos los jugadores ya pronosticaron | 🟢 Baja | ~1–2 h | Bajo |
 | N8 | [x] | Partido comenzado | 🟢 Baja | ~1–2 h | Medio |
 | N9 | [x] | Resumen diario a las 22:00 (link al Módulo L) | 🟡 Media | ~2 h | Alto |
+| N10 | [x] | Mejor/peor del día a las 21:30 (ver `08_insignias_mejorpeor.md`) | 🟡 Media | ~2 h | Alto |
+| N11 | [x] | Anuncio one-shot: nuevos logros mejor/peor del día | 🟢 Baja | ~1–2 h | Medio |
 
 **Orden de implementación sugerido:** N0 → N1 → N2 → N3 → N4 → N5 → N6 → N7 → N8 → N9  
-N0 es bloqueante: sin infraestructura base no se puede implementar ninguna otra.
+N0 es bloqueante: sin infraestructura base no se puede implementar ninguna otra.  
+N10 se documenta en `08_insignias_mejorpeor.md` (nació con las insignias mejor/peor). N11 depende de que N10 esté en producción — anuncia esos logros.
 
 ---
 
@@ -688,6 +691,115 @@ N3 ya notifica el cambio de posición **por partido**. En un día con 4 partidos
 - [x] Usuarios sin suscripción activa se omiten silenciosamente (comportamiento ya garantizado por `PushNotificationService`)
 
 ### Estimación: ~2 horas (una vez implementado el Módulo L)
+
+---
+
+## Módulo N11 — Anuncio one-shot: nuevos logros "Mejor/Peor del día"
+
+### Objetivo
+
+Anunciar **una sola vez** a todos los usuarios suscritos que existen 2 nuevos logros — 🔮 *Mejor del día* y 🪙 *Peor del día* (Módulos M1–M4 + N10, `08_insignias_mejorpeor.md`) — al momento de publicar la app en Azure. Es una notificación de marketing interno / hype, no ligada a ningún partido ni sala.
+
+### Mensaje
+
+Tono cómico/burlón (decisión de producto). El cuerpo **debe incluir literalmente** el texto `(si ves esto comparteme en whatsapp tu sticker mas puercote XD)`:
+
+> 🚨 **Última hora**
+> Nuevos logros: 🔮 Mejor del día y 🪙 Peor del día. Cada noche a las 9:30 se sabrá quién amaneció brujo… y quién la regó más. (si ves esto comparteme en whatsapp tu sticker mas puercote XD)
+
+- El link lleva a `/pools/{poolId}/achievements` si el usuario pertenece a una sola sala, o a `/pools` si pertenece a varias (mismo criterio que N2/N8).
+- Es un evento **global** (ni de partido ni de sala): un usuario recibe **una sola notificación** sin nombre de sala, sin importar en cuántas salas esté.
+
+### Disparador: publicar en Azure
+
+No se necesita mecanismo nuevo de deploy. La notificación viaja **dentro del código** del release: al publicar, la app se reinicia con la lógica de N11 incluida, y el **primer ping de la Azure Function** (`/api/notify/check`, cada 10 min) dispara el envío. En la práctica el anuncio llega dentro de los ~10 minutos posteriores al publish — suficiente para "al momento de publicar" sin tocar el pipeline.
+
+Alternativa descartada: hook en `Program.cs` al arrancar. Enviaría unos minutos antes, pero en F1 la app arranca decenas de veces al día (cold start tras cada siesta de 20 min), lo que obligaría a consultar la dedup en cada arranque y mezcla responsabilidades — el patrón del proyecto es que todo lo disparado "por tiempo" vive en `NotificationCheckService`.
+
+### Cambio de esquema: `MatchId` nullable en `NotificationLog`
+
+`NotificationLog.MatchId` hoy es `int` no-nullable (FK a `Match`). Un anuncio global no tiene partido asociado:
+
+```csharp
+// src/Quiniela.Data/Entities/NotificationLog.cs
+public int? MatchId { get; set; }      // era int
+public Match? Match { get; set; }      // era Match = null!
+```
+
+Migración: `MakeNotificationLogMatchIdNullable`. Las filas existentes (N2/N8/N9/N10) no cambian; los tipos nuevos de anuncio guardan `MatchId = null`.
+
+### Implementación
+
+Nuevo método en `NotificationCheckService`, **primero** en `CheckAndNotifyAsync` (el anuncio no debe quedar detrás de los checks diarios):
+
+```csharp
+private const string AnnouncementType = "Announcement:mejor-peor-v1";
+private static readonly DateTime AnnouncementExpiresUtc = new(2026, 7, 22); // ~2 semanas tras el release
+
+public async Task CheckAndNotifyAsync()
+{
+    await using var db = await dbFactory.CreateDbContextAsync();
+
+    var now = DateTime.UtcNow;
+    await CheckAnnouncementsAsync(db, now);     // N11 (one-shot)
+    await CheckUpcomingMatchesAsync(db, now);   // N2
+    await CheckStartedMatchesAsync(db, now);    // N8
+    await CheckDailyAwardsAsync(db, now);       // N10
+    await CheckDailySummaryAsync(db, now);      // N9
+}
+
+private async Task CheckAnnouncementsAsync(QuinielaDbContext db, DateTime now)
+{
+    if (now >= AnnouncementExpiresUtc) return;  // ventana cerrada: check gratis para siempre
+
+    // Usuarios suscritos que aún no reciben el anuncio
+    var notified = await db.NotificationLogs
+        .Where(l => l.Type == AnnouncementType)
+        .Select(l => l.UserId)
+        .ToListAsync();
+
+    var pending = await db.PushSubscriptions
+        .Where(s => !notified.Contains(s.UserId))
+        .Select(s => s.UserId)
+        .Distinct()
+        .ToListAsync();
+
+    foreach (var userId in pending)
+    {
+        await pushService.SendAsync(userId,
+            "🚨 Última hora",
+            "Nuevos logros: 🔮 Mejor del día y 🪙 Peor del día. Cada noche a las 9:30 " +
+            "se sabrá quién amaneció brujo… y quién la regó más. " +
+            "(si ves esto comparteme en whatsapp tu sticker mas puercote XD)",
+            url); // /pools/{poolId}/achievements o /pools según nº de salas
+
+        db.NotificationLogs.Add(new NotificationLog
+        {
+            UserId = userId, MatchId = null, Type = AnnouncementType, SentAt = now
+        });
+    }
+    await db.SaveChangesAsync();
+}
+```
+
+Notas:
+- **Dedup por usuario en BD** (no un flag global): si la app muere a media corrida, el siguiente ping envía solo a los que faltan. Consistente con la regla transversal "no en memoria — F1 reinicia entre pings".
+- **Solo usuarios ya suscritos al momento del release** reciben el anuncio. Quien se suscriba dentro de la ventana de 2 semanas también lo recibirá en el siguiente ping (efecto secundario aceptable — es bienvenida gratis); pasada la fecha de expiración, nadie más.
+- **Fecha de expiración hardcodeada**: evita que el check corra eternamente y define el fin de la ventana. Ajustarla al día real del deploy + ~2 semanas.
+- El sufijo `-v1` en el `Type` deja el mecanismo listo para futuros anuncios one-shot (nueva constante + nueva fecha, cero cambios de esquema).
+- Silent fail y limpieza de suscripciones `410 Gone` ya los garantiza `PushNotificationService` (ver Notas transversales).
+
+### Criterios de aceptación
+
+- [x] Migración `MakeNotificationLogMatchIdNullable` aplicada sin afectar filas existentes
+- [x] El anuncio llega a todos los usuarios suscritos dentro de los ~10 min posteriores al publish
+- [x] Cada usuario lo recibe **una sola vez**, aunque la app se reinicie entre pings (dedup por usuario en BD, guardado por usuario dentro de la corrida)
+- [x] El cuerpo incluye literalmente el texto `(si ves esto comparteme en whatsapp tu sticker mas puercote XD)`
+- [x] El link lleva a la vitrina de logros (una sala) o a `/pools` (varias salas)
+- [x] Pasada la fecha de expiración (2026-07-22 UTC), el check retorna de inmediato y no envía nada
+- [x] Usuarios sin suscripción activa se omiten silenciosamente
+
+### Estimación: ~1–2 horas
 
 ---
 

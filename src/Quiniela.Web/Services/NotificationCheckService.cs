@@ -15,6 +15,11 @@ public class NotificationCheckService(
     private const string DailySummaryType = "DailySummary";
     private const string DailyAwardType = "DailyAward";
 
+    // N11: anuncio one-shot de los logros mejor/peor del día. El sufijo -v1 deja el mecanismo
+    // listo para futuros anuncios (nueva constante + nueva fecha, cero cambios de esquema).
+    private const string AnnouncementType = "Announcement:mejor-peor-v1";
+    private static readonly DateTime AnnouncementExpiresUtc = new(2026, 7, 22);
+
     // Misma zona fija que DailySummaryService: sin DST desde 2022, conversión estable.
     private static readonly TimeZoneInfo Tz =
         TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
@@ -24,10 +29,69 @@ public class NotificationCheckService(
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var now = DateTime.UtcNow;
+        await CheckAnnouncementsAsync(db, now);     // N11 (one-shot, no debe quedar detrás de los checks diarios)
         await CheckUpcomingMatchesAsync(db, now);   // N2
         await CheckStartedMatchesAsync(db, now);    // N8
         await CheckDailyAwardsAsync(db, now);       // N10 (21:30, antes del resumen de las 22:00)
         await CheckDailySummaryAsync(db, now);      // N9
+    }
+
+    /// <summary>
+    /// N11: anuncia una sola vez los nuevos logros 🔮 Mejor / 🪙 Peor del día a todos los usuarios
+    /// suscritos. Evento global (ni de partido ni de sala): una notificación por usuario, sin
+    /// nombre de sala, con MatchId = null en el log. Dedup por usuario en BD — si la app muere a
+    /// media corrida, el siguiente ping envía solo a los que faltan. Pasada la fecha de expiración
+    /// el check retorna de inmediato.
+    /// </summary>
+    private async Task CheckAnnouncementsAsync(QuinielaDbContext db, DateTime now)
+    {
+        if (now >= AnnouncementExpiresUtc) return;
+
+        var notified = (await db.NotificationLogs
+            .Where(n => n.Type == AnnouncementType)
+            .Select(n => n.UserId)
+            .ToListAsync())
+            .ToHashSet();
+
+        var pending = (await db.PushSubscriptions
+            .Select(s => s.UserId)
+            .Distinct()
+            .ToListAsync())
+            .Where(userId => !notified.Contains(userId))
+            .ToList();
+
+        if (pending.Count == 0) return;
+
+        var poolsByUser = (await db.PoolMembers
+            .Where(pm => pending.Contains(pm.UserId))
+            .Select(pm => new { pm.UserId, pm.PoolId })
+            .ToListAsync())
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.PoolId).ToList());
+
+        foreach (var userId in pending)
+        {
+            var poolIds = poolsByUser.GetValueOrDefault(userId, []);
+            var url = poolIds.Count == 1 ? $"/pools/{poolIds[0]}/achievements" : "/pools";
+
+            await pushService.SendAsync(userId,
+                "🚨 Última hora",
+                "Nuevos logros: 🔮 Mejor del día y 🪙 Peor del día. Cada noche a las 9:30 " +
+                "se sabrá quién amaneció brujo… y quién la regó más. " +
+                "(si ves esto comparteme en whatsapp tu sticker mas puercote XD)",
+                url);
+
+            db.NotificationLogs.Add(new NotificationLog
+            {
+                UserId = userId,
+                MatchId = null,
+                Type = AnnouncementType,
+                SentAt = now,
+            });
+
+            // Guardado por usuario: si la app muere a media corrida, no se reenvía a los ya avisados
+            await db.SaveChangesAsync();
+        }
     }
 
     private async Task CheckUpcomingMatchesAsync(QuinielaDbContext db, DateTime now)
@@ -59,8 +123,8 @@ public class NotificationCheckService(
             .ToHashSet();
 
         var notifiedByMatch = (await db.NotificationLogs
-            .Where(n => n.Type == ReminderType && matchIds.Contains(n.MatchId))
-            .Select(n => new { n.MatchId, n.UserId })
+            .Where(n => n.Type == ReminderType && n.MatchId != null && matchIds.Contains(n.MatchId.Value))
+            .Select(n => new { MatchId = n.MatchId!.Value, n.UserId })
             .ToListAsync())
             .GroupBy(n => n.MatchId)
             .ToDictionary(g => g.Key, g => g.Select(n => n.UserId).ToHashSet());
@@ -129,8 +193,8 @@ public class NotificationCheckService(
             .ToDictionary(g => g.Key, g => g.Select(x => x.PoolId).ToList());
 
         var notifiedByMatch = (await db.NotificationLogs
-            .Where(n => n.Type == MatchStartedType && matchIds.Contains(n.MatchId))
-            .Select(n => new { n.MatchId, n.UserId })
+            .Where(n => n.Type == MatchStartedType && n.MatchId != null && matchIds.Contains(n.MatchId.Value))
+            .Select(n => new { MatchId = n.MatchId!.Value, n.UserId })
             .ToListAsync())
             .GroupBy(n => n.MatchId)
             .ToDictionary(g => g.Key, g => g.Select(n => n.UserId).ToHashSet());
@@ -188,7 +252,7 @@ public class NotificationCheckService(
         // Dedup por día local vía join a Match (mismo patrón que N9)
         var alreadyNotified = (await db.NotificationLogs
             .Where(n => n.Type == DailyAwardType
-                        && n.Match.KickoffUtc >= dayStartUtc && n.Match.KickoffUtc < dayEndUtc)
+                        && n.Match!.KickoffUtc >= dayStartUtc && n.Match!.KickoffUtc < dayEndUtc)
             .Select(n => n.UserId)
             .ToListAsync())
             .ToHashSet();
@@ -307,7 +371,7 @@ public class NotificationCheckService(
         // un log DailySummary cuyo partido cae en este día, ya recibió el resumen de hoy.
         var alreadyNotified = (await db.NotificationLogs
             .Where(n => n.Type == DailySummaryType
-                        && n.Match.KickoffUtc >= dayStartUtc && n.Match.KickoffUtc < dayEndUtc)
+                        && n.Match!.KickoffUtc >= dayStartUtc && n.Match!.KickoffUtc < dayEndUtc)
             .Select(n => n.UserId)
             .ToListAsync())
             .ToHashSet();

@@ -72,7 +72,13 @@ window.quiniela = {
     pushShouldPrompt: async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
         if (Notification.permission === 'denied') return false;
-        try { if (localStorage.getItem('quiniela_push_dismissed') === '1') return false; } catch { }
+        try {
+            const dismissedAt = Number(localStorage.getItem('quiniela_push_dismissed'));
+            if (dismissedAt) {
+                const hours = (Date.now() - dismissedAt) / 3600000;
+                if (hours < 6) return false;
+            }
+        } catch { }
         try {
             const reg = await navigator.serviceWorker.ready;
             const sub = await reg.pushManager.getSubscription();
@@ -80,7 +86,7 @@ window.quiniela = {
         } catch { return false; }
     },
     pushMarkDismissed: () => {
-        try { localStorage.setItem('quiniela_push_dismissed', '1'); } catch { }
+        try { localStorage.setItem('quiniela_push_dismissed', Date.now().toString()); } catch { }
     },
     pushSubscribe: async (vapidPublicKey) => {
         try {

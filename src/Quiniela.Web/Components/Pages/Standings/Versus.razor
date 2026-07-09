@@ -26,6 +26,8 @@ else if (pool is null || !isMember)
 }
 else if (playerA is null || playerB is null)
 {
+    <PageVisitLogger PoolId="@PoolId" PageName="Comparar" />
+
     <div class="alert alert-info">
         Elige dos jugadores desde la Tabla de posiciones para compararlos.
         <a href="/pools/@PoolId/standings" class="alert-link ms-2">Ir a Tabla de posiciones</a>
@@ -33,6 +35,8 @@ else if (playerA is null || playerB is null)
 }
 else
 {
+    <PageVisitLogger PoolId="@PoolId" PageName="Comparar" />
+
     @* ── Breadcrumb ─────────────────────────────────────────── *@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">

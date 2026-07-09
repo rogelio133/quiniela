@@ -1,0 +1,179 @@
+/* ── Filtro ────────────────────────────────────────────────── */
+.log-filter {
+    max-width: 260px;
+    margin-bottom: 14px;
+}
+
+/* ── Contenedor ────────────────────────────────────────────── */
+.log-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r);
+    box-shadow: var(--q-sh-sm);
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+/* ── Mobile (base): tarjetas compactas ─────────────────────── */
+.log-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.log-head {
+    display: none;
+}
+
+.log-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--q-border);
+    font-size: 0.85rem;
+    color: var(--q-text);
+}
+
+.log-row:last-child {
+    border-bottom: none;
+}
+
+.log-cell-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.log-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.log-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 0.85rem;
+}
+
+.log-name {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-cell-page {
+    padding-left: 36px; /* alineado con el nombre (avatar 28px + gap 8px) */
+}
+
+.log-cell-date {
+    padding-left: 36px;
+    color: var(--q-muted);
+    font-size: 0.75rem;
+}
+
+/* ── Desktop (≥641px): tabla de 3 columnas, mismo markup ───── */
+@media (min-width: 641px) {
+    .log-table {
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .log-head {
+        display: table-row;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--q-muted);
+        background: var(--q-bg);
+    }
+
+    .log-row {
+        display: table-row;
+    }
+
+    .log-cell {
+        display: table-cell;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--q-border);
+        vertical-align: middle;
+    }
+
+    .log-row:last-child .log-cell {
+        border-bottom: none;
+    }
+
+    .log-cell-user {
+        /* display:table-cell no admite flex: el avatar y el nombre van inline */
+        white-space: nowrap;
+    }
+
+    .log-cell-user .log-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
+    .log-cell-user .log-name {
+        vertical-align: middle;
+    }
+
+    .log-cell-page,
+    .log-cell-date {
+        padding-left: 14px;
+    }
+
+    .log-cell-date {
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+}
+
+/* ── Paginación ────────────────────────────────────────────── */
+.log-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.log-pager-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-sm);
+    background: var(--q-surface);
+    color: var(--q-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.log-pager-btn:hover:not(:disabled) {
+    background: var(--q-bg);
+}
+
+.log-pager-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.log-pager-label {
+    font-size: 0.8rem;
+    color: var(--q-muted);
+    font-variant-numeric: tabular-nums;
+}

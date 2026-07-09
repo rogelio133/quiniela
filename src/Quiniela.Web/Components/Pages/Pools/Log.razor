@@ -1,0 +1,186 @@
+@page "/pools/{poolId:int}/log"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Globalization
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject PageVisitService PageVisitService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+@* Esta página NO incluye PageVisitLogger: es admin-only y no se loguea a sí misma. *@
+
+<PageTitle>Log — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isOwner)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Log</li>
+        </ol>
+    </nav>
+
+    <h2 class="mb-3">📜 Log de visitas</h2>
+
+    <select class="form-select form-select-sm log-filter" @onchange="OnFilterChanged">
+        <option value="" selected="@(filterUserId is null)">Todos los miembros</option>
+        @foreach (var member in pool.Members.OrderBy(m => m.User.DisplayName))
+        {
+            <option value="@member.UserId" selected="@(filterUserId == member.UserId)">
+                @member.User.DisplayName
+            </option>
+        }
+    </select>
+
+    @if (visits is null || visits.Rows.Count == 0)
+    {
+        <div class="alert alert-info">
+            @(filterUserId is null
+                ? "Aún no hay visitas registradas."
+                : "Aún no hay visitas registradas de este usuario.")
+        </div>
+    }
+    else
+    {
+        <div class="log-card">
+            <div class="log-table">
+                <div class="log-head">
+                    <div class="log-cell log-cell-user">Usuario</div>
+                    <div class="log-cell log-cell-page">Página</div>
+                    <div class="log-cell log-cell-date">Fecha</div>
+                </div>
+                @foreach (var row in visits.Rows)
+                {
+                    <div class="log-row">
+                        <div class="log-cell log-cell-user">
+                            @if (!string.IsNullOrEmpty(row.ProfilePicturePath))
+                            {
+                                <img src="@row.ProfilePicturePath" class="log-avatar" alt="@row.DisplayName" />
+                            }
+                            else
+                            {
+                                <div class="log-avatar log-avatar-fallback">⚽</div>
+                            }
+                            <span class="log-name">@row.DisplayName</span>
+                        </div>
+                        <div class="log-cell log-cell-page">@row.PageName</div>
+                        <div class="log-cell log-cell-date">@FormatVisit(row.VisitedAtUtc)</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="log-pager">
+            <button class="log-pager-btn" @onclick="PrevPage" disabled="@(page <= 1)">
+                ◀ Anterior
+            </button>
+            <span class="log-pager-label">Página @(page) de @TotalPages</span>
+            <button class="log-pager-btn" @onclick="NextPage" disabled="@(page >= TotalPages)">
+                Siguiente ▶
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private const int PageSize = 20;
+
+    [Parameter] public int PoolId { get; set; }
+
+    private Pool? pool;
+    private bool isLoading = true;
+    private bool isOwner;
+    private int currentUserId;
+
+    private PageVisitService.VisitPage? visits;
+    private int page = 1;
+    private int? filterUserId;
+
+    // Fallback CDMX si el interop de timezone falla (mismo criterio que Predictions)
+    private TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+    private static readonly CultureInfo EsMx = new("es-MX");
+
+    private int TotalPages => visits is null
+        ? 1
+        : Math.Max(1, (int)Math.Ceiling(visits.TotalCount / (double)PageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        pool = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isOwner = pool?.OwnerId == currentUserId;
+
+        if (pool is not null && isOwner)
+            visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize);
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var tzId = await JS.InvokeAsync<string>("getClientTimezone");
+            try { clientTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { /* se mantiene el fallback CDMX */ }
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnFilterChanged(ChangeEventArgs e)
+    {
+        filterUserId = int.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        page = 1;
+        await LoadPageAsync();
+    }
+
+    private async Task PrevPage()
+    {
+        if (page <= 1) return;
+        page--;
+        await LoadPageAsync();
+    }
+
+    private async Task NextPage()
+    {
+        if (page >= TotalPages) return;
+        page++;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadPageAsync()
+    {
+        visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize);
+    }
+
+    private string FormatVisit(DateTime visitedAtUtc)
+    {
+        var local = TimeZoneInfo.ConvertTimeFromUtc(visitedAtUtc, clientTz);
+        // "08 jul · 21:35" — es-MX abrevia meses con punto ("jul."), se quita
+        return $"{local.ToString("dd MMM", EsMx).Replace(".", "")} · {local:HH:mm}";
+    }
+}

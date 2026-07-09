@@ -24,6 +24,8 @@ else if (pool is null || !isMember)
 }
 else
 {
+    <PageVisitLogger PoolId="@Id" PageName="Detalle de sala" />
+
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
@@ -50,6 +52,12 @@ else
         <a href="/pools/@Id/achievements" class="btn btn-outline-success btn-sm">
             🎖️ Logros
         </a>
+        @if (isOwner)
+        {
+            <a href="/pools/@Id/log" class="btn btn-outline-dark btn-sm">
+                📜 Log
+            </a>
+        }
     </div>
 
     <div class="d-flex align-items-center gap-2 mb-1">

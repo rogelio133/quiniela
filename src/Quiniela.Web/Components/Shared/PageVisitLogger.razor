@@ -1,0 +1,27 @@
+@* Componente sin UI: registra la visita a una página de sala (una fila por entrada).
+   Colocarlo DESPUÉS de la validación de membresía de la página que lo usa.
+   OnAfterRenderAsync(firstRender) y no OnInitializedAsync: las páginas de sala son
+   InteractiveServer con prerender — OnInitializedAsync corre dos veces (prerender +
+   circuito) y duplicaría cada visita; OnAfterRenderAsync corre solo en el circuito. *@
+@using System.Security.Claims
+
+@inject PageVisitService PageVisitService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+@code {
+    [Parameter, EditorRequired] public int PoolId { get; set; }
+    [Parameter, EditorRequired] public string PageName { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idClaim is null) return;
+
+        await PageVisitService.LogAsync(int.Parse(idClaim), PoolId, PageName,
+            NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+    }
+}

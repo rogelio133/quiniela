@@ -21,6 +21,7 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<NotifiedAchievement> NotifiedAchievements => Set<NotifiedAchievement>();
+    public DbSet<PageVisitLog> PageVisitLogs => Set<PageVisitLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -177,6 +178,23 @@ public class QuinielaDbContext(DbContextOptions<QuinielaDbContext> options)
             e.HasOne(n => n.Pool)
                 .WithMany()
                 .HasForeignKey(n => n.PoolId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PageVisitLog>(e =>
+        {
+            e.Property(v => v.PageName).HasMaxLength(50);
+            e.Property(v => v.Url).HasMaxLength(300);
+            // Cubre la consulta principal: log de una sala ordenado por fecha desc
+            e.HasIndex(v => new { v.PoolId, v.VisitedAt });
+            // Restrict to avoid multiple cascade paths (Users→Pools→PageVisitLogs AND Users→PageVisitLogs)
+            e.HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(v => v.Pool)
+                .WithMany()
+                .HasForeignKey(v => v.PoolId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -15,10 +15,24 @@ public class NotificationCheckService(
     private const string DailySummaryType = "DailySummary";
     private const string DailyAwardType = "DailyAward";
 
-    // N11: anuncio one-shot de los logros mejor/peor del día. El sufijo -v1 deja el mecanismo
-    // listo para futuros anuncios (nueva constante + nueva fecha, cero cambios de esquema).
-    private const string AnnouncementType = "Announcement:mejor-peor-v1";
-    private static readonly DateTime AnnouncementExpiresUtc = new(2026, 7, 22);
+    private record OneShotAnnouncement(string Type, DateTime ExpiresUtc, string Title, string Body);
+
+    // Anuncios one-shot (N11, N12, …): agregar una entrada nueva basta — dedup por Type en
+    // NotificationLog, expiración para no notificar a suscriptores tardíos meses después.
+    private static readonly OneShotAnnouncement[] Announcements =
+    [
+        // N11: logros mejor/peor del día
+        new("Announcement:mejor-peor-v1", new DateTime(2026, 7, 22),
+            "🚨 Última hora",
+            "Nuevos logros: 🔮 Mejor del día y 🪙 Peor del día. Cada noche a las 9:30 " +
+            "se sabrá quién amaneció brujo… y quién la regó más. " +
+            "(si ves esto comparteme en whatsapp tu sticker mas puercote XD)"),
+        // N12: segunda tanda de insignias (10_insignias.md)
+        new("Announcement:insignias-v2", new DateTime(2026, 7, 24),
+            "🎖️ ¡6 insignias nuevas en la vitrina!",
+            "🧠 Dueño del Grupo, 🔮 Profeta de Penales, 🐺 Lobo Solitario, 🐑 Oveja Negra, " +
+            "💔 Corazón Roto y 🙅 El Optimista.\nAlgunas quizá ya son tuyas… entra a verlo."),
+    ];
 
     // Misma zona fija que DailySummaryService: sin DST desde 2022, conversión estable.
     private static readonly TimeZoneInfo Tz =
@@ -29,7 +43,7 @@ public class NotificationCheckService(
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var now = DateTime.UtcNow;
-        await CheckAnnouncementsAsync(db, now);     // N11 (one-shot, no debe quedar detrás de los checks diarios)
+        await CheckAnnouncementsAsync(db, now);     // N11/N12 (one-shot, no deben quedar detrás de los checks diarios)
         await CheckUpcomingMatchesAsync(db, now);   // N2
         await CheckStartedMatchesAsync(db, now);    // N8
         await CheckDailyAwardsAsync(db, now);       // N10 (21:30, antes del resumen de las 22:00)
@@ -37,60 +51,58 @@ public class NotificationCheckService(
     }
 
     /// <summary>
-    /// N11: anuncia una sola vez los nuevos logros 🔮 Mejor / 🪙 Peor del día a todos los usuarios
+    /// N11/N12: anuncia una sola vez cada entrada de Announcements a todos los usuarios
     /// suscritos. Evento global (ni de partido ni de sala): una notificación por usuario, sin
-    /// nombre de sala, con MatchId = null en el log. Dedup por usuario en BD — si la app muere a
-    /// media corrida, el siguiente ping envía solo a los que faltan. Pasada la fecha de expiración
-    /// el check retorna de inmediato.
+    /// nombre de sala, con MatchId = null en el log. Dedup por usuario y Type en BD — si la app
+    /// muere a media corrida, el siguiente ping envía solo a los que faltan. Pasada la fecha de
+    /// expiración de un anuncio, ese anuncio se salta por completo.
     /// </summary>
     private async Task CheckAnnouncementsAsync(QuinielaDbContext db, DateTime now)
     {
-        if (now >= AnnouncementExpiresUtc) return;
-
-        var notified = (await db.NotificationLogs
-            .Where(n => n.Type == AnnouncementType)
-            .Select(n => n.UserId)
-            .ToListAsync())
-            .ToHashSet();
-
-        var pending = (await db.PushSubscriptions
-            .Select(s => s.UserId)
-            .Distinct()
-            .ToListAsync())
-            .Where(userId => !notified.Contains(userId))
-            .ToList();
-
-        if (pending.Count == 0) return;
-
-        var poolsByUser = (await db.PoolMembers
-            .Where(pm => pending.Contains(pm.UserId))
-            .Select(pm => new { pm.UserId, pm.PoolId })
-            .ToListAsync())
-            .GroupBy(x => x.UserId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.PoolId).ToList());
-
-        foreach (var userId in pending)
+        foreach (var announcement in Announcements)
         {
-            var poolIds = poolsByUser.GetValueOrDefault(userId, []);
-            var url = poolIds.Count == 1 ? $"/pools/{poolIds[0]}/achievements" : "/pools";
+            if (now >= announcement.ExpiresUtc) continue;
 
-            await pushService.SendAsync(userId,
-                "🚨 Última hora",
-                "Nuevos logros: 🔮 Mejor del día y 🪙 Peor del día. Cada noche a las 9:30 " +
-                "se sabrá quién amaneció brujo… y quién la regó más. " +
-                "(si ves esto comparteme en whatsapp tu sticker mas puercote XD)",
-                url);
+            var notified = (await db.NotificationLogs
+                .Where(n => n.Type == announcement.Type)
+                .Select(n => n.UserId)
+                .ToListAsync())
+                .ToHashSet();
 
-            db.NotificationLogs.Add(new NotificationLog
+            var pending = (await db.PushSubscriptions
+                .Select(s => s.UserId)
+                .Distinct()
+                .ToListAsync())
+                .Where(userId => !notified.Contains(userId))
+                .ToList();
+
+            if (pending.Count == 0) continue;
+
+            var poolsByUser = (await db.PoolMembers
+                .Where(pm => pending.Contains(pm.UserId))
+                .Select(pm => new { pm.UserId, pm.PoolId })
+                .ToListAsync())
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.PoolId).ToList());
+
+            foreach (var userId in pending)
             {
-                UserId = userId,
-                MatchId = null,
-                Type = AnnouncementType,
-                SentAt = now,
-            });
+                var poolIds = poolsByUser.GetValueOrDefault(userId, []);
+                var url = poolIds.Count == 1 ? $"/pools/{poolIds[0]}/achievements" : "/pools";
 
-            // Guardado por usuario: si la app muere a media corrida, no se reenvía a los ya avisados
-            await db.SaveChangesAsync();
+                await pushService.SendAsync(userId, announcement.Title, announcement.Body, url);
+
+                db.NotificationLogs.Add(new NotificationLog
+                {
+                    UserId = userId,
+                    MatchId = null,
+                    Type = announcement.Type,
+                    SentAt = now,
+                });
+
+                // Guardado por usuario: si la app muere a media corrida, no se reenvía a los ya avisados
+                await db.SaveChangesAsync();
+            }
         }
     }
 

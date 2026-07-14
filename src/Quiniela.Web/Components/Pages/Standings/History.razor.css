@@ -78,11 +78,16 @@
 }
 
 /* ── Mini line chart ───────────────────────────────────────── */
+/* Todo el contenedor es táctil: el click hace snap al punto más cercano
+   (ver OnChartClickAsync), por eso los puntos no reciben eventos. */
 .ph-chart {
     position: relative;
     width: 100%;
-    height: 64px;
+    height: 96px;
     margin-top: 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .ph-svg {
@@ -119,13 +124,17 @@
     margin-top: -3.5px;
     border-radius: 50%;
     background: var(--q-blue);
-    cursor: pointer;
+    pointer-events: none;
     animation: popIn 0.35s ease both;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.15s;
 }
 
-.ph-point:hover {
-    background: var(--q-blue-lt);
+/* Punto seleccionado mientras el sheet de detalle está abierto */
+.ph-point-active {
+    background: var(--q-gold);
+    transform: scale(1.9);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--q-gold) 30%, transparent);
+    z-index: 1;
 }
 
 /* ── Desktop: 2-column grid ────────────────────────────────── */

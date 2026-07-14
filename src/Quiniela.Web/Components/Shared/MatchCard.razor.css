@@ -135,13 +135,21 @@
     flex-shrink: 0;
 }
 
-/* Team text */
+/* Team text — .mc-code es el texto grande (nombre), .mc-name el chico (clave) */
 .mc-code {
-    font-size: 0.84rem;
+    font-size: 0.78rem;
     font-weight: 800;
     color: var(--q-text);
-    letter-spacing: 0.04em;
-    line-height: 1;
+    letter-spacing: 0.03em;
+    line-height: 1.15;
+    text-align: center;
+    max-width: 100%;
+    padding: 0 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 }
 
 .mc-name {
@@ -149,6 +157,7 @@
     color: var(--q-muted);
     text-align: center;
     line-height: 1.2;
+    letter-spacing: 0.06em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

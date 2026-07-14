@@ -8,20 +8,30 @@
     <img src="/images/trionda_clean.png" class="bg-ball" alt="" aria-hidden="true" />
 
     <main>
-        <div class="top-row px-4 d-flex align-items-center justify-content-end gap-3">
-            <ThemeToggle @rendermode="InteractiveServer" />
-            <AuthorizeView>
-                <Authorized>
-                    <span class="text-white small fw-semibold">@(context.User.FindFirst("DisplayName")?.Value ?? context.User.Identity?.Name)</span>
-                    <form method="post" action="/api/logout">
-                        <AntiforgeryToken />
-                        <button type="submit" class="btn btn-sm btn-outline-light">Salir</button>
-                    </form>
-                </Authorized>
-                <NotAuthorized>
-                    <a href="/login" class="text-white small">Iniciar sesión</a>
-                </NotAuthorized>
-            </AuthorizeView>
+        <div class="top-row px-4 d-flex align-items-center gap-3">
+            <div class="top-row-zone d-flex justify-content-start">
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="text-white small fw-semibold text-truncate">@(context.User.FindFirst("DisplayName")?.Value ?? context.User.Identity?.Name)</span>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+            <div class="d-flex justify-content-center">
+                <ThemeToggle @rendermode="InteractiveServer" />
+            </div>
+            <div class="top-row-zone d-flex justify-content-end">
+                <AuthorizeView>
+                    <Authorized>
+                        <form method="post" action="/api/logout">
+                            <AntiforgeryToken />
+                            <button type="submit" class="btn btn-sm btn-outline-light">Salir</button>
+                        </form>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" class="text-white small">Iniciar sesión</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
         </div>
 
         <article class="content px-4">

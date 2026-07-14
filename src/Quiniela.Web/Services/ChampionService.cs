@@ -130,6 +130,26 @@ public class ChampionService(IDbContextFactory<QuinielaDbContext> dbFactory)
     }
 
     /// <summary>
+    /// Ids de equipos que ya perdieron algún partido de eliminatoria finalizado
+    /// (misma regla que IsTeamEliminatedAsync, pero para todo el torneo de una vez).
+    /// </summary>
+    public async Task<HashSet<int>> GetEliminatedTeamIdsAsync()
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var koFinished = await db.Matches
+            .Where(m => KoStages.Contains(m.Stage) && m.Status == MatchStatus.Finalizado)
+            .Select(m => new { m.HomeTeamId, m.AwayTeamId, m.HomeScore, m.AwayScore })
+            .ToListAsync();
+
+        return koFinished
+            .Select(m => m.HomeScore > m.AwayScore ? m.AwayTeamId : m.HomeTeamId)
+            .Where(id => id != null)
+            .Select(id => id!.Value)
+            .ToHashSet();
+    }
+
+    /// <summary>
     /// Pronóstico de campeón de cada miembro de la sala, para mostrar en Standings.
     /// </summary>
     public async Task<Dictionary<int, Team>> GetAllPredictionsForPoolAsync(int poolId)

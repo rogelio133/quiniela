@@ -38,23 +38,30 @@ else
 
     <h2 class="mb-3">📜 Log de visitas</h2>
 
-    <select class="form-select form-select-sm log-filter" @onchange="OnFilterChanged">
-        <option value="" selected="@(filterUserId is null)">Todos los miembros</option>
-        @foreach (var member in pool.Members.OrderBy(m => m.User.DisplayName))
-        {
-            <option value="@member.UserId" selected="@(filterUserId == member.UserId)">
-                @member.User.DisplayName
-            </option>
-        }
-    </select>
+    <div class="log-filters">
+        <select class="form-select form-select-sm log-filter" @onchange="OnFilterChanged">
+            <option value="" selected="@(filterUserId is null)">Todos los miembros</option>
+            @foreach (var member in pool.Members.OrderBy(m => m.User.DisplayName))
+            {
+                <option value="@member.UserId" selected="@(filterUserId == member.UserId)">
+                    @member.User.DisplayName
+                </option>
+            }
+        </select>
+        <select class="form-select form-select-sm log-filter" @onchange="OnPageFilterChanged">
+            <option value="" selected="@(filterPageName is null)">Todos los módulos</option>
+            @foreach (var pageName in pageNames)
+            {
+                <option value="@pageName" selected="@(filterPageName == pageName)">
+                    @pageName
+                </option>
+            }
+        </select>
+    </div>
 
     @if (visits is null || visits.Rows.Count == 0)
     {
-        <div class="alert alert-info">
-            @(filterUserId is null
-                ? "Aún no hay visitas registradas."
-                : "Aún no hay visitas registradas de este usuario.")
-        </div>
+        <div class="alert alert-info">@EmptyMessage</div>
     }
     else
     {
@@ -109,8 +116,10 @@ else
     private int currentUserId;
 
     private PageVisitService.VisitPage? visits;
+    private List<string> pageNames = [];
     private int page = 1;
     private int? filterUserId;
+    private string? filterPageName;
 
     // Fallback CDMX si el interop de timezone falla (mismo criterio que Predictions)
     private TimeZoneInfo clientTz = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
@@ -135,7 +144,10 @@ else
         isOwner = pool?.OwnerId == currentUserId;
 
         if (pool is not null && isOwner)
-            visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize);
+        {
+            pageNames = await PageVisitService.GetDistinctPageNamesAsync(PoolId);
+            visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize, filterPageName);
+        }
 
         isLoading = false;
     }
@@ -158,6 +170,22 @@ else
         await LoadPageAsync();
     }
 
+    private async Task OnPageFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        filterPageName = string.IsNullOrEmpty(value) ? null : value;
+        page = 1;
+        await LoadPageAsync();
+    }
+
+    private string EmptyMessage => (filterUserId, filterPageName) switch
+    {
+        (null, null)         => "Aún no hay visitas registradas.",
+        (not null, null)     => "Aún no hay visitas registradas de este usuario.",
+        (null, not null)     => "Aún no hay visitas registradas de este módulo.",
+        (not null, not null) => "Aún no hay visitas de este usuario en este módulo.",
+    };
+
     private async Task PrevPage()
     {
         if (page <= 1) return;
@@ -174,7 +202,7 @@ else
 
     private async Task LoadPageAsync()
     {
-        visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize);
+        visits = await PageVisitService.GetPageAsync(PoolId, filterUserId, page, PageSize, filterPageName);
     }
 
     private string FormatVisit(DateTime visitedAtUtc)

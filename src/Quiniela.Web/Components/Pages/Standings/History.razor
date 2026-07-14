@@ -96,7 +96,12 @@ else
                         var pts    = string.Join(" ", points.Select(p =>
                             $"{p.X.ToString(CultureInfo.InvariantCulture)},{p.Y.ToString(CultureInfo.InvariantCulture)}"));
 
-                        <div class="ph-chart">
+                        @* Toda la gráfica es táctil: el tap se ajusta (snap) al punto más
+                           cercano en X — con muchos partidos los puntos de 7px eran imposibles
+                           de atinar en móvil. Los puntos quedan solo como marcadores visuales. *@
+                        <div class="ph-chart"
+                             @ref="chartRefs[entry.UserId]"
+                             @onclick="e => OnChartClickAsync(e, entry, series)">
                             <svg class="ph-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
                                 <polyline class="ph-line"
                                           points="@pts"
@@ -105,10 +110,9 @@ else
                             @for (int i = 0; i < points.Count; i++)
                             {
                                 var p = points[i];
-                                var sp = series[i];
-                                <div class="ph-point"
-                                     style="left:@(p.X.ToString(CultureInfo.InvariantCulture))%; top:@(p.Y.ToString(CultureInfo.InvariantCulture))%; animation-delay:@((i * 0.05).ToString("0.00", CultureInfo.InvariantCulture))s;"
-                                     @onclick="() => OpenDetail(entry.DisplayName, sp)"></div>
+                                var isActive = sheetOpen && selectedUserId == entry.UserId && selectedIndex == i;
+                                <div class="ph-point @(isActive ? "ph-point-active" : "")"
+                                     style="left:@(p.X.ToString(CultureInfo.InvariantCulture))%; top:@(p.Y.ToString(CultureInfo.InvariantCulture))%; animation-delay:@((i * 0.05).ToString("0.00", CultureInfo.InvariantCulture))s;"></div>
                             }
                         </div>
                     }
@@ -152,6 +156,9 @@ else
     private bool sheetOpen;
     private string? selectedPlayerName;
     private StandingsService.PositionPoint? selectedPoint;
+    private int? selectedUserId;
+    private int selectedIndex = -1;
+    private readonly Dictionary<int, ElementReference> chartRefs = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -233,6 +240,24 @@ else
         };
     }
 
+    private async Task OnChartClickAsync(MouseEventArgs e,
+        StandingsService.StandingEntry entry, List<StandingsService.PositionPoint> series)
+    {
+        if (series.Count < 2 || !chartRefs.TryGetValue(entry.UserId, out var chartEl)) return;
+
+        // Ancho real del contenedor al momento del click: los puntos van del 0% al
+        // 100% del ancho, así que el índice más cercano sale directo de la proporción X.
+        double width;
+        try { width = await JS.InvokeAsync<double>("quiniela.getElementWidth", chartEl); }
+        catch { return; }
+        if (width <= 0) return;
+
+        var i = Math.Clamp((int)Math.Round(e.OffsetX / width * (series.Count - 1)), 0, series.Count - 1);
+        selectedUserId = entry.UserId;
+        selectedIndex = i;
+        OpenDetail(entry.DisplayName, series[i]);
+    }
+
     private void OpenDetail(string playerName, StandingsService.PositionPoint point)
     {
         selectedPlayerName = playerName;
@@ -243,6 +268,8 @@ else
     private void CloseDetail()
     {
         sheetOpen = false;
+        selectedUserId = null;
+        selectedIndex = -1;
     }
 
     private string FormatKickoff(DateTime kickoffUtc)

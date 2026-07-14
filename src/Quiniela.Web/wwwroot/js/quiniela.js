@@ -80,6 +80,10 @@ window.quiniela = {
         try { const m = await import('/js/three-ball.js'); m.disposeBall(id); }
         catch { }
     },
+    getElementWidth: (el) => {
+        try { return el?.getBoundingClientRect().width ?? 0; }
+        catch { return 0; }
+    },
     countUp: (elementId, endValue, durationMs) => {
         const el = document.getElementById(elementId);
         if (!el) return;

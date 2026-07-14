@@ -33,10 +33,15 @@ main {
 .top-row {
     background: linear-gradient(90deg, #0D1B2A 0%, #1A2B42 100%);
     border-bottom: 1px solid rgba(255,255,255,0.08);
-    justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+}
+
+/* Zonas laterales iguales para que el toggle quede centrado geométricamente */
+.top-row-zone {
+    flex: 1 1 0;
+    min-width: 0;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {

@@ -133,9 +133,7 @@ else
                         <small class="text-muted" style="font-size:.68rem;">@entry.CorrectPredictions ✓ / @entry.TotalPredictions pronósticos</small>
                         @if (championPicks.TryGetValue(entry.UserId, out var champTeamTop))
                         {
-                            <small class="d-block text-muted" style="font-size:.65rem;">
-                                👑 <span class="fi fi-@champTeamTop.FlagCode.ToLower()" style="width:14px !important;height:11px !important;border-radius:2px;"></span> @(champTeamTop.ShortCode ?? champTeamTop.Name)
-                            </small>
+                            @ChampionPick(champTeamTop)
                         }
                     </div>
 
@@ -189,9 +187,7 @@ else
                                 </div>
                                 @if (championPicks.TryGetValue(entry.UserId, out var champTeamRest))
                                 {
-                                    <small class="d-block text-muted" style="font-size:.65rem;">
-                                        👑 <span class="fi fi-@champTeamRest.FlagCode.ToLower()" style="width:14px !important;height:11px !important;border-radius:2px;"></span> @(champTeamRest.ShortCode ?? champTeamRest.Name)
-                                    </small>
+                                    @ChampionPick(champTeamRest)
                                 }
                                 <div class="progress mt-1" style="height:3px;border-radius:2px;">
                                     <div class="progress-bar bg-primary"
@@ -264,6 +260,16 @@ else
     private List<StandingsService.StandingEntry> standings = [];
     private Dictionary<int, int> previousPositions = [];
     private Dictionary<int, Team> championPicks = [];
+    private HashSet<int> eliminatedTeamIds = [];
+
+    // Pick de campeón (bandera + nombre); compartido entre el podio y el resto de la tabla.
+    private RenderFragment ChampionPick(Team team) => __builder =>
+    {
+        var eliminated = eliminatedTeamIds.Contains(team.Id);
+        <small class="d-block champ-pick @(eliminated ? "champ-pick-eliminated" : "")">
+            👑 <span class="fi fi-@team.FlagCode.ToLower() champ-pick-flag"></span> @team.Name
+        </small>
+    };
 
     private bool comparePickerOpen;
     private int? pickA;
@@ -294,6 +300,7 @@ else
         standings          = await StandingsService.GetStandingsAsync(PoolId);
         previousPositions  = await StandingsService.GetLastSnapshotPositionsAsync(PoolId);
         championPicks      = await ChampionService.GetAllPredictionsForPoolAsync(PoolId);
+        eliminatedTeamIds  = await ChampionService.GetEliminatedTeamIdsAsync();
     }
 
     private async Task RefreshAsync()

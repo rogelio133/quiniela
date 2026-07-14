@@ -140,8 +140,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    flex-shrink: 0;
-    min-width: 128px;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .ds-flag {
@@ -152,6 +152,11 @@
 
 .ds-team-code {
     font-weight: 700;
+    font-size: 0.8rem;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ds-score {

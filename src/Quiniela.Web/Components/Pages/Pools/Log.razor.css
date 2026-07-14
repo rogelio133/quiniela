@@ -1,7 +1,14 @@
-/* ── Filtro ────────────────────────────────────────────────── */
+/* ── Filtros ───────────────────────────────────────────────── */
+.log-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
 .log-filter {
     max-width: 260px;
-    margin-bottom: 14px;
+    flex: 1 1 180px;
 }
 
 /* ── Contenedor ────────────────────────────────────────────── */

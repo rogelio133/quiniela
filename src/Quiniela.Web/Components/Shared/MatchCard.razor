@@ -44,8 +44,8 @@
                 <span class="fi fi-@Match.HomeTeam!.FlagCode mc-flag @(FlagsAreTappable || FlagsDblTappable ? "mc-flag-tappable" : "")"
                       @onclick:stopPropagation="FlagsAreTappable"
                       @onclick="TapHomeFlag"></span>
-                <span class="mc-code">@TeamShort(Match.HomeTeam)</span>
-                <span class="mc-name">@Match.HomeTeam.Name.ToUpperInvariant()</span>
+                <span class="mc-code">@Match.HomeTeam.Name.ToUpperInvariant()</span>
+                <span class="mc-name">@TeamShort(Match.HomeTeam)</span>
                 @if (selectedOutcome == 'H') { <span class="mc-check">✓</span> }
             </div>
 
@@ -68,8 +68,8 @@
                 <span class="fi fi-@Match.AwayTeam!.FlagCode mc-flag @(FlagsAreTappable || FlagsDblTappable ? "mc-flag-tappable" : "")"
                       @onclick:stopPropagation="FlagsAreTappable"
                       @onclick="TapAwayFlag"></span>
-                <span class="mc-code">@TeamShort(Match.AwayTeam)</span>
-                <span class="mc-name">@Match.AwayTeam.Name.ToUpperInvariant()</span>
+                <span class="mc-code">@Match.AwayTeam.Name.ToUpperInvariant()</span>
+                <span class="mc-name">@TeamShort(Match.AwayTeam)</span>
                 @if (selectedOutcome == 'A') { <span class="mc-check">✓</span> }
             </div>
         </div>

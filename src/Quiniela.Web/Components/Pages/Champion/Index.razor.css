@@ -43,6 +43,7 @@
     width: 40px !important;
     height: 30px !important;
     border-radius: 4px;
+    transition: width 0.2s ease, height 0.2s ease;
 }
 
 .champ-cell-name {
@@ -50,6 +51,18 @@
     font-size: 0.85rem;
     color: var(--q-text);
     text-align: center;
+    overflow-wrap: anywhere;
+    transition: font-size 0.2s ease;
+}
+
+/* Celda seleccionada: bandera y nombre al doble de tamaño */
+.champ-cell-selected .champ-cell-flag {
+    width: 80px !important;
+    height: 60px !important;
+}
+
+.champ-cell-selected .champ-cell-name {
+    font-size: 1.7rem;
 }
 
 .champ-save-bar {

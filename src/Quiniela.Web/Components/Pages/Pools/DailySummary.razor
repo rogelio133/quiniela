@@ -92,12 +92,12 @@ else
                         @if (row.Match.HomeTeam is not null)
                         {
                             <span class="fi fi-@row.Match.HomeTeam.FlagCode.ToLower() ds-flag"></span>
-                            <span class="ds-team-code">@TeamCode(row.Match.HomeTeam)</span>
+                            <span class="ds-team-code">@TeamLabel(row.Match.HomeTeam)</span>
                         }
                         <span class="ds-score">@row.Match.HomeScore–@row.Match.AwayScore</span>
                         @if (row.Match.AwayTeam is not null)
                         {
-                            <span class="ds-team-code">@TeamCode(row.Match.AwayTeam)</span>
+                            <span class="ds-team-code">@TeamLabel(row.Match.AwayTeam)</span>
                             <span class="fi fi-@row.Match.AwayTeam.FlagCode.ToLower() ds-flag"></span>
                         }
                     </span>
@@ -134,7 +134,7 @@ else
                     <span class="ds-row-match">
                         👑 Pronóstico campeón:
                         <span class="fi fi-@summary.Champion.FlagCode.ToLower() ds-flag"></span>
-                        <span class="ds-team-code">@(summary.Champion.ShortCode ?? summary.Champion.TeamName)</span>
+                        <span class="ds-team-code">@(summary.Champion.TeamName ?? summary.Champion.ShortCode)</span>
                         <span class="@(summary.Champion.Points > 0 ? "ds-hit" : "ds-miss")">
                             @(summary.Champion.Points > 0 ? "✓" : "✗")
                         </span>
@@ -335,13 +335,13 @@ else
 
     private string PredictionLabel(DailySummaryService.DailyRow row) => row.PredOutcome switch
     {
-        'H' => TeamCode(row.Match.HomeTeam),
-        'A' => TeamCode(row.Match.AwayTeam),
+        'H' => TeamLabel(row.Match.HomeTeam),
+        'A' => TeamLabel(row.Match.AwayTeam),
         'D' => "Empate",
         _ => "?",
     };
 
-    private static string TeamCode(Team? team) => team?.ShortCode ?? team?.Name ?? "?";
+    private static string TeamLabel(Team? team) => team?.Name ?? team?.ShortCode ?? "?";
 
     private static string InstanceLabel(MatchDecidedIn instance) => instance switch
     {

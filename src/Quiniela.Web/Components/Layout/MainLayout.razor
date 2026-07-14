@@ -9,6 +9,7 @@
 
     <main>
         <div class="top-row px-4 d-flex align-items-center justify-content-end gap-3">
+            <ThemeToggle @rendermode="InteractiveServer" />
             <AuthorizeView>
                 <Authorized>
                     <span class="text-white small fw-semibold">@(context.User.FindFirst("DisplayName")?.Value ?? context.User.Identity?.Name)</span>

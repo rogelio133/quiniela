@@ -83,7 +83,7 @@ else
                 Bracket
                 @if (placeholderMatches.Count > 0)
                 {
-                    <span class="badge bg-warning text-dark ms-1 rounded-pill">@placeholderMatches.Count</span>
+                    <span class="badge text-bg-warning ms-1 rounded-pill">@placeholderMatches.Count</span>
                 }
             </button>
         </li>
@@ -106,7 +106,7 @@ else
             {
                 <div class="card mb-3 shadow-sm border-start border-4 border-warning" @key="match.Id">
                     @* Header *@
-                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-white">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-body">
                         <small class="text-muted fw-semibold text-uppercase"
                                style="font-size:0.7rem; letter-spacing:.04rem;">
                             @StageLabel(match)
@@ -115,7 +115,7 @@ else
                                 <span> • @match.Venue</span>
                             }
                         </small>
-                        <span class="badge bg-warning text-dark" style="font-size:0.65rem;">PENDIENTE</span>
+                        <span class="badge text-bg-warning" style="font-size:0.65rem;">PENDIENTE</span>
                     </div>
 
                     <div class="card-body px-3 py-3">
@@ -221,7 +221,7 @@ else
             {
                 <div class="card mb-3 shadow-sm border-start border-4 border-success" @key="match.Id">
                     @* Header *@
-                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-white">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 px-3 bg-body">
                         <small class="text-muted fw-semibold text-uppercase"
                                style="font-size:0.7rem; letter-spacing:.04rem;">
                             @StageLabel(match)
@@ -395,7 +395,7 @@ else
             @foreach (var match in placeholderMatches)
             {
                 <div class="card mb-3 shadow-sm border-start border-4 border-info" @key="match.Id">
-                    <div class="card-header py-2 px-3 bg-white">
+                    <div class="card-header py-2 px-3 bg-body">
                         <div class="d-flex justify-content-between align-items-center w-100">
                             <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing:.04rem;">
                                 @StageLabel(match)

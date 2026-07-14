@@ -1,0 +1,28 @@
+@inject IJSRuntime JS
+
+<button type="button" class="theme-toggle" title="@(_theme == "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro")"
+        aria-label="Cambiar tema" @onclick="Toggle">
+    @(_theme == "dark" ? "☀️" : "🌙")
+</button>
+
+@code {
+    private string _theme = "light";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var current = await JS.InvokeAsync<string?>("quiniela.theme.get");
+        if (current is "light" or "dark" && current != _theme)
+        {
+            _theme = current;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Toggle()
+    {
+        _theme = _theme == "dark" ? "light" : "dark";
+        await JS.InvokeVoidAsync("quiniela.theme.set", _theme);
+    }
+}

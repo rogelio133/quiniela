@@ -23,8 +23,39 @@ async function tryInitLoginScene() {
 document.addEventListener('DOMContentLoaded', tryInitLoginScene);
 document.addEventListener('blazor:navigated', tryInitLoginScene);
 
+// Al navegar, Blazor sincroniza los atributos de <html> con el documento del
+// servidor (que no conoce el tema del cliente) y borra data-theme/data-bs-theme
+// — sin disparar ningún evento blazor:* observable. Vigilar y re-aplicar.
+new MutationObserver(() => {
+    const d = document.documentElement;
+    if (!d.getAttribute('data-theme') || !d.getAttribute('data-bs-theme'))
+        window.quiniela.theme.apply();
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-bs-theme'] });
+
 // Lazy wrappers for Blazor IJSRuntime → Three.js modules
 window.quiniela = {
+    theme: {
+        get: () => document.documentElement.getAttribute('data-theme'),
+        set: (t) => {
+            try { localStorage.setItem('quiniela_theme', t); } catch { }
+            window.quiniela.theme.apply();
+        },
+        // Re-aplica el tema efectivo (guardado o sistema) a <html> y al meta theme-color.
+        // La enhanced navigation de Blazor fusiona los atributos de <html> con la
+        // respuesta del servidor (que no trae data-theme), así que hay que re-aplicar
+        // tras cada navegación — no basta con el script del <head> (solo cold loads).
+        apply: () => {
+            let t;
+            try { t = localStorage.getItem('quiniela_theme'); } catch { }
+            if (t !== 'light' && t !== 'dark')
+                t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const d = document.documentElement;
+            d.setAttribute('data-theme', t);
+            d.setAttribute('data-bs-theme', t);
+            const m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.content = t === 'dark' ? '#0B1220' : '#0D1B2A';
+        }
+    },
     initTrophy: async (id) => {
         try { const m = await import('/js/three-trophy.js'); m.initTrophy(id); }
         catch (e) { console.warn('Trophy 3D unavailable:', e); }

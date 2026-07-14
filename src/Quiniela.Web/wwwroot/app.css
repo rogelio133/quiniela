@@ -2,18 +2,8 @@ html, body {
     font-family: 'Nunito', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-a, .btn-link {
-    color: #006bb7;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem var(--q-bg), 0 0 0 0.25rem var(--q-blue-lt);
 }
 
 .content {
@@ -25,15 +15,15 @@ h1:focus {
 }
 
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+    outline: 1px solid var(--q-green);
 }
 
 .invalid {
-    outline: 1px solid #e50000;
+    outline: 1px solid var(--q-red);
 }
 
 .validation-message {
-    color: #e50000;
+    color: var(--q-red);
 }
 
 .blazor-error-boundary {
@@ -47,7 +37,7 @@ h1:focus {
     }
 
 .darker-border-checkbox.form-check-input {
-    border-color: #929292;
+    border-color: var(--q-muted);
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
@@ -84,6 +74,7 @@ h1:focus {
 }
 
 /* ── Home dashboard ────────────────────────────────────────────────── */
+/* Gradientes navy/acento invariantes por diseño (mismos en claro y oscuro) */
 .home-welcome {
     background: linear-gradient(135deg, #0D1B2A 0%, #1A2B42 100%);
     border-radius: 16px;
@@ -161,8 +152,8 @@ h1:focus {
 }
 
 .home-stat-matches-empty {
-    background: #F1F5F9;
-    color: #64748B;
+    background: var(--q-surface-2);
+    color: var(--q-muted);
 }
 
 .home-stat-row {
@@ -200,19 +191,19 @@ h1:focus {
 }
 
 .home-cta {
-    background: white;
+    background: var(--q-surface);
     border-radius: 14px;
     padding: 20px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    border: 1px solid var(--q-border);
+    box-shadow: var(--q-sh-sm);
 }
 
 .home-quick-actions {
-    background: white;
+    background: var(--q-surface);
     border-radius: 14px;
     padding: 16px;
-    border: 1px solid #E2E8F0;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    border: 1px solid var(--q-border);
+    box-shadow: var(--q-sh-sm);
 }
 
 .home-qa-title {
@@ -220,7 +211,7 @@ h1:focus {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #64748B;
+    color: var(--q-muted);
     margin-bottom: 10px;
 }
 
@@ -230,9 +221,9 @@ h1:focus {
     gap: 10px;
     padding: 12px 14px;
     border-radius: 10px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    color: #0F172A;
+    background: var(--q-surface-2);
+    border: 1px solid var(--q-border);
+    color: var(--q-text);
     text-decoration: none;
     font-size: 0.88rem;
     font-weight: 600;
@@ -240,28 +231,28 @@ h1:focus {
 }
 
 .home-qa-btn:hover {
-    background: #EEF2F7;
+    background: var(--q-bg);
     transform: translateX(2px);
-    color: #0F172A;
+    color: var(--q-text);
 }
 
 .home-qa-btn-secondary {
-    background: #F1F5F9;
-    color: #475569;
+    background: var(--q-surface-2);
+    color: var(--q-text-sm);
 }
 
 /* ── Standings podium ──────────────────────────────────────────────── */
 .podium-card {
     border-radius: 14px;
     padding: 14px 16px;
-    border: 1px solid #E2E8F0;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    border: 1px solid var(--q-border);
+    background: var(--q-surface);
+    box-shadow: var(--q-sh-sm);
 }
 
 .podium-1 {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    border-color: #FCD34D;
+    background: var(--q-podium-1-bg);
+    border-color: var(--q-podium-1-border);
     box-shadow: 0 4px 14px rgba(245,158,11,.2);
 }
 
@@ -270,13 +261,13 @@ h1:focus {
 }
 
 .podium-2 {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-color: #CBD5E1;
+    background: var(--q-podium-2-bg);
+    border-color: var(--q-podium-2-border);
 }
 
 .podium-3 {
-    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 20%, #fff7ed 100%);
-    border-color: #FDBA74;
+    background: var(--q-podium-3-bg);
+    border-color: var(--q-podium-3-border);
 }
 
 .podium-medal {
@@ -289,7 +280,7 @@ h1:focus {
     font-size: 1.35rem;
     font-weight: 900;
     line-height: 1;
-    color: #0F172A;
+    color: var(--q-text);
 }
 
-.podium-1 .podium-pts { color: #B45309; }
+.podium-1 .podium-pts { color: var(--q-podium-1-text); }

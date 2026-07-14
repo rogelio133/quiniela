@@ -4,8 +4,8 @@
   "description": "Quiniela del Mundial 2026",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d6efd",
-  "theme_color": "#0d6efd",
+  "background_color": "#0D1B2A",
+  "theme_color": "#0D1B2A",
   "orientation": "portrait",
   "lang": "es-MX",
   "icons": [

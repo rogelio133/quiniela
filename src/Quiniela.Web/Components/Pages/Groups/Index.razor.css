@@ -20,10 +20,10 @@
 }
 
 .g-btn:not(.collapsed) {
-    background: #F0F5FF;
+    background: var(--q-blue-tint);
     color: var(--q-blue, #1A56DB);
     box-shadow: none;
-    border-bottom: 1px solid #DBEAFE;
+    border-bottom: 1px solid var(--q-border);
 }
 
 .g-btn::after {
@@ -64,13 +64,13 @@
 .g-btn-title {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #0F172A;
+    color: var(--q-text);
     letter-spacing: 0.04em;
     line-height: 1;
 }
 
 .g-btn:not(.collapsed) .g-btn-title {
-    color: var(--q-blue, #1A56DB);
+    color: var(--q-blue-lt);
 }
 
 .g-btn-leader {
@@ -78,7 +78,7 @@
     align-items: center;
     gap: 5px;
     font-size: 0.62rem;
-    color: #64748B;
+    color: var(--q-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -98,8 +98,8 @@
 .g-prog-chip {
     font-size: 0.68rem;
     font-weight: 600;
-    color: #94A3B8;
-    background: #F1F5F9;
+    color: var(--q-muted);
+    background: var(--q-surface-2);
     border-radius: 20px;
     padding: 3px 8px;
     flex-shrink: 0;
@@ -108,7 +108,7 @@
 
 .g-prog-chip-done {
     background: rgba(5,150,105,.1);
-    color: #059669;
+    color: var(--q-green);
 }
 
 .g-prog-sep { opacity: 0.5; margin: 0 1px; }
@@ -117,11 +117,11 @@
 .g-thead th {
     font-size: 0.6rem;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--q-muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 8px 5px;
-    background: #F8FAFC;
+    background: var(--q-surface-2);
     border-bottom: 1px solid var(--q-border, #E2E8F0);
     white-space: nowrap;
 }
@@ -130,14 +130,14 @@
 .g-table td {
     padding: 10px 5px;
     vertical-align: middle;
-    border-bottom: 1px solid #F1F5F9;
+    border-bottom: 1px solid var(--q-surface-2);
 }
 
 .g-table tbody tr:last-child td { border-bottom: none; }
 
 .g-stat {
     font-size: 0.82rem;
-    color: #475569;
+    color: var(--q-text-sm);
 }
 
 /* Row highlights — matches podium-1 / podium-2 from app.css */
@@ -155,7 +155,7 @@
 .g-pos {
     font-size: 0.82rem;
     font-weight: 600;
-    color: #94A3B8;
+    color: var(--q-muted);
 }
 
 /* Flag */
@@ -176,48 +176,48 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 130px;
-    color: #0F172A;
+    color: var(--q-text);
 }
 
 /* Points — mirrors podium-pts style */
 .g-pts {
     font-size: 1rem;
     font-weight: 900;
-    color: #0F172A;
+    color: var(--q-text);
     line-height: 1;
 }
 
-.g-pts-gold   { color: #B45309; }
-.g-pts-silver { color: #475569; }
+.g-pts-gold   { color: var(--q-podium-1-text); }
+.g-pts-silver { color: var(--q-text-sm); }
 
 /* Footer: progress bar */
 .g-footer {
     padding: 10px 14px 12px;
-    border-top: 1px solid #F1F5F9;
-    background: #FAFBFD;
+    border-top: 1px solid var(--q-surface-2);
+    background: var(--q-surface-2);
 }
 
 .g-footer-done {
     font-size: 0.7rem;
     font-weight: 700;
-    color: #059669;
+    color: var(--q-green);
 }
 
 .g-footer-info {
     font-size: 0.68rem;
-    color: #94A3B8;
+    color: var(--q-muted);
 }
 
 .g-footer-pct {
     font-size: 0.65rem;
     font-weight: 600;
-    color: #CBD5E1;
+    color: var(--q-muted);
 }
 
 .g-progress {
     height: 4px;
     border-radius: 2px;
-    background: #E2E8F0;
+    background: var(--q-border);
 }
 
 /* Qualification legend */
@@ -226,7 +226,7 @@
     align-items: center;
     gap: 8px;
     font-size: 0.7rem;
-    color: #64748B;
+    color: var(--q-muted);
 }
 
 .g-legend-dot {

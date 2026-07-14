@@ -1,15 +1,15 @@
 .bmc {
-    background: #fff;
-    border: 1px solid #E2E8F0;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
     border-radius: 8px;
     overflow: hidden;
     font-size: 0.72rem;
     width: 100%;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    box-shadow: var(--q-sh-sm);
 }
 
 .bmc-done {
-    border-color: #CBD5E1;
+    border-color: var(--q-border);
 }
 
 .bmc-team {
@@ -30,7 +30,7 @@
 .bmc-name {
     flex: 1;
     font-weight: 600;
-    color: #1E293B;
+    color: var(--q-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -38,7 +38,7 @@
 
 .bmc-score {
     font-weight: 700;
-    color: #1E293B;
+    color: var(--q-text);
     min-width: 14px;
     text-align: right;
     flex-shrink: 0;
@@ -46,12 +46,12 @@
 
 .bmc-winner .bmc-name,
 .bmc-winner .bmc-score {
-    color: #059669;
+    color: var(--q-green);
 }
 
 .bmc-loser .bmc-name,
 .bmc-loser .bmc-score {
-    color: #94A3B8;
+    color: var(--q-muted);
 }
 
 .bmc-loser .bmc-flag {
@@ -60,6 +60,6 @@
 
 .bmc-divider {
     height: 1px;
-    background: #F1F5F9;
+    background: var(--q-surface-2);
     margin: 0 8px;
 }

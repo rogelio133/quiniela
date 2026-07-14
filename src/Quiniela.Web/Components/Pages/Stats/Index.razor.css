@@ -1,3 +1,4 @@
+/* Gradiente azul de acento — invariante por diseño */
 .stats-headline {
     background: linear-gradient(135deg, #1A56DB, #1e40af);
     color: #fff;
@@ -23,7 +24,7 @@
     right: 0;
     bottom: 0;
     width: 20px;
-    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95));
+    background: linear-gradient(to right, transparent, var(--q-surface) 95%);
     pointer-events: none;
 }
 
@@ -46,7 +47,7 @@
 .stats-bar-value {
     font-size: 0.68rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--q-text-sm);
     margin-bottom: 2px;
 }
 
@@ -67,7 +68,7 @@
 
 .stats-bar-label {
     font-size: 0.7rem;
-    color: #94A3B8;
+    color: var(--q-muted);
     margin-top: 4px;
     white-space: nowrap;
 }

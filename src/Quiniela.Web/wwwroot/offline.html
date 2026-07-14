@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0d6efd" />
+  <meta name="theme-color" content="#0D1B2A" />
   <title>Sin conexión — Quiniela 133</title>
   <style>
+    :root { color-scheme: light dark; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -21,6 +22,11 @@
     .icon { width: 96px; height: 96px; margin-bottom: 1.5rem; }
     h1 { font-size: 1.5rem; font-weight: 700; color: #1a2a4a; margin-bottom: .5rem; }
     p  { font-size: 0.95rem; color: #6c757d; margin-bottom: 1.75rem; line-height: 1.5; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0B1220; }
+      h1   { color: #E7EEF8; }
+      p    { color: #8CA3C0; }
+    }
     button {
       background: #0d6efd;
       color: #fff;

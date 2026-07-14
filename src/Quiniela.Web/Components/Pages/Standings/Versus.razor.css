@@ -85,10 +85,10 @@
 }
 
 .h2h-stage-btn:not(.collapsed) {
-    background: #F0F5FF;
-    color: var(--q-blue, #1A56DB);
+    background: var(--q-blue-tint);
+    color: var(--q-blue-lt);
     box-shadow: none;
-    border-bottom: 1px solid #DBEAFE;
+    border-bottom: 1px solid var(--q-border);
 }
 
 .h2h-stage-title {
@@ -100,14 +100,14 @@
 }
 
 .h2h-stage-btn:not(.collapsed) .h2h-stage-title {
-    color: var(--q-blue, #1A56DB);
+    color: var(--q-blue-lt);
 }
 
 .h2h-stage-count {
     font-size: 0.68rem;
     font-weight: 600;
-    color: #94A3B8;
-    background: #F1F5F9;
+    color: var(--q-muted);
+    background: var(--q-surface-2);
     border-radius: 20px;
     padding: 3px 9px;
     flex-shrink: 0;

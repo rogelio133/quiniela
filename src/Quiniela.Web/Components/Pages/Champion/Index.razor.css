@@ -5,7 +5,7 @@
 }
 
 .champ-subtitle {
-    color: #64748B;
+    color: var(--q-muted);
     font-size: 0.9rem;
     margin-bottom: 1.25rem;
 }
@@ -23,16 +23,16 @@
     align-items: center;
     gap: 6px;
     padding: 14px 8px;
-    border: 2px solid #E2E8F0;
+    border: 2px solid var(--q-border);
     border-radius: 10px;
-    background: #fff;
+    background: var(--q-surface);
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
 }
 
 .champ-cell-selected {
-    border-color: #1A56DB;
-    background: #EFF6FF;
+    border-color: var(--q-blue);
+    background: var(--q-blue-tint);
 }
 
 .champ-cell-disabled {
@@ -48,7 +48,7 @@
 .champ-cell-name {
     font-weight: 600;
     font-size: 0.85rem;
-    color: #1E293B;
+    color: var(--q-text);
     text-align: center;
 }
 
@@ -56,7 +56,7 @@
     position: sticky;
     bottom: 0;
     padding: 12px 0;
-    background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
+    background: linear-gradient(to top, var(--q-bg) 70%, transparent);
 }
 
 .champ-locked {
@@ -88,7 +88,7 @@
     margin-top: 0.75rem;
     font-weight: 600;
     font-size: 1.05rem;
-    color: #1E293B;
+    color: var(--q-text);
 }
 
 @media (min-width: 641px) {

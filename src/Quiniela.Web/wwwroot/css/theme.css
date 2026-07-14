@@ -10,6 +10,7 @@
 
     --q-bg:      #EEF2F7;
     --q-surface: #FFFFFF;
+    --q-surface-2: #F8FAFC;
     --q-border:  #E2E8F0;
     --q-muted:   #64748B;
     --q-text:    #0F172A;
@@ -33,6 +34,69 @@
     --q-g-green:   linear-gradient(135deg, #059669 0%, #10B981 100%);
     --q-g-sidebar: linear-gradient(180deg, #0D1B2A 0%, #1E0A3C 100%);
     --q-g-header:  linear-gradient(135deg, #0D1B2A 0%, #1A2B40 100%);
+
+    /* Estados de predicción (MatchCard y afines) */
+    --q-ok-bg:     #F0FDF4;
+    --q-ok-border: #BBF7D0;
+    --q-bad-bg:    #FEF2F2;
+    --q-bad-border:#FCA5A5;
+
+    /* Tintes de selección/acción */
+    --q-blue-tint:      #EFF4FF;
+    --q-va-bg:          linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%);
+    --q-va-bg-hover:    linear-gradient(135deg, #E0E7FF 0%, #DCFCE7 100%);
+    --q-va-bg-active:   linear-gradient(135deg, #C7D2FE 0%, #BBF7D0 100%);
+    --q-va-text:        #3730A3;
+    --q-va-arrow:       #6366F1;
+
+    /* Podium oro/plata/bronce (Home/Standings) */
+    --q-podium-1-bg:     linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    --q-podium-1-border: #FCD34D;
+    --q-podium-2-bg:     linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --q-podium-2-border: #CBD5E1;
+    --q-podium-3-bg:     linear-gradient(135deg, #fff7ed 0%, #fed7aa 20%, #fff7ed 100%);
+    --q-podium-3-border: #FDBA74;
+    --q-podium-1-text:   #B45309;
+}
+
+/* ── Tema oscuro ───────────────────────────────────────────── */
+:root[data-theme="dark"] {
+    color-scheme: dark;               /* form controls y scrollbars nativos */
+
+    --q-bg:      #0B1220;
+    --q-surface: #131F31;
+    --q-surface-2: #1B2A40;
+    --q-border:  #263650;
+    --q-muted:   #8CA3C0;
+    --q-text:    #E7EEF8;
+    --q-text-sm: #B6C5DB;
+
+    /* Acentos: se conservan; solo se suavizan las sombras */
+    --q-sh-sm:   0 1px 3px rgba(0,0,0,.35);
+    --q-sh-md:   0 4px 10px rgba(0,0,0,.4);
+    --q-sh-lg:   0 12px 28px rgba(0,0,0,.5);
+
+    --q-g-header: linear-gradient(135deg, #0A1524 0%, #14233A 100%);
+
+    --q-ok-bg:     #0E2A1B;
+    --q-ok-border: #1E5A3A;
+    --q-bad-bg:    #331416;
+    --q-bad-border:#7F2A2E;
+
+    --q-blue-tint:      #16294A;
+    --q-va-bg:          linear-gradient(135deg, #1A2240 0%, #122A20 100%);
+    --q-va-bg-hover:    linear-gradient(135deg, #222C52 0%, #17352A 100%);
+    --q-va-bg-active:   linear-gradient(135deg, #2A3664 0%, #1C4033 100%);
+    --q-va-text:        #A5B4FC;
+    --q-va-arrow:       #818CF8;
+
+    --q-podium-1-bg:     linear-gradient(135deg, #2A2210 0%, #3A2E12 100%);
+    --q-podium-1-border: #8A6A1C;
+    --q-podium-2-bg:     linear-gradient(135deg, #1B2434 0%, #232E42 100%);
+    --q-podium-2-border: #475870;
+    --q-podium-3-bg:     linear-gradient(135deg, #2B1D10 0%, #3A2716 20%, #2B1D10 100%);
+    --q-podium-3-border: #8A5A2C;
+    --q-podium-1-text:   #F1C25C;
 }
 
 /* Base overrides */

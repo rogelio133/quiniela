@@ -12,21 +12,21 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 14px;
-    background: #F8FAFC;
+    background: var(--q-surface-2);
     border-bottom: 1px solid var(--q-border, #E2E8F0);
 }
 
 .ko-order {
     font-size: 0.62rem;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--q-muted);
     letter-spacing: 0.06em;
 }
 
 .ko-kickoff {
     font-size: 0.65rem;
     font-weight: 600;
-    color: #64748B;
+    color: var(--q-muted);
 }
 
 .ko-card-body {
@@ -61,7 +61,7 @@
 .ko-team-name {
     font-size: 0.83rem;
     font-weight: 600;
-    color: #0F172A;
+    color: var(--q-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -70,26 +70,26 @@
 .ko-slot {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #94A3B8;
+    color: var(--q-muted);
 }
 
 .ko-vs {
     font-size: 0.68rem;
     font-weight: 700;
-    color: #CBD5E1;
+    color: var(--q-border);
     flex-shrink: 0;
 }
 
 .ko-score {
     font-size: 1rem;
     font-weight: 800;
-    color: #0F172A;
+    color: var(--q-text);
     flex-shrink: 0;
 }
 
 .ko-venue {
     padding: 6px 14px 10px;
     font-size: 0.62rem;
-    color: #94A3B8;
-    border-top: 1px solid #F1F5F9;
+    color: var(--q-muted);
+    border-top: 1px solid var(--q-surface-2);
 }

@@ -74,6 +74,7 @@ builder.Services.AddScoped<NotificationCheckService>();
 builder.Services.AddScoped<DailySummaryService>();
 builder.Services.AddScoped<DailyAwardService>();
 builder.Services.AddScoped<PageVisitService>();
+builder.Services.AddScoped<FinalSummaryService>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();

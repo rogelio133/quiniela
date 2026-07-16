@@ -1,0 +1,317 @@
+@page "/pools/{poolId:int}/final-summary"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject FinalSummaryService FinalSummaryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Resumen del torneo — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else if (!unlocked && !isAdminRole)
+{
+    @* Mismo trato que un no-miembro: la página "no existe" hasta que termine el Mundial *@
+    <div class="alert alert-info">
+        Disponible cuando termine el Mundial 🏆
+        <a href="/pools/@PoolId" class="alert-link ms-2">Volver a la sala</a>
+    </div>
+}
+else
+{
+    <PageVisitLogger PoolId="@PoolId" PageName="Resumen final" />
+
+    @if (!unlocked)
+    {
+        <div class="fs-preview-banner">
+            👁️ Vista previa — solo tú puedes ver esta página hasta que se capture la Final
+        </div>
+    }
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Resumen del torneo</li>
+        </ol>
+    </nav>
+
+    @* ── Hero ceremonial (navy invariante al tema, como los sheets) ── *@
+    <section class="fs-hero">
+        <canvas class="fs-rain-canvas" @ref="rainCanvas"></canvas>
+
+        <div class="fs-hero-inner">
+            <div class="fs-kicker">Mundial 2026 · @pool.Name</div>
+
+            @if (phase == Phase.Ceremony)
+            {
+                <h1 class="fs-title">Y el campeón de la quiniela es…</h1>
+
+                <div class="fs-ceremony-list">
+                    @if (revealStep >= 1 && ThirdEntry is not null)
+                    {
+                        <div class="fs-cer-row fs-cer-pop">
+                            <span class="fs-cer-medal">🥉</span>
+                            <span class="fs-cer-place">3er lugar</span>
+                            @AvatarFragment(ThirdEntry.Entry, 44)
+                            <span class="fs-cer-name">@ThirdEntry.Entry.DisplayName</span>
+                            <span class="fs-cer-pts">@ThirdEntry.Entry.TotalPoints pts</span>
+                        </div>
+                    }
+                    @if (revealStep >= 2 && SecondEntry is not null)
+                    {
+                        <div class="fs-cer-row fs-cer-pop">
+                            <span class="fs-cer-medal">🥈</span>
+                            <span class="fs-cer-place">2° lugar</span>
+                            @AvatarFragment(SecondEntry.Entry, 44)
+                            <span class="fs-cer-name">@SecondEntry.Entry.DisplayName</span>
+                            <span class="fs-cer-pts">@SecondEntry.Entry.TotalPoints pts</span>
+                        </div>
+                    }
+                    @if (revealStep == 2)
+                    {
+                        <div class="fs-cer-suspense">🥁 …</div>
+                    }
+                </div>
+
+                <button type="button" class="fs-skip-btn" @onclick="SkipCeremony">
+                    Saltar ⏭
+                </button>
+            }
+            else if (phase == Phase.Podium && ChampionEntry is not null)
+            {
+                <div class="fs-champ-crown">👑</div>
+                <h1 class="fs-title fs-champ-title">@ChampionEntry.Entry.DisplayName</h1>
+                <div class="fs-champ-sub">
+                    @(unlocked ? "Campeón de la quiniela" : "Campeón parcial (vista previa)")
+                </div>
+
+                <div class="fs-podium">
+                    @if (SecondEntry is not null)
+                    {
+                        <div class="fs-pod fs-pod-2">
+                            @AvatarFragment(SecondEntry.Entry, 64)
+                            <div class="fs-pod-medal">🥈</div>
+                            <div class="fs-pod-name">@SecondEntry.Entry.DisplayName</div>
+                            <div class="fs-pod-pts">@SecondEntry.Entry.TotalPoints <span>pts</span></div>
+                            <div class="fs-pod-base fs-base-2">2°</div>
+                        </div>
+                    }
+                    <div class="fs-pod fs-pod-1">
+                        @AvatarFragment(ChampionEntry.Entry, 92)
+                        <div class="fs-pod-medal">🥇</div>
+                        <div class="fs-pod-name">@ChampionEntry.Entry.DisplayName</div>
+                        <div class="fs-pod-pts">@ChampionEntry.Entry.TotalPoints <span>pts</span></div>
+                        @if (podium!.DeltaVsSecond > 0)
+                        {
+                            <div class="fs-pod-delta">+@podium.DeltaVsSecond sobre el 2°</div>
+                        }
+                        <div class="fs-pod-base fs-base-1">1°</div>
+                    </div>
+                    @if (ThirdEntry is not null)
+                    {
+                        <div class="fs-pod fs-pod-3">
+                            @AvatarFragment(ThirdEntry.Entry, 64)
+                            <div class="fs-pod-medal">🥉</div>
+                            <div class="fs-pod-name">@ThirdEntry.Entry.DisplayName</div>
+                            <div class="fs-pod-pts">@ThirdEntry.Entry.TotalPoints <span>pts</span></div>
+                            <div class="fs-pod-base fs-base-3">3°</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ── Footer de la página (secciones RF3–RF7 se insertan arriba de esto) ── *@
+    <footer class="fs-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="ReplayCeremony">
+            🔁 Repetir ceremonia
+        </button>
+        <a href="/pools/@PoolId" class="btn btn-outline-secondary btn-sm">← Volver a la sala</a>
+    </footer>
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private enum Phase { Loading, Ceremony, Podium }
+
+    private Pool? pool;
+    private bool isLoading = true;
+    private bool isMember;
+    private bool isAdminRole;
+    private bool unlocked;
+    private int currentUserId;
+
+    private FinalSummaryService.Podium? podium;
+    private Phase phase = Phase.Loading;
+    private int revealStep;                 // 0 nada, 1 = 3°, 2 = +2°, 3 = campeón
+    private bool reducedMotion;
+    private bool rainRunning;
+    private CancellationTokenSource? ceremonyCts;
+    private ElementReference rainCanvas;
+
+    private FinalSummaryService.PodiumEntry? ChampionEntry => podium?.Top.ElementAtOrDefault(0);
+    private FinalSummaryService.PodiumEntry? SecondEntry => podium?.Top.ElementAtOrDefault(1);
+    private FinalSummaryService.PodiumEntry? ThirdEntry => podium?.Top.ElementAtOrDefault(2);
+
+    private string SeenKey => $"quiniela_final_seen_{PoolId}_{currentUserId}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(
+            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        isAdminRole = authState.User.IsInRole("Admin");
+
+        pool = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+
+        if (isMember)
+        {
+            unlocked = await FinalSummaryService.IsUnlockedAsync();
+            if (unlocked || isAdminRole)
+                podium = await FinalSummaryService.GetPodiumAsync(PoolId);
+        }
+
+        isLoading = false;
+    }
+
+    private bool startDecided;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // OnAfterRenderAsync no corre en prerender, así que el interop JS es seguro.
+        // No se usa firstRender: el primer render ocurre con isLoading=true (podium
+        // aún null, por el await de OnInitializedAsync) — se decide una sola vez
+        // en cuanto los datos estén cargados y la página realmente se muestre.
+        if (startDecided || podium is null || ChampionEntry is null) return;
+        startDecided = true;
+
+        reducedMotion = await JS.InvokeAsync<bool>("quiniela.prefersReducedMotion");
+        var seenList = await JS.InvokeAsync<List<string>>("quiniela.getStoredList", SeenKey);
+        bool alreadySeen = seenList.Count > 0;
+
+        if (reducedMotion)
+        {
+            // Sin ceremonia ni confeti animado: podio directo (confeti estático en CSS)
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+        }
+        else if (alreadySeen)
+        {
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+            await StartRainAsync();
+        }
+        else
+        {
+            await RunCeremonyAsync();
+        }
+    }
+
+    private async Task RunCeremonyAsync()
+    {
+        ceremonyCts?.Cancel();
+        var cts = ceremonyCts = new CancellationTokenSource();
+        try
+        {
+            phase = Phase.Ceremony;
+            revealStep = 0;
+            StateHasChanged();
+
+            await Task.Delay(1400, cts.Token);
+            revealStep = 1; StateHasChanged();          // 3er lugar
+
+            await Task.Delay(2000, cts.Token);
+            revealStep = 2; StateHasChanged();          // 2° lugar
+
+            await Task.Delay(2600, cts.Token);          // pausa dramática
+
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("quiniela.finalCeremony.burst");
+            await StartRainAsync();
+            await MarkSeenAsync();
+        }
+        catch (TaskCanceledException) { /* saltada o página desechada */ }
+    }
+
+    private async Task SkipCeremony()
+    {
+        ceremonyCts?.Cancel();
+        phase = Phase.Podium;
+        revealStep = 3;
+        await StartRainAsync();
+        await MarkSeenAsync();
+    }
+
+    private async Task ReplayCeremony()
+    {
+        await StopRainAsync();
+        await RunCeremonyAsync();
+    }
+
+    private async Task StartRainAsync()
+    {
+        if (reducedMotion) return;
+        await JS.InvokeVoidAsync("quiniela.finalCeremony.startRain", rainCanvas);
+        rainRunning = true;
+    }
+
+    private async Task StopRainAsync()
+    {
+        if (!rainRunning) return;
+        await JS.InvokeVoidAsync("quiniela.finalCeremony.stopRain");
+        rainRunning = false;
+    }
+
+    private async Task MarkSeenAsync()
+        => await JS.InvokeVoidAsync("quiniela.setStoredList", SeenKey, new[] { "seen" });
+
+    private static RenderFragment AvatarFragment(StandingsService.StandingEntry entry, int size) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+        {
+            <img src="@entry.ProfilePicturePath" class="fs-avatar" alt="@entry.DisplayName"
+                 style="width:@(size)px;height:@(size)px;" />
+        }
+        else
+        {
+            <div class="fs-avatar fs-avatar-fallback"
+                 style="width:@(size)px;height:@(size)px;font-size:@(size / 2)px;">⚽</div>
+        }
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        ceremonyCts?.Cancel();
+        try { await StopRainAsync(); }
+        catch { /* circuito ya cerrado */ }
+    }
+}

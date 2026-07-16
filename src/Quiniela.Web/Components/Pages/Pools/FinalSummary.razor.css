@@ -1,0 +1,289 @@
+/* ── Resumen final del torneo ─────────────────────────────────
+   El hero es navy invariante al tema (como los sheets); el resto
+   de la página usa tokens --q-*. */
+
+.fs-preview-banner {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: -1rem -0.75rem 1rem;
+    padding: 0.55rem 1rem;
+    background: var(--q-g-header);
+    color: #FCD34D;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--q-sh-md);
+}
+
+/* ── Hero ──────────────────────────────────────────────────── */
+.fs-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--q-r-lg);
+    background: var(--q-g-hero);
+    color: #F1F5F9;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--q-sh-lg);
+}
+
+.fs-rain-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.fs-hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 2.2rem 1rem 2.6rem;
+    text-align: center;
+}
+
+.fs-kicker {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    margin-bottom: 0.8rem;
+}
+
+.fs-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 1.4rem;
+}
+
+/* ── Ceremonia (reveal 3° → 2° → 1°) ───────────────────────── */
+.fs-ceremony-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    max-width: 420px;
+    margin: 0 auto 1.6rem;
+}
+
+.fs-cer-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--q-r);
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+}
+
+.fs-cer-pop { animation: fsPop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+
+.fs-cer-medal { font-size: 1.5rem; }
+
+.fs-cer-place {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94A3B8;
+    min-width: 58px;
+}
+
+.fs-cer-name {
+    flex: 1;
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.fs-cer-pts {
+    font-weight: 800;
+    color: #FCD34D;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.fs-cer-suspense {
+    font-size: 1.6rem;
+    margin-top: 0.4rem;
+    animation: fsPulse 1s ease-in-out infinite;
+}
+
+.fs-skip-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #CBD5E1;
+    border-radius: 999px;
+    padding: 0.35rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fs-skip-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+/* ── Podio ─────────────────────────────────────────────────── */
+.fs-champ-crown {
+    font-size: 2.6rem;
+    animation: fsPop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.fs-champ-title {
+    font-size: 2rem;
+    margin-bottom: 0.2rem;
+    background: var(--q-g-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.fs-champ-sub {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #94A3B8;
+    margin-bottom: 1.8rem;
+}
+
+.fs-podium {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.7rem;
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.fs-pod {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+    min-width: 0;
+    animation: fsPop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.fs-pod-2 { animation-delay: 0.1s; }
+.fs-pod-3 { animation-delay: 0.2s; }
+
+.fs-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+.fs-pod-1 .fs-avatar {
+    border-color: #FCD34D;
+    box-shadow: 0 0 24px rgba(252, 211, 77, 0.45);
+}
+
+.fs-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.fs-pod-medal { font-size: 1.3rem; margin-top: -0.2rem; }
+
+.fs-pod-name {
+    font-weight: 800;
+    font-size: 0.88rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fs-pod-1 .fs-pod-name { font-size: 1.05rem; }
+
+.fs-pod-pts { font-size: 0.85rem; font-weight: 800; color: #FCD34D; }
+.fs-pod-pts span { font-weight: 600; font-size: 0.65rem; color: #94A3B8; }
+.fs-pod-1 .fs-pod-pts { font-size: 1.05rem; }
+
+.fs-pod-delta {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #6EE7B7;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 999px;
+    padding: 0.12rem 0.6rem;
+}
+
+.fs-pod-base {
+    width: 100%;
+    border-radius: var(--q-r-sm) var(--q-r-sm) 0 0;
+    font-weight: 800;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 0.4rem;
+    margin-top: 0.35rem;
+}
+
+.fs-base-1 { height: 86px; background: var(--q-g-gold); color: #78350F; }
+.fs-base-2 { height: 58px; background: linear-gradient(180deg, #CBD5E1 0%, #94A3B8 100%); color: #1E293B; }
+.fs-base-3 { height: 42px; background: linear-gradient(180deg, #FDBA74 0%, #EA8C3F 100%); color: #7C2D12; }
+
+/* ── Footer ────────────────────────────────────────────────── */
+.fs-footer {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 1.6rem 0 0.8rem;
+}
+
+/* ── Animaciones ───────────────────────────────────────────── */
+@keyframes fsPop {
+    from { opacity: 0; transform: translateY(14px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fsPulse {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+}
+
+/* ── prefers-reduced-motion: sin ceremonia ni confeti animado ─
+   Podio directo con confeti estático decorativo en CSS. */
+@media (prefers-reduced-motion: reduce) {
+    .fs-cer-pop, .fs-pod, .fs-champ-crown, .fs-cer-suspense { animation: none; }
+
+    .fs-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            radial-gradient(circle 3px at 12% 18%, #FCD34D 98%, transparent),
+            radial-gradient(circle 2px at 28% 64%, #3B82F6 98%, transparent),
+            radial-gradient(circle 3px at 44% 30%, #10B981 98%, transparent),
+            radial-gradient(circle 2px at 61% 74%, #FCD34D 98%, transparent),
+            radial-gradient(circle 3px at 72% 22%, #F472B6 98%, transparent),
+            radial-gradient(circle 2px at 85% 55%, #3B82F6 98%, transparent),
+            radial-gradient(circle 3px at 93% 82%, #10B981 98%, transparent),
+            radial-gradient(circle 2px at 8% 84%, #F472B6 98%, transparent);
+        opacity: 0.7;
+    }
+}
+
+/* ── Desktop ───────────────────────────────────────────────── */
+@media (min-width: 641px) {
+    .fs-hero { min-height: 480px; }
+    .fs-title { font-size: 2rem; }
+    .fs-champ-title { font-size: 2.6rem; }
+    .fs-base-1 { height: 104px; }
+    .fs-base-2 { height: 70px; }
+    .fs-base-3 { height: 50px; }
+    .fs-preview-banner { margin: -1rem -1.5rem 1rem; }
+}

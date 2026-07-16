@@ -5,6 +5,7 @@
 @using System.Security.Claims
 
 @inject PoolService PoolService
+@inject FinalSummaryService FinalSummaryService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
@@ -52,6 +53,16 @@ else
         <a href="/pools/@Id/achievements" class="btn btn-outline-success btn-sm">
             🎖️ Logros
         </a>
+        @if (finalSummaryUnlocked || isAdminRole)
+        {
+            <a href="/pools/@Id/final-summary" class="btn btn-outline-danger btn-sm">
+                🎉 Resumen del torneo
+                @if (!finalSummaryUnlocked)
+                {
+                    <span class="badge text-bg-secondary ms-1">vista previa</span>
+                }
+            </a>
+        }
         @if (isOwner)
         {
             <a href="/pools/@Id/log" class="btn btn-outline-dark btn-sm">
@@ -158,6 +169,8 @@ else
     private string? saveError;
     private bool codeCopied;
     private int currentUserId;
+    private bool isAdminRole;
+    private bool finalSummaryUnlocked;
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,6 +187,8 @@ else
         pool = await PoolService.GetPoolWithMembersAsync(Id);
         isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
         isOwner = pool?.OwnerId == currentUserId;
+        isAdminRole = authState.User.IsInRole("Admin");
+        finalSummaryUnlocked = await FinalSummaryService.IsUnlockedAsync();
         isLoading = false;
     }
 

@@ -96,6 +96,55 @@ window.quiniela = {
         }
         requestAnimationFrame(frame);
     },
+    prefersReducedMotion: () => {
+        try { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
+        catch { return false; }
+    },
+    // Confeti/fuegos del Resumen final (canvas-confetti self-hosted, global `confetti`)
+    finalCeremony: {
+        _rain: null,
+        // Explosión al revelar al campeón: fireworks + cañones laterales (~2.2s)
+        burst: () => {
+            if (typeof confetti !== 'function') return;
+            if (window.quiniela.prefersReducedMotion()) return;
+            const colors = ['#F59E0B', '#FCD34D', '#3B82F6', '#10B981', '#FFFFFF'];
+            const end = Date.now() + 2200;
+            (function cannons() {
+                confetti({ particleCount: 3, angle: 60, spread: 55, startVelocity: 55, colors, origin: { x: 0, y: 0.75 } });
+                confetti({ particleCount: 3, angle: 120, spread: 55, startVelocity: 55, colors, origin: { x: 1, y: 0.75 } });
+                if (Date.now() < end) requestAnimationFrame(cannons);
+            })();
+            [0.5, 0.25, 0.75].forEach((x, i) => setTimeout(() => confetti({
+                particleCount: 110, spread: 110, startVelocity: 42, ticks: 220, scalar: 1.1, colors,
+                origin: { x, y: 0.3 }
+            }), i * 400));
+        },
+        // Caída suave continua de fondo, baja densidad; pausada con document.hidden
+        startRain: (canvas) => {
+            const fc = window.quiniela.finalCeremony;
+            fc.stopRain();
+            if (typeof confetti !== 'function' || !canvas) return;
+            if (window.quiniela.prefersReducedMotion()) return;
+            const inst = confetti.create(canvas, { resize: true });
+            let last = 0, raf = 0;
+            const loop = (now) => {
+                raf = requestAnimationFrame(loop);
+                if (document.hidden || now - last < 350) return;
+                last = now;
+                inst({
+                    particleCount: 2, startVelocity: 4, gravity: 0.4, spread: 70,
+                    ticks: 350, scalar: 0.8, drift: Math.random() - 0.5,
+                    origin: { x: Math.random(), y: -0.1 }
+                });
+            };
+            raf = requestAnimationFrame(loop);
+            fc._rain = { stop: () => { cancelAnimationFrame(raf); inst.reset(); } };
+        },
+        stopRain: () => {
+            const fc = window.quiniela.finalCeremony;
+            if (fc._rain) { fc._rain.stop(); fc._rain = null; }
+        }
+    },
     getStoredList: (key) => {
         try { return JSON.parse(localStorage.getItem(key) ?? '[]'); }
         catch { return []; }

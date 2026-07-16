@@ -1,7 +1,7 @@
 # 13 — Resumen final del torneo 🎉
 
 **Fecha:** 2026-07-16
-**Estado:** 🚧 En implementación — RF1 y RF2 completados (2026-07-16). Pendiente: RF3–RF8 y confirmar preguntas abiertas.
+**Estado:** 🚧 En implementación — RF1, RF2 y RF3 completados (2026-07-16). Pendiente: RF4–RF8 y confirmar preguntas abiertas.
 **Contexto:** Página post-Final por sala (`/pools/{poolId}/final-summary`), el "cierre" del proyecto. Se desbloquea para todos cuando el partido de la Final queda Finalizado; antes de eso solo el admin puede verla (vista previa). Muestra: campeón de la quiniela con podio grande y reveal ceremonial, vitrina definitiva de insignias, stats curiosas de la sala, "Tu participación en números", gráfica de evolución completa, e imagen descargable para compartir en redes. Queda como recuerdo permanente.
 
 ---
@@ -47,7 +47,7 @@ public async Task<bool> IsUnlockedAsync()
 |--------|-----------|------------|--------|
 | RF1 | `FinalSummaryService` + gate de visibilidad + botón en Pool Detail | — | ✅ Completado (2026-07-16) |
 | RF2 | Página base + hero con reveal ceremonial + fondo de confeti/fuegos | RF1 | ✅ Completado (2026-07-16) |
-| RF3 | Secciones con scroll-animations: podio, stats de sala, vitrina de insignias | RF1, RF2 | ⏳ Pendiente |
+| RF3 | Secciones con scroll-animations: podio, stats de sala, vitrina de insignias | RF1, RF2 | ✅ Completado (2026-07-16) |
 | RF4 | "Tu participación en números" | RF1 | ⏳ Pendiente |
 | RF5 | Gráfica de evolución completa (multi-línea, todos los jugadores) | RF1 | ⏳ Pendiente |
 | RF6 | Notificación **N13** al capturar la Final | RF1 | ⏳ Pendiente |
@@ -73,11 +73,11 @@ public async Task<bool> IsUnlockedAsync()
 
 ## RF3 — Secciones con scroll-animations (estilo Apple)
 
-- [ ] Helper JS nuevo en `quiniela.js`: `quiniela.observeReveals(selector)` — un `IntersectionObserver` (threshold ~0.2) que agrega `.fs-visible` a cada `.fs-reveal` al entrar al viewport (una sola vez). Todo el movimiento es CSS (`opacity` + `translateY`/`scale`, `transition-delay` escalonado por `--fs-i` para stagger). Sin librerías de scroll.
-- [ ] Efectos por tipo de contenido: números clave con `quiniela.countUp` existente (disparado al hacerse visible), la gráfica de evolución se "dibuja" al entrar al viewport (`stroke-dasharray`/`stroke-dashoffset`, patrón ya probado del Módulo I), tarjetas de stats con pop escalonado, secciones con headers grandes tipo display (tipografía protagonista, mucho aire — el "sabor Apple" es 80% tipografía y espaciado, 20% animación).
-- [ ] Estructura de la página (orden del scroll): Hero/podio → "La sala en números" (stats seleccionadas, una tarjeta grande por stat) → Vitrina de insignias definitiva → Gráfica de evolución → "Tu participación en números" → Compartir (botones de imagen) → footer de despedida.
-- [ ] **Vitrina definitiva:** reusa el grid de `Achievements/Index.razor` en modo vitrina (tarjeta por jugador, 19 insignias, medallas 🏅) — idealmente extrayendo el grid a un componente compartido si el markup lo permite sin fricción; si no, se replica el CSS con clases `fs-*`.
-- [ ] Dark mode: tokens `--q-*` en todo; hero navy invariante.
+- [x] Helper JS nuevo en `quiniela.js`: `quiniela.observeReveals(selector)` — un `IntersectionObserver` (threshold ~0.2) que agrega `.fs-visible` a cada `.fs-reveal` al entrar al viewport (una sola vez). Todo el movimiento es CSS (`opacity` + `translateY`/`scale`, `transition-delay` escalonado por `--fs-i` para stagger). Sin librerías de scroll. *(Implementado sin parámetro `selector` — opera sobre `.fs-reveal:not(.fs-observed)`, idempotente; con `prefers-reduced-motion` todo aparece de inmediato.)*
+- [x] Efectos por tipo de contenido: números clave con `quiniela.countUp` existente (disparado al hacerse visible), tarjetas de stats con pop escalonado, secciones con headers grandes tipo display (tipografía protagonista, mucho aire — el "sabor Apple" es 80% tipografía y espaciado, 20% animación). *(Count-up vía `<span data-countup="N">` dentro del `.fs-reveal`, mismo easing que `countUp`. El dibujo de la gráfica con `stroke-dasharray` llega con RF5.)*
+- [x] Estructura de la página (orden del scroll): Hero/podio → "La sala en números" (stats seleccionadas, una tarjeta grande por stat) → Vitrina de insignias definitiva → Gráfica de evolución → "Tu participación en números" → Compartir (botones de imagen) → footer de despedida. *(Implementadas las secciones de RF3 — stats de sala con las 27 marcadas del catálogo, calculadas en `FinalSummaryService.GetPoolStatsAsync`, y vitrina; cada tarjeta se oculta sola si su stat no es computable aún. Las secciones de RF4/RF5/RF7 se insertarán arriba del footer de despedida al implementarse.)*
+- [x] **Vitrina definitiva:** reusa el grid de `Achievements/Index.razor` en modo vitrina (tarjeta por jugador, 19 insignias, medallas 🏅) — idealmente extrayendo el grid a un componente compartido si el markup lo permite sin fricción; si no, se replica el CSS con clases `fs-*`. *(Se replicó el CSS con clases `fs-ach-*` — el scoped CSS de Blazor no permite compartir las clases `ach-*` entre componentes sin extraer también el markup + sheet de detalle, fricción que el doc pedía evitar. Solo insignias obtenidas, con conteo N/19 y medallas 🏅.)*
+- [x] Dark mode: tokens `--q-*` en todo; hero navy invariante.
 
 ## RF4 — "Tu participación en números"
 
@@ -230,9 +230,9 @@ Ordenadas por relación valor/esfuerzo:
 - [x] Antes de la Final: jugadores no-admin no ven el botón en Pool Detail y la ruta directa les muestra "disponible al terminar el Mundial"; el admin ve la página completa con banner de vista previa. *(Verificado en navegador real con Playwright, 2026-07-16.)*
 - [ ] Al capturar el resultado de la Final en el admin: la página se desbloquea para todos SIN deploy ni cambio de código, y cada miembro con suscripción push recibe la N13 con link directo.
 - [x] Primera visita: ceremonia 3°→2°→1° con confeti/fireworks; "Saltar" funciona; visitas siguientes van directo al podio; "Repetir ceremonia" disponible; `prefers-reduced-motion` respetado. *(Verificado en navegador real con Playwright, 2026-07-16.)*
-- [ ] Todas las secciones hacen reveal al scroll (IntersectionObserver + CSS), números con count-up, gráfica se dibuja al entrar al viewport. Sin librerías de scroll/animación (solo canvas-confetti y html2canvas, ambas self-hosted).
+- [x] Todas las secciones hacen reveal al scroll (IntersectionObserver + CSS), números con count-up, gráfica se dibuja al entrar al viewport. Sin librerías de scroll/animación (solo canvas-confetti y html2canvas, ambas self-hosted). *(Verificado con Playwright 2026-07-16: 27 reveals, 0 visibles fuera de viewport antes del scroll y 27/27 tras el scroll, 13 count-ups llegando a su valor exacto, `prefers-reduced-motion` muestra todo sin animar. La parte de "gráfica se dibuja al entrar al viewport" queda pendiente hasta RF5 — la sección de gráfica aún no existe.)*
 - [ ] Gráfica de evolución: todos los jugadores en un solo chart, leyenda interactiva, línea del campeón destacada.
-- [ ] Vitrina: 19 insignias + medallas por jugador, mismo tratamiento visual que Achievements.
+- [x] Vitrina: 19 insignias + medallas por jugador, mismo tratamiento visual que Achievements. *(Verificado en navegador real 2026-07-16: tarjeta por jugador ordenada por insignias, celdas con color por categoría, filas de medallas 🏅, conteo N/19, dark/light OK.)*
 - [ ] "Tu participación en números" muestra las stats personales acordadas, correctas contra la BD.
 - [ ] Descargar imagen: ambas variantes generan PNG 1080×1920 legible (banderas emoji, avatar, sin elementos cortados); en móvil `navigator.share` abre el share sheet con la imagen; en desktop descarga directa.
 - [ ] Corrección posterior del marcador de la Final: la página se auto-corrige (on-demand), sin re-notificación N13.

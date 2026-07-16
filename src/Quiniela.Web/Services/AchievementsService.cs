@@ -264,7 +264,7 @@ public class AchievementsService(
     /// los 16avos están completamente asignados, y el equipo no aparece en ningún cruce. La
     /// condición doble de (2) evita falsos positivos a media asignación de cruces.
     /// </summary>
-    private static async Task<HashSet<int>> GetEliminatedTeamIdsAsync(QuinielaDbContext db)
+    internal static async Task<HashSet<int>> GetEliminatedTeamIdsAsync(QuinielaDbContext db)
     {
         var eliminated = (await db.Matches
             .Where(m => m.Status == MatchStatus.Finalizado

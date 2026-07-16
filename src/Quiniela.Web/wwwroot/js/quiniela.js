@@ -86,7 +86,9 @@ window.quiniela = {
     },
     countUp: (elementId, endValue, durationMs) => {
         const el = document.getElementById(elementId);
-        if (!el) return;
+        if (el) window.quiniela._countUpEl(el, endValue, durationMs);
+    },
+    _countUpEl: (el, endValue, durationMs) => {
         const start = performance.now();
         function frame(now) {
             const t = Math.min((now - start) / durationMs, 1);
@@ -95,6 +97,36 @@ window.quiniela = {
             if (t < 1) requestAnimationFrame(frame);
         }
         requestAnimationFrame(frame);
+    },
+    // Scroll-reveals del Resumen final (RF3): un IntersectionObserver agrega
+    // .fs-visible a cada .fs-reveal al entrar al viewport (una sola vez); todo el
+    // movimiento es CSS. Los <span data-countup="N"> dentro del elemento revelado
+    // animan su número al mismo tiempo. Idempotente: llamadas repetidas solo
+    // observan nodos nuevos. Con prefers-reduced-motion todo aparece de inmediato.
+    observeReveals: () => {
+        const els = document.querySelectorAll('.fs-reveal:not(.fs-observed)');
+        if (!els.length) return;
+        const reduce = window.quiniela.prefersReducedMotion();
+        const show = (el) => {
+            el.classList.add('fs-visible');
+            el.querySelectorAll('[data-countup]').forEach(n => {
+                const end = Number(n.getAttribute('data-countup')) || 0;
+                if (reduce) n.textContent = end.toString();
+                else window.quiniela._countUpEl(n, end, 900);
+            });
+        };
+        if (reduce || !('IntersectionObserver' in window)) {
+            els.forEach(el => { el.classList.add('fs-observed'); show(el); });
+            return;
+        }
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                show(e.target);
+            });
+        }, { threshold: 0.2 });
+        els.forEach(el => { el.classList.add('fs-observed'); io.observe(el); });
     },
     prefersReducedMotion: () => {
         try { return matchMedia('(prefers-reduced-motion: reduce)').matches; }

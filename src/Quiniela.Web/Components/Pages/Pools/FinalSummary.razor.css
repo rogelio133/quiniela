@@ -235,12 +235,342 @@
 .fs-base-2 { height: 58px; background: linear-gradient(180deg, #CBD5E1 0%, #94A3B8 100%); color: #1E293B; }
 .fs-base-3 { height: 42px; background: linear-gradient(180deg, #FDBA74 0%, #EA8C3F 100%); color: #7C2D12; }
 
+/* ── RF3: scroll-reveals (estilo Apple: 80% tipografía/aire) ──
+   .fs-reveal arranca oculto; quiniela.observeReveals agrega
+   .fs-visible al entrar al viewport. Movimiento 100% CSS,
+   stagger con --fs-i. */
+.fs-reveal {
+    opacity: 0;
+    transform: translateY(26px) scale(0.985);
+    transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.2, 0.9, 0.3, 1);
+    transition-delay: calc(var(--fs-i, 0) * 110ms);
+}
+
+.fs-reveal.fs-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ── Secciones ─────────────────────────────────────────────── */
+.fs-section {
+    margin-top: 3.2rem;
+}
+
+.fs-sec-head {
+    text-align: center;
+    margin-bottom: 1.6rem;
+}
+
+.fs-sec-kicker {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--q-muted);
+    margin-bottom: 0.35rem;
+}
+
+.fs-sec-title {
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--q-text);
+    margin: 0;
+}
+
+/* ── Tarjetas de stats ─────────────────────────────────────── */
+.fs-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+}
+
+.fs-stat-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-lg);
+    box-shadow: var(--q-sh-sm);
+    padding: 1.5rem 1.3rem 1.4rem;
+    text-align: center;
+}
+
+.fs-stat-icon {
+    font-size: 2.1rem;
+    line-height: 1;
+    margin-bottom: 0.55rem;
+}
+
+.fs-stat-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--q-muted);
+    margin-bottom: 0.45rem;
+}
+
+.fs-stat-main {
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--q-text);
+    line-height: 1.15;
+    margin-bottom: 0.4rem;
+    overflow-wrap: anywhere;
+}
+
+.fs-stat-main .fs-num { color: var(--q-gold); }
+
+.fs-stat-sub {
+    font-size: 0.84rem;
+    color: var(--q-muted);
+    line-height: 1.45;
+}
+
+.fs-stat-sub .fs-num { font-weight: 800; color: var(--q-text); }
+
+.fs-stat-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    text-align: left;
+    max-width: 420px;
+    margin: 0.2rem auto 0;
+    font-size: 0.88rem;
+    color: var(--q-text);
+}
+
+.fs-stat-row strong { font-weight: 800; }
+
+.fs-flag {
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px var(--q-border);
+    font-size: 1.05em;
+    vertical-align: -0.1em;
+}
+
+/* Fe en el campeón */
+.fs-faith-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-width: 480px;
+    margin: 0.3rem auto 0;
+}
+
+.fs-faith-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-sm);
+    background: var(--q-surface-2);
+    font-size: 0.86rem;
+    text-align: left;
+}
+
+.fs-faith-team { font-weight: 700; color: var(--q-text); }
+
+.fs-faith-name {
+    flex: 1;
+    color: var(--q-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fs-faith-mark { font-weight: 700; color: var(--q-muted); white-space: nowrap; }
+
+.fs-faith-hit {
+    border-color: var(--q-gold);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.10), var(--q-surface-2) 70%);
+}
+
+.fs-faith-hit .fs-faith-mark { color: var(--q-gold); }
+
+.fs-faith-broken .fs-faith-mark { color: var(--q-red); }
+
+/* La sala en números totales (cierre tipo Wrapped) */
+.fs-totals-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem 0.6rem;
+    margin-top: 0.6rem;
+}
+
+.fs-total {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.fs-total-num {
+    font-size: 1.9rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--q-gold);
+    line-height: 1;
+}
+
+.fs-total-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--q-muted);
+    text-align: center;
+}
+
+/* ── Vitrina de insignias (mismo tratamiento visual que Achievements,
+      CSS replicado con clases fs-ach-* por el aislamiento de scoped CSS) ── */
+.fs-vitrina {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.fs-ach-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r);
+    box-shadow: var(--q-sh-sm);
+    padding: 14px 16px;
+}
+
+.fs-ach-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.fs-ach-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.fs-ach-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 1.15rem;
+}
+
+.fs-ach-name-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fs-ach-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--q-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fs-ach-me {
+    font-size: 0.55rem;
+    padding: 2px 5px;
+    vertical-align: 0.15em;
+    margin-left: 4px;
+}
+
+.fs-ach-count {
+    font-size: 0.72rem;
+    color: var(--q-muted);
+}
+
+.fs-ach-empty {
+    color: var(--q-muted);
+    font-size: 0.82rem;
+    margin: 4px 0 2px;
+}
+
+.fs-ach-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.fs-ach-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 6px;
+    border: 2px solid var(--q-border);
+    border-radius: var(--q-r-sm);
+    background: var(--q-surface);
+}
+
+.fs-ach-cell-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.fs-ach-cell-name {
+    font-weight: 600;
+    font-size: 0.72rem;
+    color: var(--q-text);
+    text-align: center;
+}
+
+.fs-ach-cell-medals {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1px;
+    font-size: 0.7rem;
+    line-height: 1.15;
+}
+
+.fs-ach-cat-prestige {
+    border-color: var(--q-gold);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.10), var(--q-surface) 65%);
+}
+
+.fs-ach-cat-positive {
+    border-color: var(--q-green);
+    background: linear-gradient(180deg, rgba(5, 150, 105, 0.10), var(--q-surface) 65%);
+}
+
+.fs-ach-cat-ironic {
+    border-color: var(--q-muted);
+    background: linear-gradient(180deg, rgba(100, 116, 139, 0.10), var(--q-surface) 65%);
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .fs-footer {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 3rem 0 0.8rem;
+}
+
+.fs-farewell {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--q-text);
+    text-align: center;
+}
+
+.fs-footer-btns {
+    display: flex;
     justify-content: center;
     gap: 0.6rem;
-    margin: 1.6rem 0 0.8rem;
 }
 
 /* ── Animaciones ───────────────────────────────────────────── */
@@ -258,6 +588,14 @@
    Podio directo con confeti estático decorativo en CSS. */
 @media (prefers-reduced-motion: reduce) {
     .fs-cer-pop, .fs-pod, .fs-champ-crown, .fs-cer-suspense { animation: none; }
+
+    /* Los reveals aparecen de inmediato, sin movimiento (observeReveals además
+       fija los count-up en su valor final sin animar). */
+    .fs-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
 
     .fs-hero::before {
         content: "";
@@ -286,4 +624,11 @@
     .fs-base-2 { height: 70px; }
     .fs-base-3 { height: 50px; }
     .fs-preview-banner { margin: -1rem -1.5rem 1rem; }
+
+    .fs-sec-title { font-size: 2.3rem; }
+    .fs-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .fs-card-wide { grid-column: 1 / -1; }
+    .fs-stat-main { font-size: 1.65rem; }
+    .fs-totals-grid { grid-template-columns: repeat(3, 1fr); }
+    .fs-ach-grid { grid-template-columns: repeat(4, 1fr); }
 }

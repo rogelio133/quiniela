@@ -1,0 +1,770 @@
+@page "/pools/{poolId:int}/final-summary"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using System.Globalization
+@using System.Security.Claims
+
+@inject PoolService PoolService
+@inject FinalSummaryService FinalSummaryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Resumen del torneo — @(pool?.Name ?? "Sala")</PageTitle>
+
+@if (isLoading)
+{
+    <SkeletonLoader ShowCard="true" Lines="4" />
+}
+else if (pool is null || !isMember)
+{
+    <div class="alert alert-warning">
+        Sala no encontrada o no tienes acceso.
+        <a href="/pools" class="alert-link ms-2">Volver a Mis Salas</a>
+    </div>
+}
+else if (!unlocked && !isAdminRole)
+{
+    @* Mismo trato que un no-miembro: la página "no existe" hasta que termine el Mundial *@
+    <div class="alert alert-info">
+        Disponible cuando termine el Mundial 🏆
+        <a href="/pools/@PoolId" class="alert-link ms-2">Volver a la sala</a>
+    </div>
+}
+else
+{
+    <PageVisitLogger PoolId="@PoolId" PageName="Resumen final" />
+
+    @if (!unlocked)
+    {
+        <div class="fs-preview-banner">
+            👁️ Vista previa — solo tú puedes ver esta página hasta que se capture la Final
+        </div>
+    }
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/pools">Mis Salas</a></li>
+            <li class="breadcrumb-item"><a href="/pools/@PoolId">@pool.Name</a></li>
+            <li class="breadcrumb-item active">Resumen del torneo</li>
+        </ol>
+    </nav>
+
+    @* ── Hero ceremonial (navy invariante al tema, como los sheets) ── *@
+    <section class="fs-hero">
+        <canvas class="fs-rain-canvas" @ref="rainCanvas"></canvas>
+
+        <div class="fs-hero-inner">
+            <div class="fs-kicker">Mundial 2026 · @pool.Name</div>
+
+            @if (phase == Phase.Ceremony)
+            {
+                <h1 class="fs-title">Y el campeón de la quiniela es…</h1>
+
+                <div class="fs-ceremony-list">
+                    @if (revealStep >= 1 && ThirdEntry is not null)
+                    {
+                        <div class="fs-cer-row fs-cer-pop">
+                            <span class="fs-cer-medal">🥉</span>
+                            <span class="fs-cer-place">3er lugar</span>
+                            @AvatarFragment(ThirdEntry.Entry, 44)
+                            <span class="fs-cer-name">@ThirdEntry.Entry.DisplayName</span>
+                            <span class="fs-cer-pts">@ThirdEntry.Entry.TotalPoints pts</span>
+                        </div>
+                    }
+                    @if (revealStep >= 2 && SecondEntry is not null)
+                    {
+                        <div class="fs-cer-row fs-cer-pop">
+                            <span class="fs-cer-medal">🥈</span>
+                            <span class="fs-cer-place">2° lugar</span>
+                            @AvatarFragment(SecondEntry.Entry, 44)
+                            <span class="fs-cer-name">@SecondEntry.Entry.DisplayName</span>
+                            <span class="fs-cer-pts">@SecondEntry.Entry.TotalPoints pts</span>
+                        </div>
+                    }
+                    @if (revealStep == 2)
+                    {
+                        <div class="fs-cer-suspense">🥁 …</div>
+                    }
+                </div>
+
+                <button type="button" class="fs-skip-btn" @onclick="SkipCeremony">
+                    Saltar ⏭
+                </button>
+            }
+            else if (phase == Phase.Podium && ChampionEntry is not null)
+            {
+                <div class="fs-champ-crown">👑</div>
+                <h1 class="fs-title fs-champ-title">@ChampionEntry.Entry.DisplayName</h1>
+                <div class="fs-champ-sub">
+                    @(unlocked ? "Campeón de la quiniela" : "Campeón parcial (vista previa)")
+                </div>
+
+                <div class="fs-podium">
+                    @if (SecondEntry is not null)
+                    {
+                        <div class="fs-pod fs-pod-2">
+                            @AvatarFragment(SecondEntry.Entry, 64)
+                            <div class="fs-pod-medal">🥈</div>
+                            <div class="fs-pod-name">@SecondEntry.Entry.DisplayName</div>
+                            <div class="fs-pod-pts">@SecondEntry.Entry.TotalPoints <span>pts</span></div>
+                            <div class="fs-pod-base fs-base-2">2°</div>
+                        </div>
+                    }
+                    <div class="fs-pod fs-pod-1">
+                        @AvatarFragment(ChampionEntry.Entry, 92)
+                        <div class="fs-pod-medal">🥇</div>
+                        <div class="fs-pod-name">@ChampionEntry.Entry.DisplayName</div>
+                        <div class="fs-pod-pts">@ChampionEntry.Entry.TotalPoints <span>pts</span></div>
+                        @if (podium!.DeltaVsSecond > 0)
+                        {
+                            <div class="fs-pod-delta">+@podium.DeltaVsSecond sobre el 2°</div>
+                        }
+                        <div class="fs-pod-base fs-base-1">1°</div>
+                    </div>
+                    @if (ThirdEntry is not null)
+                    {
+                        <div class="fs-pod fs-pod-3">
+                            @AvatarFragment(ThirdEntry.Entry, 64)
+                            <div class="fs-pod-medal">🥉</div>
+                            <div class="fs-pod-name">@ThirdEntry.Entry.DisplayName</div>
+                            <div class="fs-pod-pts">@ThirdEntry.Entry.TotalPoints <span>pts</span></div>
+                            <div class="fs-pod-base fs-base-3">3°</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ── RF3: La sala en números (scroll-reveals + count-up) ── *@
+    @if (stats is not null)
+    {
+        statIdx = 0;
+        <section class="fs-section">
+            <div class="fs-sec-head fs-reveal">
+                <div class="fs-sec-kicker">Lo que vivimos juntos</div>
+                <h2 class="fs-sec-title">La sala en números</h2>
+            </div>
+
+            <div class="fs-stats-grid">
+                @if (stats.CollectiveFail is { } cf)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">💀</div>
+                        <div class="fs-stat-title">El engaño colectivo</div>
+                        <div class="fs-stat-main">@cf.Match.Label</div>
+                        <div class="fs-stat-sub">
+                            Los @cf.FailedCount lo fallaron.
+                            @(cf.MoreMatches > 0 ? $"Y hubo {cf.MoreMatches} más así…" : "Nadie lo vio venir.")
+                        </div>
+                    </div>
+                }
+                @if (stats.BestStreak is { } bs)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🔥</div>
+                        <div class="fs-stat-title">La racha del torneo</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@bs.Length">0</span> aciertos al hilo</div>
+                        <div class="fs-stat-sub">La mejor racha de la sala es de @Names(bs.Holders).</div>
+                    </div>
+                }
+                @if (stats.LoneWolf is { } lw)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🐺</div>
+                        <div class="fs-stat-title">El acierto más solitario</div>
+                        <div class="fs-stat-main">@lw.Wolf.DisplayName</div>
+                        <div class="fs-stat-sub">El único en acertar @lw.Match.Label — los otros @lw.OthersFailed fallaron.</div>
+                    </div>
+                }
+                @if (stats.Comeback is { } cb)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🚀</div>
+                        <div class="fs-stat-title">La remontada</div>
+                        <div class="fs-stat-main">De @(cb.FromPos)° a @(cb.ToPos)°</div>
+                        <div class="fs-stat-sub">@cb.Member.DisplayName, entre @cb.FromLabel y @cb.ToLabel.</div>
+                    </div>
+                }
+                @if (stats.AgonicChange is { } ag)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">⏰</div>
+                        <div class="fs-stat-title">El cambio más agónico</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@ag.MinutesBefore">0</span> min antes del kickoff</div>
+                        <div class="fs-stat-sub">
+                            @ag.Member.DisplayName cambió su pronóstico de @ag.Match.Label…
+                            @(ag.Hit is null ? "aún no se sabe si le atinó." : ag.Hit == true ? "¡y le atinó! ✅" : "y aun así lo falló. ❌")
+                        </div>
+                    </div>
+                }
+                @if (stats.Indecisive is { } ind)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🎰</div>
+                        <div class="fs-stat-title">El más indeciso</div>
+                        <div class="fs-stat-main">@ind.Member.DisplayName</div>
+                        <div class="fs-stat-sub">
+                            <span class="fs-num" data-countup="@ind.TotalChanges">0</span> cambios de opinión en el torneo.
+                            @if (ind.HotMatch is { } hm)
+                            {
+                                <span>El partido que más mareó a la sala: @hm.Label (@ind.HotMatchChanges cambios).</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (stats.WorstStreak is { } ws)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🥶</div>
+                        <div class="fs-stat-title">La peor racha</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@ws.Length">0</span> fallos seguidos</div>
+                        <div class="fs-stat-sub">El récord que nadie quería: @Names(ws.Holders).</div>
+                    </div>
+                }
+                @if (stats.CursedTeam is { } cu)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🪦</div>
+                        <div class="fs-stat-title">El equipo maldito</div>
+                        <div class="fs-stat-main"><span class="fi fi-@cu.FlagCode fs-flag"></span> @cu.TeamName</div>
+                        <div class="fs-stat-sub">Nos hizo fallar @cu.Value pronósticos. Ni perdón ni olvido.</div>
+                    </div>
+                }
+                @if (stats.CharmTeam is { } ch)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🧲</div>
+                        <div class="fs-stat-title">El equipo talismán</div>
+                        <div class="fs-stat-main"><span class="fi fi-@ch.FlagCode fs-flag"></span> @ch.TeamName</div>
+                        <div class="fs-stat-sub">Nos regaló @ch.Value puntos entre todos. Gracias eternas.</div>
+                    </div>
+                }
+                @if (stats.GoldenDay is not null || stats.BlackDay is not null)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">📅</div>
+                        <div class="fs-stat-title">El día dorado y el día negro</div>
+                        <div class="fs-stat-rows">
+                            @if (stats.GoldenDay is { } gd)
+                            {
+                                <div class="fs-stat-row">🌞 <strong>@Day(gd.Day)</strong> — la sala sumó +@gd.Points pts</div>
+                            }
+                            @if (stats.BlackDay is { } bd)
+                            {
+                                <div class="fs-stat-row">🌑 <strong>@Day(bd.Day)</strong> — acertamos @bd.CorrectCount de @bd.TotalCount (@Pct(bd.CorrectCount, bd.TotalCount)%)</div>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (stats.Surprise is { } sp)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🤯</div>
+                        <div class="fs-stat-title">La sorpresa del torneo</div>
+                        <div class="fs-stat-main">@sp.Match.Label</div>
+                        <div class="fs-stat-sub">@sp.UnanimousPickLabel… y pasó lo contrario.</div>
+                    </div>
+                }
+                @if (stats.DecidedItAll is { } di)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🏆</div>
+                        <div class="fs-stat-title">El partido que decidió todo</div>
+                        <div class="fs-stat-main">@(di.FromStart ? "De principio a fin" : $"Desde {di.FromLabel}")</div>
+                        <div class="fs-stat-sub">
+                            El campeón no soltó el 1° en los últimos @di.MatchesLeading partidos.
+                            @if (di.FinalMargin > 0) { <span>Margen final: +@di.FinalMargin pts.</span> }
+                        </div>
+                    </div>
+                }
+                @if (stats.LeaderChanges is { } lc)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🔀</div>
+                        <div class="fs-stat-title">La guerra por la cima</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@lc">0</span> cambios de líder</div>
+                        <div class="fs-stat-sub">Las veces que la punta de la tabla cambió de manos.</div>
+                    </div>
+                }
+                @if (stats.DrawAllergy is { } da)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">⚖️</div>
+                        <div class="fs-stat-title">Alergia al empate</div>
+                        <div class="fs-stat-main">@Pct(da.RealDraws, da.RealMatches)% vs @Pct(da.PredictedDraws, da.PredictedTotal)%</div>
+                        <div class="fs-stat-sub">Empates reales en grupos vs los que la sala se atrevió a pronosticar.</div>
+                    </div>
+                }
+                @if (stats.NobodySawItCount > 0)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🙈</div>
+                        <div class="fs-stat-title">Nadie lo vio venir</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@stats.NobodySawItCount">0</span> partidos</div>
+                        <div class="fs-stat-sub">Terminaron en un resultado que nadie de la sala pronosticó.</div>
+                    </div>
+                }
+                @if (stats.Obvious is { } ob)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🤝</div>
+                        <div class="fs-stat-title">El partido obvio</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@ob.Count">0</span> pleno@(ob.Count == 1 ? "" : "s")</div>
+                        <div class="fs-stat-sub">
+                            Partidos donde el 100% de la sala acertó.
+                            @if (ob.Example is { } ex) { <span>El último: @ex.Label.</span> }
+                        </div>
+                    </div>
+                }
+                @if (stats.PenaltyProphets is { } pp)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🥅</div>
+                        <div class="fs-stat-title">Los que olieron los penales</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@pp.PenaltyMatches">0</span> partido@(pp.PenaltyMatches == 1 ? "" : "s") a penales</div>
+                        <div class="fs-stat-sub">
+                            @if (pp.Prophets.Count > 0)
+                            {
+                                <span>Profetas: @string.Join(" · ", pp.Prophets.Select(r => $"{r.Member.DisplayName} 🔮×{r.Count}"))</span>
+                            }
+                            else
+                            {
+                                <span>Y nadie los olió venir.</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (stats.Ghost is { } gh)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">💸</div>
+                        <div class="fs-stat-title">Puntos dejados en la mesa</div>
+                        @if (gh.Ghost is { } gm)
+                        {
+                            <div class="fs-stat-main">@gm.DisplayName</div>
+                            <div class="fs-stat-sub">El fantasma 👻: dejó pasar @gh.GhostMissed partido@(gh.GhostMissed == 1 ? "" : "s") sin pronosticar (la sala: @gh.PoolMissedTotal en total).</div>
+                        }
+                        else
+                        {
+                            <div class="fs-stat-main">Cero olvidos</div>
+                            <div class="fs-stat-sub">Nadie dejó pasar ni un partido sin pronosticar. 💪</div>
+                        }
+                    </div>
+                }
+                @if (stats.DailyMedals is { } dm)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🌞🥴</div>
+                        <div class="fs-stat-title">Medallero del día a día</div>
+                        <div class="fs-stat-rows">
+                            @if (dm.Best is { } db)
+                            {
+                                <div class="fs-stat-row">🌞 <strong>@db.DisplayName</strong> — @dm.BestCount día@(dm.BestCount == 1 ? "" : "s") como el mejor</div>
+                            }
+                            @if (dm.Worst is { } dw)
+                            {
+                                <div class="fs-stat-row">🥴 <strong>@dw.DisplayName</strong> — @dm.WorstCount día@(dm.WorstCount == 1 ? "" : "s") como el peor</div>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (stats.StageKings is { } sk)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🕐</div>
+                        <div class="fs-stat-title">Rey de grupos vs rey del KO</div>
+                        <div class="fs-stat-rows">
+                            @if (sk.GroupKing is { } gk)
+                            {
+                                <div class="fs-stat-row">🗂️ Grupos: <strong>@gk.DisplayName</strong> (@sk.GroupPts pts)</div>
+                            }
+                            @if (sk.KoKing is { } kk)
+                            {
+                                <div class="fs-stat-row">⚔️ Eliminatorias: <strong>@kk.DisplayName</strong> (@sk.KoPts pts)</div>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (stats.NightOwl is { } no)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🌙</div>
+                        <div class="fs-stat-title">El búho</div>
+                        <div class="fs-stat-main">@no.LocalTime.ToString("h:mm tt", EsMx)</div>
+                        <div class="fs-stat-sub">
+                            @no.Member.DisplayName pronosticando @no.MatchLabel a esa hora.
+                            Hora habitual de cada quién: @string.Join(" · ", no.TypicalHours.Select(t => $"{t.Member.DisplayName} ~{t.Hour:00}h"))
+                        </div>
+                    </div>
+                }
+                @if (stats.Anticipation is { } an)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">⚡</div>
+                        <div class="fs-stat-title">El madrugador vs el del último minuto</div>
+                        <div class="fs-stat-rows">
+                            <div class="fs-stat-row">🐦 <strong>@an.EarlyBird.DisplayName</strong> — pronostica con @FormatSpan(an.EarlyAvg) de anticipación</div>
+                            <div class="fs-stat-row">🚨 <strong>@an.LastMinute.DisplayName</strong> — en promedio a @FormatSpan(an.LateAvg) del kickoff</div>
+                        </div>
+                    </div>
+                }
+                @if (stats.Unmoved is { } um)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🗿</div>
+                        <div class="fs-stat-title">Los inamovibles</div>
+                        <div class="fs-stat-main"><span class="fs-num" data-countup="@Pct(um.UnchangedCount, um.TotalPredictions)">0</span>%</div>
+                        <div class="fs-stat-sub">@um.UnchangedCount de @um.TotalPredictions pronósticos jamás se cambiaron.</div>
+                    </div>
+                }
+                @if (stats.LuckyVenue is { } lv)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">🗺️</div>
+                        <div class="fs-stat-title">El estadio de la suerte</div>
+                        <div class="fs-stat-main">@lv.Venue</div>
+                        <div class="fs-stat-sub">@Pct(lv.CorrectCount, lv.TotalCount)% de aciertos de la sala en @lv.MatchCount partidos.</div>
+                    </div>
+                }
+                @if (stats.MostConstant is { } mc)
+                {
+                    <div class="fs-stat-card fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">📊</div>
+                        <div class="fs-stat-title">El más constante</div>
+                        <div class="fs-stat-main">@mc.Member.DisplayName</div>
+                        <div class="fs-stat-sub">Vivió en el @(mc.ModePosition)° lugar el @Math.Round(mc.PctAtMode * 100)% del torneo.</div>
+                    </div>
+                }
+                @if (stats.ChampionFaith.Count > 0)
+                {
+                    <div class="fs-stat-card fs-card-wide fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                        <div class="fs-stat-icon">👑</div>
+                        <div class="fs-stat-title">Fe en el campeón</div>
+                        <div class="fs-faith-list">
+                            @foreach (var row in stats.ChampionFaith)
+                            {
+                                <div class="fs-faith-row @(row.Hit ? "fs-faith-hit" : row.Eliminated ? "fs-faith-broken" : "")">
+                                    <span class="fi fi-@row.FlagCode fs-flag"></span>
+                                    <span class="fs-faith-team">@row.TeamName</span>
+                                    <span class="fs-faith-name">@row.Member.DisplayName</span>
+                                    <span class="fs-faith-mark">
+                                        @if (row.Hit) { <span>👑 ¡Acertó!</span> }
+                                        else if (row.Eliminated) { <span>💔 @(row.HeartbrokenOn is { } hb ? Day(hb) : "eliminado")</span> }
+                                        else { <span>—</span> }
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="fs-stat-card fs-card-wide fs-reveal" style="--fs-i:@(statIdx++ % 2)">
+                    <div class="fs-stat-icon">🔢</div>
+                    <div class="fs-stat-title">La sala en números totales</div>
+                    <div class="fs-totals-grid">
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.Predictions">0</span><span class="fs-total-label">pronósticos</span></div>
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.Changes">0</span><span class="fs-total-label">cambios de opinión</span></div>
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.FinalizedMatches">0</span><span class="fs-total-label">partidos</span></div>
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.RealGoals">0</span><span class="fs-total-label">goles reales</span></div>
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.BadgesAwarded">0</span><span class="fs-total-label">insignias repartidas</span></div>
+                        <div class="fs-total"><span class="fs-total-num fs-num" data-countup="@stats.Totals.TournamentDays">0</span><span class="fs-total-label">días de torneo</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        @* ── RF3: Vitrina definitiva de insignias ── *@
+        <section class="fs-section">
+            <div class="fs-sec-head fs-reveal">
+                <div class="fs-sec-kicker">Para la posteridad</div>
+                <h2 class="fs-sec-title">Vitrina de insignias</h2>
+            </div>
+
+            <div class="fs-vitrina">
+                @{ int vi = 0; }
+                @foreach (var entry in stats.Showcase)
+                {
+                    var earnedBadges = entry.Badges.OrderBy(b => IndexInCatalog(b.Badge.Key)).ToList();
+                    int totalMedals = entry.Badges.Sum(b => b.Medals);
+                    <div class="fs-ach-card fs-reveal" style="--fs-i:@(vi++ % 2)" @key="entry.Member.UserId">
+                        <div class="fs-ach-header">
+                            @AvatarShowcase(entry.Member)
+                            <div class="fs-ach-name-block">
+                                <span class="fs-ach-name">
+                                    @entry.Member.DisplayName
+                                    @if (entry.Member.UserId == currentUserId)
+                                    {
+                                        <span class="badge bg-primary fs-ach-me">TÚ</span>
+                                    }
+                                </span>
+                                <span class="fs-ach-count">
+                                    @entry.Badges.Count / @AchievementCatalog.All.Count insignias@(totalMedals > 0 ? $" · {totalMedals} 🏅" : "")
+                                </span>
+                            </div>
+                        </div>
+                        @if (earnedBadges.Count == 0)
+                        {
+                            <p class="fs-ach-empty">Se fue en blanco… ni una insignia. 😅</p>
+                        }
+                        else
+                        {
+                            <div class="fs-ach-grid">
+                                @foreach (var earned in earnedBadges)
+                                {
+                                    <div class="fs-ach-cell fs-ach-cat-@earned.Badge.Category.ToString().ToLower()" @key="earned.Badge.Key">
+                                        <span class="fs-ach-cell-icon">@earned.Badge.Icon</span>
+                                        <span class="fs-ach-cell-name">@earned.Badge.Name</span>
+                                        @if (earned.Medals > 0)
+                                        {
+                                            <span class="fs-ach-cell-medals">
+                                                @for (int i = 0; i < earned.Medals; i++) { <span>🏅</span> }
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @* ── Footer de despedida (secciones RF4/RF5/RF7 se insertan arriba de esto) ── *@
+    <footer class="fs-footer">
+        <div class="fs-farewell fs-reveal">Esto fue el Mundial 2026. Gracias por jugar. 💙</div>
+        <div class="fs-footer-btns">
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="ReplayCeremony">
+                🔁 Repetir ceremonia
+            </button>
+            <a href="/pools/@PoolId" class="btn btn-outline-secondary btn-sm">← Volver a la sala</a>
+        </div>
+    </footer>
+}
+
+@code {
+    [Parameter] public int PoolId { get; set; }
+
+    private enum Phase { Loading, Ceremony, Podium }
+
+    private Pool? pool;
+    private bool isLoading = true;
+    private bool isMember;
+    private bool isAdminRole;
+    private bool unlocked;
+    private int currentUserId;
+
+    private FinalSummaryService.Podium? podium;
+    private FinalSummaryService.PoolStats? stats;
+    private int statIdx;
+    private bool revealsInit;
+    private Phase phase = Phase.Loading;
+
+    private static readonly CultureInfo EsMx = new("es-MX");
+    private int revealStep;                 // 0 nada, 1 = 3°, 2 = +2°, 3 = campeón
+    private bool reducedMotion;
+    private bool rainRunning;
+    private CancellationTokenSource? ceremonyCts;
+    private ElementReference rainCanvas;
+
+    private FinalSummaryService.PodiumEntry? ChampionEntry => podium?.Top.ElementAtOrDefault(0);
+    private FinalSummaryService.PodiumEntry? SecondEntry => podium?.Top.ElementAtOrDefault(1);
+    private FinalSummaryService.PodiumEntry? ThirdEntry => podium?.Top.ElementAtOrDefault(2);
+
+    private string SeenKey => $"quiniela_final_seen_{PoolId}_{currentUserId}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        currentUserId = int.Parse(
+            authState.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        isAdminRole = authState.User.IsInRole("Admin");
+
+        pool = await PoolService.GetPoolWithMembersAsync(PoolId);
+        isMember = pool?.Members.Any(m => m.UserId == currentUserId) == true;
+
+        if (isMember)
+        {
+            unlocked = await FinalSummaryService.IsUnlockedAsync();
+            if (unlocked || isAdminRole)
+            {
+                podium = await FinalSummaryService.GetPodiumAsync(PoolId);
+                stats = await FinalSummaryService.GetPoolStatsAsync(PoolId);
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private bool startDecided;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // OnAfterRenderAsync no corre en prerender, así que el interop JS es seguro.
+        // No se usa firstRender: el primer render ocurre con isLoading=true (podium
+        // aún null, por el await de OnInitializedAsync) — se decide una sola vez
+        // en cuanto los datos estén cargados y la página realmente se muestre.
+        if (!revealsInit && stats is not null)
+        {
+            // RF3: las secciones ya están en el DOM — activar los scroll-reveals.
+            revealsInit = true;
+            await JS.InvokeVoidAsync("quiniela.observeReveals");
+        }
+
+        if (startDecided || podium is null || ChampionEntry is null) return;
+        startDecided = true;
+
+        reducedMotion = await JS.InvokeAsync<bool>("quiniela.prefersReducedMotion");
+        var seenList = await JS.InvokeAsync<List<string>>("quiniela.getStoredList", SeenKey);
+        bool alreadySeen = seenList.Count > 0;
+
+        if (reducedMotion)
+        {
+            // Sin ceremonia ni confeti animado: podio directo (confeti estático en CSS)
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+        }
+        else if (alreadySeen)
+        {
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+            await StartRainAsync();
+        }
+        else
+        {
+            await RunCeremonyAsync();
+        }
+    }
+
+    private async Task RunCeremonyAsync()
+    {
+        ceremonyCts?.Cancel();
+        var cts = ceremonyCts = new CancellationTokenSource();
+        try
+        {
+            phase = Phase.Ceremony;
+            revealStep = 0;
+            StateHasChanged();
+
+            await Task.Delay(1400, cts.Token);
+            revealStep = 1; StateHasChanged();          // 3er lugar
+
+            await Task.Delay(2000, cts.Token);
+            revealStep = 2; StateHasChanged();          // 2° lugar
+
+            await Task.Delay(2600, cts.Token);          // pausa dramática
+
+            phase = Phase.Podium;
+            revealStep = 3;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("quiniela.finalCeremony.burst");
+            await StartRainAsync();
+            await MarkSeenAsync();
+        }
+        catch (TaskCanceledException) { /* saltada o página desechada */ }
+    }
+
+    private async Task SkipCeremony()
+    {
+        ceremonyCts?.Cancel();
+        phase = Phase.Podium;
+        revealStep = 3;
+        await StartRainAsync();
+        await MarkSeenAsync();
+    }
+
+    private async Task ReplayCeremony()
+    {
+        await StopRainAsync();
+        await RunCeremonyAsync();
+    }
+
+    private async Task StartRainAsync()
+    {
+        if (reducedMotion) return;
+        await JS.InvokeVoidAsync("quiniela.finalCeremony.startRain", rainCanvas);
+        rainRunning = true;
+    }
+
+    private async Task StopRainAsync()
+    {
+        if (!rainRunning) return;
+        await JS.InvokeVoidAsync("quiniela.finalCeremony.stopRain");
+        rainRunning = false;
+    }
+
+    private async Task MarkSeenAsync()
+        => await JS.InvokeVoidAsync("quiniela.setStoredList", SeenKey, new[] { "seen" });
+
+    // ── Helpers de formato para las tarjetas de stats (RF3) ──
+    private static string Names(List<FinalSummaryService.MemberRef> members)
+    {
+        var names = members.Select(m => m.DisplayName).ToList();
+        return names.Count switch
+        {
+            0 => "",
+            1 => names[0],
+            _ => string.Join(", ", names[..^1]) + " y " + names[^1]
+        };
+    }
+
+    private static string Pct(int num, int den)
+        => den == 0 ? "0" : Math.Round(num * 100.0 / den).ToString("0");
+
+    private static string Day(DateOnly d) => d.ToString("d 'de' MMMM", EsMx);
+
+    private static string FormatSpan(TimeSpan ts) => ts.TotalDays >= 1
+        ? $"{ts.TotalDays:0.#} días"
+        : ts.TotalHours >= 1 ? $"{ts.TotalHours:0.#} h" : $"{(int)ts.TotalMinutes} min";
+
+    private static int IndexInCatalog(string key)
+    {
+        for (int i = 0; i < AchievementCatalog.All.Count; i++)
+            if (AchievementCatalog.All[i].Key == key) return i;
+        return int.MaxValue;
+    }
+
+    private static RenderFragment AvatarShowcase(FinalSummaryService.MemberRef member) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(member.ProfilePicturePath))
+        {
+            <img src="@member.ProfilePicturePath" class="fs-ach-avatar" alt="@member.DisplayName" />
+        }
+        else
+        {
+            <div class="fs-ach-avatar fs-ach-avatar-fallback">⚽</div>
+        }
+    };
+
+    private static RenderFragment AvatarFragment(StandingsService.StandingEntry entry, int size) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(entry.ProfilePicturePath))
+        {
+            <img src="@entry.ProfilePicturePath" class="fs-avatar" alt="@entry.DisplayName"
+                 style="width:@(size)px;height:@(size)px;" />
+        }
+        else
+        {
+            <div class="fs-avatar fs-avatar-fallback"
+                 style="width:@(size)px;height:@(size)px;font-size:@(size / 2)px;">⚽</div>
+        }
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        ceremonyCts?.Cancel();
+        try { await StopRainAsync(); }
+        catch { /* circuito ya cerrado */ }
+    }
+}

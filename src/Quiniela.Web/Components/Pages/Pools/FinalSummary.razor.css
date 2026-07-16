@@ -321,6 +321,12 @@
 
 .fs-stat-main .fs-num { color: var(--q-gold); }
 
+.fs-stat-of {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--q-muted);
+}
+
 .fs-stat-sub {
     font-size: 0.84rem;
     color: var(--q-muted);

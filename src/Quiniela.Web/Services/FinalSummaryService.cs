@@ -14,7 +14,8 @@ public class FinalSummaryService(
     IDbContextFactory<QuinielaDbContext> dbFactory,
     StandingsService standingsService,
     AchievementsService achievementsService,
-    DailyAwardService dailyAwardService)
+    DailyAwardService dailyAwardService,
+    PlayerStatsService playerStatsService)
 {
     // Misma zona fija que DailyAwardService/DailySummaryService: sin DST desde 2022.
     private static readonly TimeZoneInfo Tz =
@@ -758,6 +759,338 @@ public class FinalSummaryService(
             MostConstant = mostConstant,
             Totals = totals,
             Showcase = showcase
+        };
+    }
+
+    // ── RF4: "Tu participación en números" ─────────────────────────────────
+    // Stats personales del usuario actual (las 10 por defecto del doc 13 +
+    // las opcionales marcadas). Reusa PlayerStatsService para lo ya existente;
+    // null = no computable aún (la tarjeta/fila no se renderiza).
+
+    public record PersonalDayStat(DateOnly Day, int Points, int Correct, int Total);
+    public record PersonalTeamStat(string TeamName, string FlagCode, int Value);
+    public record PersonalChampionPick(string TeamName, string FlagCode,
+                                       bool Hit, bool Eliminated);
+    public record PersonalAgonicChange(string MatchLabel, int MinutesBefore, bool? Hit);
+    public record PersonalLoneWolf(int Count, string? ExampleLabel);
+
+    public class PersonalStats
+    {
+        // 1. Posición final
+        public required int Position { get; init; }
+        public required int TotalMembers { get; init; }
+        public required int PlayersBeaten { get; init; }
+        // 2. Puntos totales + desglose
+        public required int TotalPoints { get; init; }
+        public required int PtsFromResult { get; init; }
+        public required int PtsFromInstance { get; init; }
+        public required int PtsFromChampion { get; init; }
+        // 3. Aciertos vs promedio de la sala
+        public required int CorrectResults { get; init; }
+        public required int TotalPredictions { get; init; }
+        public required int PoolCorrect { get; init; }
+        public required int PoolPredictions { get; init; }
+        // 4. Mejor racha
+        public required int BestStreak { get; init; }
+        // 5. Mejor día / día negro
+        public PersonalDayStat? BestDay { get; init; }
+        public PersonalDayStat? WorstDay { get; init; }
+        // 6. Insignias + medallas
+        public required int BadgeCount { get; init; }
+        public required int MedalCount { get; init; }
+        // 7. Pick de campeón
+        public PersonalChampionPick? ChampionPick { get; init; }
+        // 8. Cambios de pronóstico + el más agónico
+        public required int TotalChanges { get; init; }
+        public PersonalAgonicChange? MostAgonic { get; init; }
+        // 9. Equipo talismán / maldito
+        public PersonalTeamStat? CharmTeam { get; init; }
+        public PersonalTeamStat? CursedTeam { get; init; }
+        // 10. Mejor/peor posición + días como líder/en podio
+        public int? BestPosition { get; init; }
+        public int? WorstPosition { get; init; }
+        public required int DaysAsLeader { get; init; }
+        public required int DaysOnPodium { get; init; }
+        // Opcionales del catálogo personal (todas marcadas en el doc 13)
+        public PersonalLoneWolf? LoneWolf { get; init; }          // 🐺
+        public required int CorrectDraws { get; init; }           // ⚖️
+        public required int PenaltyProphecies { get; init; }      // 🥅
+        public required int FinalizedMatches { get; init; }       // 📅 (% pronosticados)
+        public required int GroupPts { get; init; }               // 🕐 fase fuerte
+        public required int KoPts { get; init; }
+        public int? TypicalHour { get; init; }                    // 🌙
+        public DateTime? FirstPredictionLocal { get; init; }      // 🗓️
+        public required int DaysSinceFirst { get; init; }
+    }
+
+    /// <summary>
+    /// Stats personales del resumen final, calculadas on-demand (se auto-corrigen
+    /// si el admin corrige un marcador, igual que las de sala).
+    /// </summary>
+    public async Task<PersonalStats> GetPersonalStatsAsync(int poolId, int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+
+        var baseStats = await playerStatsService.GetAsync(userId, poolId);
+        var standings = await standingsService.GetStandingsAsync(poolId);
+        var positions = StandingsService.ComputePositions(standings);
+        var badgesByUser = await achievementsService.GetForPoolAsync(poolId);
+
+        int myIdx = standings.FindIndex(s => s.UserId == userId);
+        int myPosition = myIdx >= 0 ? positions[myIdx] : 0;
+        int playersBeaten = myIdx >= 0
+            ? Enumerable.Range(0, standings.Count).Count(i => positions[i] > myPosition)
+            : 0;
+
+        var finalized = await db.Matches
+            .Include(m => m.HomeTeam).Include(m => m.AwayTeam)
+            .Where(m => m.Status == MatchStatus.Finalizado)
+            .OrderBy(m => m.KickoffUtc)
+            .ToListAsync();
+        var matchById = finalized.ToDictionary(m => m.Id);
+
+        static string SideLabel(Match m, bool home) => home
+            ? m.HomeTeam?.ShortCode ?? m.HomeTeam?.Name ?? m.HomeSlotLabel ?? "?"
+            : m.AwayTeam?.ShortCode ?? m.AwayTeam?.Name ?? m.AwaySlotLabel ?? "?";
+        static DateOnly LocalDay(DateTime utc) =>
+            DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(utc, Tz));
+        string MatchLabel(Match m) =>
+            $"{SideLabel(m, true)} {m.HomeScore}-{m.AwayScore} {SideLabel(m, false)}";
+
+        // Pronósticos del pool sobre finalizados (los propios + los del resto para 🐺)
+        var poolPreds = await db.Predictions
+            .Where(p => p.PoolId == poolId && p.Match.Status == MatchStatus.Finalizado)
+            .Select(p => new { p.UserId, p.MatchId, p.PredOutcome, p.PredInstance,
+                               p.Points, p.PtsResult, p.PtsInstance })
+            .ToListAsync();
+        var myPreds = poolPreds.Where(p => p.UserId == userId).ToList();
+
+        // Promedio de la sala solo sobre partidos finalizados (mismo universo que
+        // los aciertos personales; StandingEntry cuenta también los no finalizados)
+        int poolCorrect = poolPreds.Count(p => p.PtsResult > 0);
+        int poolPredictions = poolPreds.Count;
+
+        // 2. Desglose de puntos (resultado / instancia / campeón)
+        var myChampionPick = await db.ChampionPredictions
+            .Include(c => c.Team)
+            .FirstOrDefaultAsync(c => c.PoolId == poolId && c.UserId == userId);
+        int ptsResult = myPreds.Sum(p => p.PtsResult);
+        int ptsInstance = myPreds.Sum(p => p.PtsInstance);
+        int ptsChampion = myChampionPick?.Points ?? 0;
+
+        // 5. Mejor día / día negro (día local CDMX, mismo criterio que la sala)
+        PersonalDayStat? bestDay = null, worstDay = null;
+        {
+            var byDay = myPreds
+                .GroupBy(p => LocalDay(matchById[p.MatchId].KickoffUtc))
+                .Select(g => new PersonalDayStat(
+                    g.Key, g.Sum(p => p.Points),
+                    g.Count(p => p.PtsResult > 0), g.Count()))
+                .ToList();
+            if (byDay.Count >= 2)
+            {
+                bestDay = byDay.OrderByDescending(d => d.Points).ThenBy(d => d.Day).First();
+                worstDay = byDay.Where(d => d.Total >= 2 && d.Day != bestDay.Day)
+                    .OrderBy(d => d.Correct / (double)d.Total)
+                    .ThenBy(d => d.Points).ThenBy(d => d.Day)
+                    .FirstOrDefault();
+            }
+        }
+
+        // 6. Insignias + medallas
+        var myBadges = badgesByUser.GetValueOrDefault(userId, []);
+
+        // 7. Pick de campeón (misma lógica hit/eliminated que "Fe en el campeón")
+        PersonalChampionPick? championPick = null;
+        if (myChampionPick is not null)
+        {
+            var finalMatch = finalized.FirstOrDefault(m => m.Stage == MatchStage.Final);
+            int? realChampionTeamId = finalMatch is { HomeTeamId: not null, AwayTeamId: not null }
+                ? (finalMatch.HomeScore > finalMatch.AwayScore ? finalMatch.HomeTeamId : finalMatch.AwayTeamId)
+                : null;
+            bool hit = myChampionPick.Points > 0
+                || (realChampionTeamId is not null && myChampionPick.TeamId == realChampionTeamId);
+            bool eliminated = !hit && (await AchievementsService.GetEliminatedTeamIdsAsync(db))
+                .Contains(myChampionPick.TeamId);
+            championPick = new(myChampionPick.Team.Name, myChampionPick.Team.FlagCode, hit, eliminated);
+        }
+
+        // 8. Cambios totales + el más agónico — historial propio (primera fila = captura)
+        var myHistory = await db.PredictionHistories
+            .Where(h => h.Prediction.PoolId == poolId && h.Prediction.UserId == userId)
+            .Select(h => new
+            {
+                h.PredictionId,
+                h.Prediction.MatchId,
+                h.Prediction.Match.KickoffUtc,
+                h.ChangedAt,
+                h.Prediction.PtsResult,
+                MatchFinalized = h.Prediction.Match.Status == MatchStatus.Finalizado,
+                HomeLabel = h.Prediction.Match.HomeTeam != null
+                    ? (h.Prediction.Match.HomeTeam.ShortCode ?? h.Prediction.Match.HomeTeam.Name)
+                    : (h.Prediction.Match.HomeSlotLabel ?? "?"),
+                AwayLabel = h.Prediction.Match.AwayTeam != null
+                    ? (h.Prediction.Match.AwayTeam.ShortCode ?? h.Prediction.Match.AwayTeam.Name)
+                    : (h.Prediction.Match.AwaySlotLabel ?? "?")
+            })
+            .ToListAsync();
+
+        int totalChanges = 0;
+        PersonalAgonicChange? mostAgonic = null;
+        foreach (var g in myHistory.GroupBy(h => h.PredictionId))
+        {
+            var ordered = g.OrderBy(h => h.ChangedAt).ToList();
+            totalChanges += ordered.Count - 1;
+            foreach (var change in ordered.Skip(1))
+            {
+                var minutes = (int)Math.Floor((change.KickoffUtc - change.ChangedAt).TotalMinutes);
+                if (minutes < 0) continue;
+                if (mostAgonic is null || minutes < mostAgonic.MinutesBefore)
+                {
+                    var label = matchById.TryGetValue(change.MatchId, out var mm)
+                        ? MatchLabel(mm)
+                        : $"{change.HomeLabel} vs {change.AwayLabel}";
+                    mostAgonic = new(label, minutes,
+                                     change.MatchFinalized ? change.PtsResult > 0 : null);
+                }
+            }
+        }
+
+        // 9. Equipo talismán (más puntos me dio) / maldito (más me falló)
+        PersonalTeamStat? charm = null, cursed = null;
+        {
+            var gifts = new Dictionary<int, int>();
+            var fails = new Dictionary<int, int>();
+            var teamById = new Dictionary<int, Team>();
+            foreach (var p in myPreds)
+            {
+                var m = matchById[p.MatchId];
+                foreach (var team in new[] { m.HomeTeam, m.AwayTeam })
+                {
+                    if (team is null) continue;
+                    teamById[team.Id] = team;
+                    gifts[team.Id] = gifts.GetValueOrDefault(team.Id) + p.Points;
+                    if (p.PtsResult == 0) fails[team.Id] = fails.GetValueOrDefault(team.Id) + 1;
+                }
+            }
+            if (gifts.Count > 0 && gifts.Values.Max() > 0)
+            {
+                var t = gifts.OrderByDescending(kv => kv.Value).ThenBy(kv => teamById[kv.Key].Name).First();
+                charm = new(teamById[t.Key].Name, teamById[t.Key].FlagCode, t.Value);
+            }
+            if (fails.Count > 0 && fails.Values.Max() > 0)
+            {
+                var t = fails.OrderByDescending(kv => kv.Value).ThenBy(kv => teamById[kv.Key].Name).First();
+                cursed = new(teamById[t.Key].Name, teamById[t.Key].FlagCode, t.Value);
+            }
+        }
+
+        // 10. Mejor/peor posición + días como líder / en podio (posición al cierre
+        // de cada día local con snapshot, mismo criterio de "día" que el resto)
+        int? bestPosition = null, worstPosition = null;
+        int daysAsLeader = 0, daysOnPodium = 0;
+        var history = await standingsService.GetPositionHistoryAsync(poolId);
+        if (history.TryGetValue(userId, out var mySeries) && mySeries.Count > 0)
+        {
+            bestPosition = mySeries.Min(p => p.Position);
+            worstPosition = mySeries.Max(p => p.Position);
+            var endOfDay = mySeries
+                .GroupBy(p => LocalDay(p.KickoffUtc))
+                .Select(g => g.OrderBy(p => p.KickoffUtc).Last().Position)
+                .ToList();
+            daysAsLeader = endOfDay.Count(p => p == 1);
+            daysOnPodium = endOfDay.Count(p => p <= 3);
+        }
+
+        // 🐺 Momentos lobo solitario — único en acertar entre ≥3 pronósticos
+        PersonalLoneWolf? loneWolf = null;
+        {
+            var predsByMatch = poolPreds.GroupBy(p => p.MatchId);
+            int count = 0;
+            Match? lastExample = null;
+            foreach (var g in predsByMatch)
+            {
+                var ps = g.ToList();
+                if (ps.Count < 3) continue;
+                var correct = ps.Where(p => p.PtsResult > 0).ToList();
+                if (correct.Count == 1 && correct[0].UserId == userId)
+                {
+                    count++;
+                    var m = matchById[g.Key];
+                    if (lastExample is null || m.KickoffUtc > lastExample.KickoffUtc)
+                        lastExample = m;
+                }
+            }
+            if (count > 0)
+                loneWolf = new(count, lastExample is null ? null : MatchLabel(lastExample));
+        }
+
+        // ⚖️ Empates acertados / 🥅 profecías de penales cumplidas
+        int correctDraws = myPreds.Count(p => p.PredOutcome == 'D' && p.PtsResult > 0
+                                           && matchById[p.MatchId].Stage == MatchStage.Grupos);
+        int penaltyProphecies = myPreds.Count(p =>
+            p.PredInstance == MatchDecidedIn.Penalties
+            && matchById[p.MatchId].Stage != MatchStage.Grupos
+            && matchById[p.MatchId].DecidedIn == MatchDecidedIn.Penalties);
+
+        // 🕐 Fase fuerte: puntos en grupos vs eliminatorias
+        int groupPts = myPreds.Where(p => matchById[p.MatchId].Stage == MatchStage.Grupos)
+                              .Sum(p => p.Points);
+        int koPts = myPreds.Where(p => matchById[p.MatchId].Stage != MatchStage.Grupos)
+                           .Sum(p => p.Points);
+
+        // 🌙 Hora habitual de pronosticar / 🗓️ primer pronóstico (hora local CDMX)
+        int? typicalHour = null;
+        DateTime? firstLocal = null;
+        int daysSinceFirst = 0;
+        if (myHistory.Count > 0)
+        {
+            typicalHour = myHistory
+                .GroupBy(h => TimeZoneInfo.ConvertTimeFromUtc(h.ChangedAt, Tz).Hour)
+                .OrderByDescending(g => g.Count()).ThenBy(g => g.Key)
+                .First().Key;
+            var firstUtc = myHistory.Min(h => h.ChangedAt);
+            firstLocal = TimeZoneInfo.ConvertTimeFromUtc(firstUtc, Tz);
+            var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz);
+            daysSinceFirst = Math.Max(0, (todayLocal.Date - firstLocal.Value.Date).Days);
+        }
+
+        return new PersonalStats
+        {
+            Position = myPosition,
+            TotalMembers = standings.Count,
+            PlayersBeaten = playersBeaten,
+            TotalPoints = baseStats.TotalPoints,
+            PtsFromResult = ptsResult,
+            PtsFromInstance = ptsInstance,
+            PtsFromChampion = ptsChampion,
+            CorrectResults = baseStats.CorrectResults,
+            TotalPredictions = baseStats.TotalPredictions,
+            PoolCorrect = poolCorrect,
+            PoolPredictions = poolPredictions,
+            BestStreak = baseStats.BestStreak,
+            BestDay = bestDay,
+            WorstDay = worstDay,
+            BadgeCount = myBadges.Count,
+            MedalCount = myBadges.Sum(b => b.Medals),
+            ChampionPick = championPick,
+            TotalChanges = totalChanges,
+            MostAgonic = mostAgonic,
+            CharmTeam = charm,
+            CursedTeam = cursed,
+            BestPosition = bestPosition,
+            WorstPosition = worstPosition,
+            DaysAsLeader = daysAsLeader,
+            DaysOnPodium = daysOnPodium,
+            LoneWolf = loneWolf,
+            CorrectDraws = correctDraws,
+            PenaltyProphecies = penaltyProphecies,
+            FinalizedMatches = finalized.Count,
+            GroupPts = groupPts,
+            KoPts = koPts,
+            TypicalHour = typicalHour,
+            FirstPredictionLocal = firstLocal,
+            DaysSinceFirst = daysSinceFirst
         };
     }
 }

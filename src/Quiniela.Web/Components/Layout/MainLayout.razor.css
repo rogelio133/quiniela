@@ -17,16 +17,25 @@ main {
 }
 
 /* ── Background rotating ball ───────────────────────────────── */
-.bg-ball {
+/* La bola sobresale del viewport (right/bottom negativos + el bounding box
+   de la rotación); en navegadores móviles eso genera paneo horizontal.
+   Este wrapper fijo del tamaño exacto del viewport la recorta. */
+.bg-ball-clip {
     position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bg-ball {
+    position: absolute;
     bottom: -55px;
     right: -55px;
     width: 350px;
     height: 350px;
-    pointer-events: none;
     user-select: none;
     -webkit-user-select: none;
-    z-index: 0;
     animation: bgBallSpin 28s linear infinite;
 }
 

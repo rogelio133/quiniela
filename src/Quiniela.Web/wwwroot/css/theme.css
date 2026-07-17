@@ -49,6 +49,19 @@
     --q-va-text:        #3730A3;
     --q-va-arrow:       #6366F1;
 
+    /* Series de la gráfica de evolución (Resumen final RF5): paleta categórica
+       de 8 validada para CVD sobre --q-surface; el orden de los slots es el
+       mecanismo de seguridad (maximiza la separación entre adyacentes), no
+       es cosmético — asignar siempre en este orden, nunca ciclar. */
+    --q-viz-1: #2A78D6;
+    --q-viz-2: #008300;
+    --q-viz-3: #E87BA4;
+    --q-viz-4: #EDA100;
+    --q-viz-5: #1BAF7A;
+    --q-viz-6: #EB6834;
+    --q-viz-7: #4A3AA7;
+    --q-viz-8: #E34948;
+
     /* Podium oro/plata/bronce (Home/Standings) */
     --q-podium-1-bg:     linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
     --q-podium-1-border: #FCD34D;
@@ -89,6 +102,16 @@
     --q-va-bg-active:   linear-gradient(135deg, #2A3664 0%, #1C4033 100%);
     --q-va-text:        #A5B4FC;
     --q-va-arrow:       #818CF8;
+
+    /* Mismos 8 matices re-escalonados para la superficie oscura (validados) */
+    --q-viz-1: #3987E5;
+    --q-viz-2: #008300;
+    --q-viz-3: #D55181;
+    --q-viz-4: #C98500;
+    --q-viz-5: #199E70;
+    --q-viz-6: #D95926;
+    --q-viz-7: #9085E9;
+    --q-viz-8: #E66767;
 
     --q-podium-1-bg:     linear-gradient(135deg, #2A2210 0%, #3A2E12 100%);
     --q-podium-1-border: #8A6A1C;

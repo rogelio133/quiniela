@@ -253,6 +253,54 @@ window.quiniela = {
             if (fc._rain) { fc._rain.stop(); fc._rain = null; }
         }
     },
+    // Imagen compartible del Resumen final (RF7): re-renderiza la tarjeta oculta
+    // 1080×1920 a PNG con html2canvas (self-hosted, lazy — solo se carga al pulsar
+    // descargar). En móvil con Web Share API nivel 2 abre el share sheet nativo
+    // (vía directa a Instagram/WhatsApp); si no, descarga directa con <a download>.
+    downloadShareCard: async (elementId, fileName) => {
+        const el = document.getElementById(elementId);
+        if (!el) return false;
+        try {
+            if (typeof html2canvas !== 'function')
+                await import('/lib/html2canvas/html2canvas.min.js'); // UMD: registra window.html2canvas
+            if (typeof html2canvas !== 'function') return false;
+
+            const canvas = await html2canvas(el, {
+                scale: 1,
+                backgroundColor: '#0D1B2A',
+                logging: false,
+                // La tarjeta vive fija fuera de pantalla (left:-9999px): anclar la
+                // captura a las coordenadas reales del elemento, no al scroll.
+                scrollX: 0,
+                scrollY: 0
+            });
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            if (!blob) return false;
+
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file] });
+                    return true;
+                } catch (e) {
+                    if (e.name === 'AbortError') return true; // el usuario cerró el sheet: no es error
+                    // otro fallo del share nativo → caer a descarga directa
+                }
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            return true;
+        } catch (e) {
+            console.warn('downloadShareCard failed:', e);
+            return false;
+        }
+    },
     getStoredList: (key) => {
         try { return JSON.parse(localStorage.getItem(key) ?? '[]'); }
         catch { return []; }

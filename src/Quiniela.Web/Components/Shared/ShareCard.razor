@@ -1,0 +1,156 @@
+@* Tarjetas ocultas 1080×1920 (story 9:16) para la imagen compartible del
+   Resumen final (RF7). html2canvas re-renderiza el nodo a un canvas, así que
+   el CSS se limita a lo que soporta bien: flex, gradientes lineales simples,
+   border-radius — sin backdrop-filter ni background-clip:text. Banderas como
+   emoji (flag-icons viene de CDN y no conviene depender de CORS); avatares
+   locales (ProfilePicturePath es same-origin). *@
+
+@using System.Text
+
+<div class="sc-stage" aria-hidden="true">
+
+    @* ── Variante "Mi participación" ── *@
+    @if (Personal is not null && Me is not null)
+    {
+        <div class="sc-card" id="fs-share-personal">
+            <div class="sc-confetti">
+                <span style="left:60px; top:200px; transform:rotate(-18deg)">🎉</span>
+                <span style="right:70px; top:320px; transform:rotate(14deg)">✨</span>
+                <span style="left:80px; top:880px; transform:rotate(10deg)">🎊</span>
+                <span style="right:90px; top:960px; transform:rotate(-12deg)">⚽</span>
+            </div>
+
+            <div class="sc-head">
+                <div class="sc-brand">⚽ Quiniela Mundial 2026</div>
+                <div class="sc-pool">@PoolName</div>
+            </div>
+
+            <div class="sc-me">
+                @Avatar(Me.ProfilePicturePath, Me.DisplayName, 200)
+                <div class="sc-me-name">@Me.DisplayName</div>
+                <div class="sc-me-sub">Mi Mundial en números</div>
+            </div>
+
+            <div class="sc-pos">
+                <span class="sc-pos-num">@(Personal.Position)°</span>
+                <span class="sc-pos-of">de @Personal.TotalMembers jugadores</span>
+            </div>
+
+            <div class="sc-grid">
+                <div class="sc-tile">
+                    <div class="sc-tile-val">@Personal.TotalPoints</div>
+                    <div class="sc-tile-label">🎯 puntos</div>
+                </div>
+                <div class="sc-tile">
+                    <div class="sc-tile-val">@Pct(Personal.CorrectResults, Personal.TotalPredictions)%</div>
+                    <div class="sc-tile-label">✅ aciertos (@Personal.CorrectResults de @Personal.TotalPredictions)</div>
+                </div>
+                <div class="sc-tile">
+                    <div class="sc-tile-val">@Personal.BestStreak</div>
+                    <div class="sc-tile-label">🔥 mejor racha</div>
+                </div>
+                <div class="sc-tile">
+                    <div class="sc-tile-val">@Personal.BadgeCount<span class="sc-tile-den">/@AchievementCatalog.All.Count</span></div>
+                    <div class="sc-tile-label">🎖️ insignias@(Personal.MedalCount > 0 ? $" · {Personal.MedalCount} 🏅" : "")</div>
+                </div>
+            </div>
+
+            @if (Personal.ChampionPick is { } cp)
+            {
+                <div class="sc-pick @(cp.Hit ? "sc-pick-hit" : cp.Eliminated ? "sc-pick-broken" : "")">
+                    Mi campeón: <span class="sc-pick-flag">@FlagEmoji(cp.FlagCode)</span> @cp.TeamName
+                    @(cp.Hit ? " 👑" : cp.Eliminated ? " 💔" : "")
+                </div>
+            }
+
+            <div class="sc-foot">Quiniela Mundial 2026 · @PoolName</div>
+        </div>
+    }
+
+    @* ── Variante "Podio de la sala" ── *@
+    @if (Podium is not null && Podium.Top.Count > 0)
+    {
+        var champ = Podium.Top[0];
+        <div class="sc-card" id="fs-share-podium">
+            <div class="sc-confetti">
+                <span style="left:70px; top:180px; transform:rotate(-15deg)">🎊</span>
+                <span style="right:60px; top:260px; transform:rotate(18deg)">🎉</span>
+                <span style="left:110px; top:520px; transform:rotate(8deg)">✨</span>
+                <span style="right:100px; bottom:560px; transform:rotate(-10deg)">🎊</span>
+                <span style="left:70px; bottom:340px; transform:rotate(15deg)">🎉</span>
+            </div>
+
+            <div class="sc-head">
+                <div class="sc-brand">⚽ Quiniela Mundial 2026</div>
+                <div class="sc-pool">@PoolName</div>
+            </div>
+
+            <div class="sc-champ">
+                <div class="sc-champ-cup">🏆</div>
+                <div class="sc-champ-kicker">Campeón de la quiniela</div>
+                @Avatar(champ.Entry.ProfilePicturePath, champ.Entry.DisplayName, 280)
+                <div class="sc-champ-name">@champ.Entry.DisplayName</div>
+                <div class="sc-champ-pts">@champ.Entry.TotalPoints pts</div>
+                @if (Podium.DeltaVsSecond > 0)
+                {
+                    <div class="sc-champ-delta">+@Podium.DeltaVsSecond sobre el 2°</div>
+                }
+            </div>
+
+            <div class="sc-runners">
+                @foreach (var e in Podium.Top.Skip(1))
+                {
+                    <div class="sc-runner">
+                        <span class="sc-runner-medal">@(e.Position == 2 ? "🥈" : "🥉")</span>
+                        @Avatar(e.Entry.ProfilePicturePath, e.Entry.DisplayName, 110)
+                        <span class="sc-runner-name">@e.Entry.DisplayName</span>
+                        <span class="sc-runner-pts">@e.Entry.TotalPoints pts</span>
+                    </div>
+                }
+            </div>
+
+            <div class="sc-foot">Quiniela Mundial 2026 · @PoolName</div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string PoolName { get; set; } = "";
+    [Parameter] public FinalSummaryService.Podium? Podium { get; set; }
+    [Parameter] public FinalSummaryService.PersonalStats? Personal { get; set; }
+    [Parameter] public FinalSummaryService.MemberRef? Me { get; set; }
+
+    private static string Pct(int num, int den)
+        => den == 0 ? "0" : Math.Round(num * 100.0 / den).ToString("0");
+
+    // FlagCode (flag-icons, alpha-2 minúsculas) → emoji de bandera. Códigos
+    // compuestos (gb-eng/gb-sct/gb-wls) usan la secuencia de tags de subdivisión;
+    // donde el sistema no la soporte cae a 🏴, aceptable para la tarjeta.
+    private static string FlagEmoji(string flagCode)
+    {
+        var code = flagCode.ToLowerInvariant();
+        if (code.Contains('-'))
+        {
+            var sb = new StringBuilder(char.ConvertFromUtf32(0x1F3F4));
+            foreach (var c in code.Replace("-", ""))
+                sb.Append(char.ConvertFromUtf32(0xE0000 + c));
+            sb.Append(char.ConvertFromUtf32(0xE007F));
+            return sb.ToString();
+        }
+        return string.Concat(code.Select(c => char.ConvertFromUtf32(0x1F1E6 + (c - 'a'))));
+    }
+
+    private static RenderFragment Avatar(string? path, string name, int size) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(path))
+        {
+            <img src="@path" class="sc-avatar" alt="@name"
+                 style="width:@(size)px;height:@(size)px;" />
+        }
+        else
+        {
+            <div class="sc-avatar sc-avatar-fallback"
+                 style="width:@(size)px;height:@(size)px;font-size:@(size / 2)px;">⚽</div>
+        }
+    };
+}

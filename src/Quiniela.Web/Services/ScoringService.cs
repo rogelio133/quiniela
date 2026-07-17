@@ -10,6 +10,8 @@ public class ScoringService(
     PushNotificationService pushService,
     AchievementsService achievementsService)
 {
+    private const string FinalSummaryType = "FinalSummary";
+
     public async Task RecalculateForMatchAsync(int matchId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -45,7 +47,10 @@ public class ScoringService(
         await NotifyResultAsync(db, match, predictions);
 
         if (match.Stage == MatchStage.Final)
+        {
             await ResolveChampionAsync(db, match);
+            await NotifyChampionAsync(db, match);
+        }
 
         await SaveSnapshotAsync(db, matchId);
 
@@ -123,6 +128,62 @@ public class ScoringService(
 
             await pushService.SendAsync(pred.UserId, $"⚽ {matchLabel}", body, $"/pools/{pred.PoolId}/predictions");
         }
+    }
+
+    /// <summary>
+    /// N13: "🏆 ¡Tenemos campeón!" a todos los miembros de cada sala al capturarse la Final, con
+    /// link al resumen final (/pools/{id}/final-summary). Corre después de ResolveChampionAsync
+    /// para que los puntos de campeón ya cuenten en la tabla al determinar al ganador. Dedup dura
+    /// vía NotificationLog (Type "FinalSummary", MatchId = la Final): corregir el marcador de la
+    /// Final después NO re-notifica, aunque la corrección cambiara al campeón de la quiniela
+    /// (decisión del doc 13 — evita tormenta de pushes; el admin avisa por el chat si aplica).
+    /// El índice único (UserId, MatchId, Type) implica una sola notificación por usuario: quien
+    /// esté en varias salas recibe la de su primera sala por PoolId (mismo criterio que N1/N6).
+    /// </summary>
+    private async Task NotifyChampionAsync(QuinielaDbContext db, Match final)
+    {
+        var pools = await db.PoolMembers
+            .Select(pm => pm.Pool)
+            .Distinct()
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+
+        var alreadyNotified = await db.NotificationLogs
+            .Where(n => n.MatchId == final.Id && n.Type == FinalSummaryType)
+            .Select(n => n.UserId)
+            .ToHashSetAsync();
+
+        var now = DateTime.UtcNow;
+
+        foreach (var pool in pools)
+        {
+            var standings = await standingsService.GetStandingsAsync(db, pool.Id, null);
+            if (standings.Count == 0) continue;
+
+            var champion = standings[0];
+
+            foreach (var row in standings)
+            {
+                if (!alreadyNotified.Add(row.UserId)) continue;
+
+                var body = row.UserId == champion.UserId
+                    ? $"¡GANASTE la quiniela {pool.Name}! 👑🎉"
+                    : $"{champion.DisplayName} ganó la quiniela {pool.Name} 🎉 Mira el resumen final del torneo";
+
+                await pushService.SendAsync(row.UserId, "🏆 ¡Tenemos campeón!", body,
+                    $"/pools/{pool.Id}/final-summary");
+
+                db.NotificationLogs.Add(new NotificationLog
+                {
+                    UserId = row.UserId,
+                    MatchId = final.Id,
+                    Type = FinalSummaryType,
+                    SentAt = now,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task ResolveChampionAsync(QuinielaDbContext db, Match final)

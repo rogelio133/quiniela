@@ -355,6 +355,111 @@
     vertical-align: -0.1em;
 }
 
+/* ── X1: Los Quiniela Awards (tarjetas de premio) ────────────
+   Misma data que las stats de sala; solo cambia la presentación:
+   emoji grande + nombre del premio (tipografía display) + ganador
+   con avatar + el dato como subtítulo. */
+.fs-award-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-lg);
+    box-shadow: var(--q-sh-sm);
+    padding: 1.7rem 1.3rem 1.5rem;
+    text-align: center;
+}
+
+/* Cinta dorada superior: el toque ceremonial */
+.fs-award-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--q-g-gold);
+}
+
+.fs-award-emoji {
+    font-size: 2.6rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.fs-award-name {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--q-text);
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+}
+
+.fs-award-winners {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.8rem;
+    margin-bottom: 0.6rem;
+}
+
+.fs-award-winner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--q-surface-2);
+    border: 1px solid var(--q-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+}
+
+.fs-award-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.fs-award-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 0.9rem;
+}
+
+.fs-award-winner-name {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--q-text);
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fs-award-sub {
+    font-size: 0.84rem;
+    color: var(--q-muted);
+    line-height: 1.45;
+}
+
+.fs-award-sub .fs-num { font-weight: 800; color: var(--q-gold); }
+
+/* Premios dobles (Consentido/Ancla, Madrugador/Último minuto, Reyes):
+   auto-fit para que con una sola mitad la tarjeta no quede descentrada */
+.fs-award-halves {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.5rem 1.2rem;
+}
+
+/* La lista de fe en el campeón dentro del premio Profeta/Corazones */
+.fs-award-card .fs-faith-list { margin-top: 0.8rem; }
+
 /* Fe en el campeón */
 .fs-faith-list {
     display: flex;
@@ -1062,6 +1167,7 @@
     .fs-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .fs-card-wide { grid-column: 1 / -1; }
     .fs-stat-main { font-size: 1.65rem; }
+    .fs-award-name { font-size: 1.45rem; }
     .fs-totals-grid { grid-template-columns: repeat(3, 1fr); }
     .fs-ach-grid { grid-template-columns: repeat(4, 1fr); }
 

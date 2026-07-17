@@ -936,6 +936,58 @@
     gap: 0.6rem;
 }
 
+/* ── RF7: Compartir (imagen 9:16) ──────────────────────────── */
+.fs-share-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-lg);
+    box-shadow: var(--q-sh-sm);
+    padding: 1.6rem 1.3rem;
+    text-align: center;
+}
+
+.fs-share-note {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--q-muted);
+    margin: 0 0 1.1rem;
+}
+
+.fs-share-btns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+}
+
+.fs-share-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #F1F5F9;
+    background: linear-gradient(135deg, #13233A 0%, #0D1B2A 100%);
+    border: 1px solid var(--q-border);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fs-share-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--q-sh-sm);
+}
+
+.fs-share-btn:disabled {
+    opacity: 0.6;
+}
+
+.fs-share-error {
+    margin: 0.9rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #DC2626;
+}
+
 /* ── Animaciones ───────────────────────────────────────────── */
 @keyframes fsPop {
     from { opacity: 0; transform: translateY(14px) scale(0.92); }

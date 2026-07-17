@@ -1,7 +1,7 @@
 # 13 — Resumen final del torneo 🎉
 
 **Fecha:** 2026-07-16
-**Estado:** 🚧 En implementación — RF1–RF4 completados (2026-07-16) y RF5 completado (2026-07-17). Pendiente: RF6–RF8 y confirmar preguntas abiertas.
+**Estado:** 🚧 En implementación — RF1–RF4 completados (2026-07-16), RF5 y RF7 completados (2026-07-17). Pendiente: RF6, RF8 y confirmar preguntas abiertas.
 **Contexto:** Página post-Final por sala (`/pools/{poolId}/final-summary`), el "cierre" del proyecto. Se desbloquea para todos cuando el partido de la Final queda Finalizado; antes de eso solo el admin puede verla (vista previa). Muestra: campeón de la quiniela con podio grande y reveal ceremonial, vitrina definitiva de insignias, stats curiosas de la sala, "Tu participación en números", gráfica de evolución completa, e imagen descargable para compartir en redes. Queda como recuerdo permanente.
 
 ---
@@ -51,7 +51,7 @@ public async Task<bool> IsUnlockedAsync()
 | RF4 | "Tu participación en números" | RF1 | ✅ Completado (2026-07-16) |
 | RF5 | Gráfica de evolución completa (multi-línea, todos los jugadores) | RF1 | ✅ Completado (2026-07-17) |
 | RF6 | Notificación **N13** al capturar la Final | RF1 | ⏳ Pendiente |
-| RF7 | Imagen compartible 9:16 (2 variantes) + descarga/compartir | RF3, RF4 | ⏳ Pendiente |
+| RF7 | Imagen compartible 9:16 (2 variantes) + descarga/compartir | RF3, RF4 | ✅ Completado (2026-07-17) |
 | RF8 | Extras seleccionados (ver "Funcionalidad extra") | según elección | ⏳ Pendiente |
 
 ---
@@ -140,12 +140,13 @@ Sí es posible. Opciones, de la recomendada a la menos:
 
 **Recomendación: opción 1** (con la 3 como fallback si html2canvas diera guerra con algo puntual):
 
-- [ ] Componente `ShareCard.razor` — nodo oculto (`position:fixed; left:-9999px`) de 1080×1920 con diseño propio para story: fondo navy con confeti decorativo **CSS/inline** (no el canvas animado), tipografía grande, marca "Quiniela Mundial 2026 · {PoolName}". CSS restringido a lo que html2canvas soporta bien (flex/grid, gradientes lineales simples, border-radius, sombras). Banderas como **emoji** (🇲🇽🇫🇷) y avatares locales (`ProfilePicturePath` es local, sin problema de CORS).
-- [ ] Dos variantes (mismo componente, parámetro): **"Mi participación"** (posición, pts, %, racha, insignias, campeón pick) y **"Podio de la sala"** (top 3 con avatares + campeón destacado).
-- [ ] `quiniela.downloadShareCard(elementId, fileName)` en `quiniela.js`: `html2canvas(el, {scale:1}) → canvas.toBlob → `
+- [x] Componente `ShareCard.razor` — nodo oculto (`position:fixed; left:-9999px`) de 1080×1920 con diseño propio para story: fondo navy con confeti decorativo **CSS/inline** (no el canvas animado), tipografía grande, marca "Quiniela Mundial 2026 · {PoolName}". CSS restringido a lo que html2canvas soporta bien (flex/grid, gradientes lineales simples, border-radius, sombras). Banderas como **emoji** (🇲🇽🇫🇷) y avatares locales (`ProfilePicturePath` es local, sin problema de CORS). *(Implementado en `Components/Shared/ShareCard.razor(.css)` — valores CSS literales, sin custom properties ni `background-clip:text` que html2canvas no soporta. Conversión `FlagCode`→emoji en el componente: indicadores regionales para alpha-2 y secuencia de tags para códigos compuestos `gb-eng`/`gb-sct`/`gb-wls` — donde el sistema no soporte subdivisiones cae a 🏴, aceptable. El confeti decorativo son `<span>` emoji absolutos en zonas sin contenido.)*
+- [x] Dos variantes (mismo componente, parámetro): **"Mi participación"** (posición, pts, %, racha, insignias, campeón pick) y **"Podio de la sala"** (top 3 con avatares + campeón destacado). *(Ids `fs-share-personal`/`fs-share-podium`; la píldora del pick de campeón se oculta sola si el usuario no tiene `ChampionPrediction`, mismo patrón de RF4. El componente recibe `Podium`/`PersonalStats`/`MemberRef` ya cargados por la página — cero queries nuevas.)*
+- [x] `quiniela.downloadShareCard(elementId, fileName)` en `quiniela.js`: `html2canvas(el, {scale:1}) → canvas.toBlob → `
   - **Móvil con Web Share API nivel 2** (`navigator.canShare({files})`): `navigator.share({files:[png]})` — abre el share sheet nativo y va directo a Instagram/WhatsApp. Es la vía principal de compartir.
   - **Fallback/desktop:** `<a download="quiniela-2026.png">`.
-- [ ] `html2canvas.min.js` self-hosted en `wwwroot/lib/`, cargado **lazy** (solo al pulsar descargar, `import()` dinámico) para no engordar la carga inicial.
+  - *(Notas de implementación: `AbortError` del share nativo cuenta como éxito — el usuario cerró el sheet, no es error; cualquier otro fallo del share cae a la descarga directa. `scrollX/scrollY: 0` para anclar la captura del nodo fijo fuera de pantalla. Devuelve `bool`; la sección "Comparte tu Mundial" en la página muestra estado "⏳ Generando…" y mensaje de error si falla.)*
+- [x] `html2canvas.min.js` self-hosted en `wwwroot/lib/`, cargado **lazy** (solo al pulsar descargar, `import()` dinámico) para no engordar la carga inicial. *(html2canvas 1.4.1 en `wwwroot/lib/html2canvas/` — build UMD: el `import()` lo ejecuta y registra `window.html2canvas` vía `globalThis`, con doble check antes de usar.)*
 
 ## RF8 — Extras (según selección, ver "Funcionalidad extra")
 
@@ -248,7 +249,7 @@ Ordenadas por relación valor/esfuerzo:
 - [x] Vitrina: 19 insignias + medallas por jugador, mismo tratamiento visual que Achievements. *(Verificado en navegador real 2026-07-16: tarjeta por jugador ordenada por insignias, celdas con color por categoría, filas de medallas 🏅, conteo N/19, dark/light OK.)*
 - [x] Vitrina — recorrido horizontal: el scroll vertical desplaza las vitrinas en horizontal mientras la sección está pineada y continúa en vertical al terminar; tocar una insignia abre el sheet con su descripción. Fallback vertical con `prefers-reduced-motion` o si todo cabe a lo ancho. *(Verificado con Playwright 2026-07-16 en mobile 390 dark y desktop 1280 light — ver "Ajuste RF3".)*
 - [x] "Tu participación en números" muestra las stats personales acordadas, correctas contra la BD. *(Verificado en navegador real con Playwright 2026-07-16: 13 tarjetas renderizadas, 14/14 reveals al scroll, 7 count-ups llegando a su valor exacto, 0 errores de consola, light 1280px y dark 390px sin overflow. Cifras cotejadas contra la BD dev con SQL directo: puntos 20 = 18 resultado + 2 instancia + 0 campeón ✓, aciertos 6/13 vs promedio de sala 40% (10/25) ✓, 13 de 95 partidos pronosticados ✓, grupos 9 pts vs KO 11 pts ✓, 0 cambios de pronóstico ✓, primer pronóstico 9-jul 10:01 a.m. CDMX ✓. El gate no-admin sigue intacto.)*
-- [ ] Descargar imagen: ambas variantes generan PNG 1080×1920 legible (banderas emoji, avatar, sin elementos cortados); en móvil `navigator.share` abre el share sheet con la imagen; en desktop descarga directa.
+- [x] Descargar imagen: ambas variantes generan PNG 1080×1920 legible (banderas emoji, avatar, sin elementos cortados); en móvil `navigator.share` abre el share sheet con la imagen; en desktop descarga directa. *(Verificado con Playwright 2026-07-17, admin/sala 1, desktop 1280 light y mobile 390 dark: ambas variantes descargan PNG de exactamente 1080×1920 (header PNG inspeccionado), inspección visual de ambas imágenes — avatares, tipografía grande, tiles y confeti decorativo sin encimarse al contenido, nada cortado; sección "Comparte tu Mundial" con reveal al scroll, 0 errores de consola, sin overflow horizontal. La píldora del pick de campeón no se ejercitó visualmente porque la sala 1 de la BD dev no tiene `ChampionPredictions` (la tarjeta la oculta correctamente); la conversión bandera→emoji es la estándar de indicadores regionales. El share sheet nativo no es automatizable en Playwright (Chromium headless no expone `navigator.share`): se verificó que el fallback `<a download>` corre en ese caso — la rama `canShare({files})` queda validada por revisión de código.)*
 - [ ] Corrección posterior del marcador de la Final: la página se auto-corrige (on-demand), sin re-notificación N13.
 - [ ] Dark/light mode OK en toda la página; mobile 390px y desktop 1280px OK; 0 errores de consola.
 - [x] Se agrega `PageVisitLogger` a la página (aparece en el Log del owner). *(PageName "Resumen final"; filas de prueba borradas de la BD dev.)*

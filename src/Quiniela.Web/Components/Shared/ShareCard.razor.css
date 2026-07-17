@@ -1,0 +1,243 @@
+/* Tarjetas compartibles 9:16 (RF7). Invariantes al tema (navy, como el hero)
+   y con valores literales — html2canvas re-renderiza este CSS y conviene no
+   depender de custom properties ni de efectos que no soporta. Ocultas fuera
+   de pantalla: display:none no funcionaría (html2canvas necesita layout). */
+
+.sc-stage {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 1080px;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.sc-card {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 110px 90px 90px;
+    background: linear-gradient(165deg, #13233A 0%, #0D1B2A 55%, #0B1220 100%);
+    color: #F1F5F9;
+    font-family: 'Nunito', system-ui, sans-serif;
+    text-align: center;
+}
+
+/* Confeti decorativo estático (emoji, no el canvas animado) */
+.sc-confetti span {
+    position: absolute;
+    font-size: 64px;
+    opacity: 0.5;
+}
+
+.sc-head { position: relative; }
+
+.sc-brand {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+.sc-pool {
+    margin-top: 14px;
+    font-size: 52px;
+    font-weight: 800;
+    color: #FCD34D;
+}
+
+/* ── Variante "Mi participación" ── */
+
+.sc-me {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.sc-me-name {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.sc-me-sub {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+.sc-pos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sc-pos-num {
+    font-size: 200px;
+    font-weight: 800;
+    line-height: 1;
+    color: #FCD34D;
+}
+
+.sc-pos-of {
+    font-size: 40px;
+    font-weight: 700;
+    color: #94A3B8;
+}
+
+.sc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 28px;
+    width: 100%;
+}
+
+.sc-tile {
+    width: 430px;
+    padding: 44px 20px 38px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+.sc-tile-val {
+    font-size: 92px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.sc-tile-den {
+    font-size: 48px;
+    font-weight: 700;
+    color: #94A3B8;
+}
+
+.sc-tile-label {
+    margin-top: 14px;
+    font-size: 33px;
+    font-weight: 700;
+    color: #CBD5E1;
+}
+
+.sc-pick {
+    font-size: 44px;
+    font-weight: 800;
+    padding: 26px 60px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+.sc-pick-flag { font-size: 52px; }
+.sc-pick-hit { background: rgba(16, 185, 129, 0.18); border-color: rgba(110, 231, 183, 0.5); }
+.sc-pick-broken { background: rgba(239, 68, 68, 0.14); border-color: rgba(252, 165, 165, 0.4); }
+
+.sc-foot {
+    position: relative;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #64748B;
+}
+
+/* ── Variante "Podio de la sala" ── */
+
+.sc-champ {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.sc-champ-cup { font-size: 150px; line-height: 1; }
+
+.sc-champ-kicker {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+.sc-champ-name {
+    font-size: 96px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #FCD34D;
+}
+
+.sc-champ-pts {
+    font-size: 56px;
+    font-weight: 800;
+}
+
+.sc-champ-delta {
+    font-size: 36px;
+    font-weight: 700;
+    color: #6EE7B7;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 999px;
+    padding: 12px 44px;
+}
+
+.sc-runners {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    width: 100%;
+}
+
+.sc-runner {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 28px 44px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+.sc-runner-medal { font-size: 64px; }
+
+.sc-runner-name {
+    flex: 1;
+    text-align: left;
+    font-size: 52px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sc-runner-pts {
+    font-size: 44px;
+    font-weight: 800;
+    color: #FCD34D;
+}
+
+/* Avatares (locales, sin problema de CORS) */
+.sc-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    border: 6px solid rgba(255, 255, 255, 0.25);
+}
+
+.sc-champ .sc-avatar { border-color: #FCD34D; }
+
+.sc-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+}

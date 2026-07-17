@@ -546,6 +546,88 @@ else
         </section>
     }
 
+    @* ── RF5: Gráfica de evolución completa ──
+       Un solo SVG multi-línea con todos los jugadores (eje Y = posición
+       invertida, eje X = partidos con snapshot en orden de kickoff). El dibujo
+       de las líneas se dispara con el reveal de RF3 (.fs-visible en la tarjeta);
+       tocar la leyenda resalta esa línea y atenúa las demás. *@
+    @if (evolution is not null)
+    {
+        <section class="fs-section">
+            <div class="fs-sec-head fs-reveal">
+                <div class="fs-sec-kicker">Partido a partido</div>
+                <h2 class="fs-sec-title">La evolución de la tabla</h2>
+            </div>
+
+            <div class="fs-evo-card fs-reveal">
+                <div class="fs-evo-legend">
+                    @foreach (var (series, ci) in evolution.Players.Select((s, i) => (s, i)))
+                    {
+                        <button type="button"
+                                class="fs-evo-leg @(evoSelected == series.Member.UserId ? "fs-evo-leg-on" : "") @(evoSelected is not null && evoSelected != series.Member.UserId ? "fs-evo-leg-off" : "")"
+                                style="--evo-c: var(--q-viz-@(ci % 8 + 1))"
+                                @onclick="() => ToggleEvoSeries(series.Member.UserId)">
+                            <span class="fs-evo-chip"></span>
+                            @EvoAvatar(series.Member)
+                            <span class="fs-evo-leg-name">@series.Member.DisplayName</span>
+                            @if (series.IsChampion) { <span class="fs-evo-leg-cup">🏆</span> }
+                        </button>
+                    }
+                </div>
+
+                <div class="fs-evo-plot-row">
+                    <div class="fs-evo-yaxis" aria-hidden="true">
+                        <span>1°</span>
+                        <span>@(evolution.MemberCount)°</span>
+                    </div>
+                    <div class="fs-evo-chart">
+                        <svg class="fs-evo-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            @* Orden de pintado invertido: el campeón (primero de la
+                               lista) se pinta al final para que su línea quede encima
+                               en los tramos compartidos *@
+                            @foreach (var (series, ci) in evolution.Players.Select((s, i) => (s, i)).Reverse())
+                            {
+                                var pts = string.Join(" ", series.Points.Select(p =>
+                                    $"{EvoX(p.MatchIndex).ToString("0.##", CultureInfo.InvariantCulture)},{EvoY(p.Position).ToString("0.##", CultureInfo.InvariantCulture)}"));
+                                <polyline class="fs-evo-line @(series.IsChampion ? "fs-evo-line-champ" : "") @EvoDim(series.Member.UserId)"
+                                          points="@pts"
+                                          style="--evo-c: var(--q-viz-@(ci % 8 + 1))" />
+                            }
+                        </svg>
+                        @foreach (var (series, ci) in evolution.Players.Select((s, i) => (s, i)))
+                        {
+                            @* Marcadores solo en hitos (cambios de líder) + el último punto *@
+                            for (int i = 0; i < series.Points.Count; i++)
+                            {
+                                var p = series.Points[i];
+                                bool isLast = i == series.Points.Count - 1;
+                                if (!p.IsMilestone && !isLast) { continue; }
+                                var xPct = EvoX(p.MatchIndex).ToString("0.##", CultureInfo.InvariantCulture);
+                                var yPct = EvoY(p.Position).ToString("0.##", CultureInfo.InvariantCulture);
+                                <div class="fs-evo-pt @EvoDim(series.Member.UserId)"
+                                     style="left:@(xPct)%; top:@(yPct)%; --evo-c: var(--q-viz-@(ci % 8 + 1)); --evo-x: @xPct"
+                                     title="@p.MatchLabel — @(p.Position)°"></div>
+                                @if (isLast && series.IsChampion)
+                                {
+                                    <div class="fs-evo-cup @EvoDim(series.Member.UserId)"
+                                         style="left:@(xPct)%; top:@(yPct)%">🏆</div>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="fs-evo-xaxis" aria-hidden="true">
+                    <span>Partido 1</span>
+                    <span>Partido @evolution.MatchCount</span>
+                </div>
+                <div class="fs-evo-note">
+                    Los puntos marcan los cambios de líder · toca un nombre para resaltar su línea
+                </div>
+            </div>
+        </section>
+    }
+
     @* ── RF4: Tu participación en números ── *@
     @if (personal is not null)
     {
@@ -843,6 +925,8 @@ else
     private FinalSummaryService.Podium? podium;
     private FinalSummaryService.PoolStats? stats;
     private FinalSummaryService.PersonalStats? personal;
+    private FinalSummaryService.Evolution? evolution;
+    private int? evoSelected;
     private int statIdx;
     private bool revealsInit;
     private Phase phase = Phase.Loading;
@@ -889,6 +973,7 @@ else
             {
                 podium = await FinalSummaryService.GetPodiumAsync(PoolId);
                 stats = await FinalSummaryService.GetPoolStatsAsync(PoolId);
+                evolution = await FinalSummaryService.GetEvolutionAsync(PoolId);
                 personal = await FinalSummaryService.GetPersonalStatsAsync(PoolId, currentUserId);
             }
         }
@@ -1015,6 +1100,33 @@ else
 
     private async Task MarkSeenAsync()
         => await JS.InvokeVoidAsync("quiniela.setStoredList", SeenKey, new[] { "seen" });
+
+    // ── Helpers de la gráfica de evolución (RF5) ──
+    private void ToggleEvoSeries(int userId)
+        => evoSelected = evoSelected == userId ? null : userId;
+
+    private string EvoDim(int userId)
+        => evoSelected is int s ? (s == userId ? "fs-evo-hi" : "fs-evo-dim") : "";
+
+    private double EvoX(int matchIndex) => evolution!.MatchCount <= 1
+        ? 50
+        : matchIndex / (double)(evolution.MatchCount - 1) * 100;
+
+    private double EvoY(int position) => evolution!.MemberCount <= 1
+        ? 50
+        : (position - 1) / (double)(evolution.MemberCount - 1) * 100;
+
+    private static RenderFragment EvoAvatar(FinalSummaryService.MemberRef member) => __builder =>
+    {
+        if (!string.IsNullOrEmpty(member.ProfilePicturePath))
+        {
+            <img src="@member.ProfilePicturePath" class="fs-evo-avatar" alt="" />
+        }
+        else
+        {
+            <span class="fs-evo-avatar fs-evo-avatar-fallback">⚽</span>
+        }
+    };
 
     private void OpenBadge(Achievement badge, int medals)
     {

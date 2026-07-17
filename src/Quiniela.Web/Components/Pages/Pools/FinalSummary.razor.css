@@ -708,6 +708,211 @@
     margin-bottom: 18px;
 }
 
+/* ── RF5: Gráfica de evolución ─────────────────────────────────
+   Colores de serie: tokens globales --q-viz-1..8 (theme.css), asignados
+   por orden de tabla final vía --evo-c en línea. El dibujo de las líneas
+   (stroke-dasharray/offset) se dispara cuando el reveal de RF3 agrega
+   .fs-visible a la tarjeta. */
+.fs-evo-card {
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-lg);
+    box-shadow: var(--q-sh-sm);
+    padding: 1.15rem 1rem 0.9rem;
+}
+
+.fs-evo-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.fs-evo-leg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--q-border);
+    background: var(--q-surface-2);
+    color: var(--q-text);
+    border-radius: 999px;
+    padding: 3px 10px 3px 7px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fs-evo-leg-on {
+    border-color: var(--evo-c);
+    box-shadow: 0 0 0 1px var(--evo-c);
+}
+
+.fs-evo-leg-off { opacity: 0.4; }
+
+.fs-evo-chip {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--evo-c);
+    flex-shrink: 0;
+}
+
+.fs-evo-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.fs-evo-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    font-size: 0.7rem;
+}
+
+.fs-evo-leg-name {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fs-evo-leg-cup { font-size: 0.85rem; }
+
+.fs-evo-plot-row {
+    display: flex;
+    gap: 8px;
+}
+
+.fs-evo-yaxis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 20px;
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--q-muted);
+}
+
+.fs-evo-chart {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 230px;
+    margin: 4px 6px 4px 0;
+}
+
+/* Dibujo al entrar al viewport: un "wipe" izquierda→derecha con clip-path
+   sobre el SVG completo — todas las líneas avanzan juntas partido a partido
+   (el eje X es tiempo compartido). No se usa stroke-dasharray porque con
+   vector-effect: non-scaling-stroke los dashes se computan en píxeles de
+   pantalla y el trazo queda con huecos. El inset de -6px evita recortar
+   los remates redondeados en los bordes del viewBox. */
+.fs-evo-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    clip-path: inset(-6px 100% -6px -6px);
+}
+
+.fs-reveal.fs-visible .fs-evo-svg {
+    animation: fsEvoWipe 1.5s linear 0.2s forwards;
+}
+
+.fs-evo-line {
+    fill: none;
+    stroke: var(--evo-c);
+    stroke-width: 2;
+    /* El viewBox 100×100 se estira al tamaño del contenedor: sin esto el
+       grosor del trazo se deforma (líneas de ~15px en desktop) */
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: opacity 0.25s ease;
+}
+
+.fs-evo-line-champ { stroke-width: 3.5; }
+
+/* Marcadores: solo hitos (cambios de líder) + último punto de cada línea.
+   Cada uno aparece cuando el frente del wipe pasa por su X (--evo-x en %).
+   fill backwards: invisibles durante el delay, y al terminar la animación
+   vuelve a mandar el cascade (para que .fs-evo-dim siga funcionando). */
+.fs-evo-pt {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: var(--evo-c);
+    box-shadow: 0 0 0 2px var(--q-surface);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.fs-reveal.fs-visible .fs-evo-pt {
+    animation: fsEvoPtIn 0.3s ease backwards;
+    animation-delay: calc(0.2s + var(--evo-x, 100) * 15ms);
+}
+
+.fs-evo-cup {
+    position: absolute;
+    font-size: 1.15rem;
+    line-height: 1;
+    transform: translate(-50%, -58%);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.fs-reveal.fs-visible .fs-evo-cup {
+    animation: fsEvoCupIn 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+    animation-delay: 1.8s;
+}
+
+/* Leyenda interactiva: la línea tocada se resalta, las demás se atenúan */
+.fs-evo-dim { opacity: 0.15; }
+.fs-evo-line.fs-evo-hi { stroke-width: 3.5; }
+.fs-evo-line-champ.fs-evo-hi { stroke-width: 4.2; }
+.fs-evo-pt.fs-evo-hi { transform: scale(1.3); }
+
+.fs-evo-xaxis {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 6px 0 28px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--q-muted);
+}
+
+.fs-evo-note {
+    margin-top: 0.55rem;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--q-muted);
+}
+
+@keyframes fsEvoWipe {
+    to { clip-path: inset(-6px -6px -6px -6px); }
+}
+
+@keyframes fsEvoPtIn {
+    from { opacity: 0; transform: scale(0.2); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fsEvoCupIn {
+    from { opacity: 0; transform: translate(-50%, -58%) scale(0.2); }
+    to   { opacity: 1; transform: translate(-50%, -58%) scale(1); }
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .fs-footer {
     display: flex;
@@ -765,6 +970,14 @@
         transition: none;
     }
 
+    /* Gráfica de evolución: líneas ya dibujadas, sin animación de entrada */
+    .fs-evo-svg {
+        clip-path: none;
+        animation: none !important;
+    }
+
+    .fs-evo-pt, .fs-evo-cup { animation: none !important; }
+
     .fs-hero::before {
         content: "";
         position: absolute;
@@ -816,6 +1029,9 @@
     /* En horizontal, la grilla de insignias de cada tarjeta vuelve a 2 col
        (la tarjeta es angosta, 4 columnas quedan ilegibles) */
     .fs-vit-on .fs-ach-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .fs-evo-chart { height: 300px; }
+    .fs-evo-card { padding: 1.4rem 1.5rem 1.1rem; }
 
     .fs-sheet-overlay, .fs-sheet-panel { left: 250px; }
 }

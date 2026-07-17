@@ -762,6 +762,70 @@ public class FinalSummaryService(
         };
     }
 
+    // ── RF5: gráfica de evolución completa ─────────────────────────────────
+    // Un solo chart multi-línea con todos los jugadores (a diferencia del
+    // Módulo I, un mini-gráfico por jugador). Reusa GetPositionHistoryAsync
+    // tal cual; el eje X (partidos finalizados con snapshot, orden KickoffUtc)
+    // es compartido por todas las líneas. Los "hitos" con marcador de punto
+    // son los partidos donde cambió el líder de la tabla.
+
+    public record EvolutionPoint(int MatchIndex, int Position, string MatchLabel,
+                                 DateTime KickoffUtc, bool IsMilestone);
+    public record EvolutionSeries(MemberRef Member, bool IsChampion, List<EvolutionPoint> Points);
+    public record Evolution(List<EvolutionSeries> Players, int MemberCount, int MatchCount);
+
+    /// <summary>
+    /// Series de posición por jugador para la gráfica de evolución, en orden de
+    /// tabla final (el 1° primero — ese es el campeón). Null si aún no hay
+    /// historial suficiente (menos de 2 partidos con snapshot).
+    /// </summary>
+    public async Task<Evolution?> GetEvolutionAsync(int poolId)
+    {
+        var history = await standingsService.GetPositionHistoryAsync(poolId);
+        if (history.Count == 0) return null;
+
+        // Eje X global: unión de partidos con snapshot, orden cronológico
+        var indexByMatch = history.Values
+            .SelectMany(s => s)
+            .GroupBy(p => p.MatchId)
+            .Select(g => (MatchId: g.Key, g.First().KickoffUtc))
+            .OrderBy(x => x.KickoffUtc)
+            .Select((x, i) => (x.MatchId, Index: i))
+            .ToDictionary(x => x.MatchId, x => x.Index);
+        if (indexByMatch.Count < 2) return null;
+
+        // Hitos: partidos donde el conjunto de líderes cambió (misma lógica que #14)
+        var leadersByMatch = history
+            .SelectMany(kv => kv.Value.Select(p => (p.MatchId, p.KickoffUtc, UserId: kv.Key, p.Position)))
+            .GroupBy(x => x.MatchId)
+            .Select(g => (g.First().KickoffUtc, MatchId: g.Key,
+                          Leaders: g.Where(x => x.Position == 1)
+                                    .Select(x => x.UserId).OrderBy(x => x).ToList()))
+            .OrderBy(x => x.KickoffUtc)
+            .ToList();
+        var milestoneMatchIds = new HashSet<int>();
+        for (int i = 1; i < leadersByMatch.Count; i++)
+            if (!leadersByMatch[i].Leaders.SequenceEqual(leadersByMatch[i - 1].Leaders))
+                milestoneMatchIds.Add(leadersByMatch[i].MatchId);
+
+        var standings = await standingsService.GetStandingsAsync(poolId);
+        var players = standings
+            .Select((e, i) => (Entry: e, IsChampion: i == 0))
+            .Where(x => history.ContainsKey(x.Entry.UserId))
+            .Select(x => new EvolutionSeries(
+                new MemberRef(x.Entry.UserId, x.Entry.DisplayName, x.Entry.ProfilePicturePath),
+                x.IsChampion,
+                history[x.Entry.UserId]
+                    .Select(p => new EvolutionPoint(
+                        indexByMatch[p.MatchId], p.Position, p.MatchLabel, p.KickoffUtc,
+                        // el marcador va en la línea del jugador que tomó/compartía el 1°
+                        milestoneMatchIds.Contains(p.MatchId) && p.Position == 1))
+                    .ToList()))
+            .ToList();
+
+        return players.Count == 0 ? null : new Evolution(players, standings.Count, indexByMatch.Count);
+    }
+
     // ── RF4: "Tu participación en números" ─────────────────────────────────
     // Stats personales del usuario actual (las 10 por defecto del doc 13 +
     // las opcionales marcadas). Reusa PlayerStatsService para lo ya existente;

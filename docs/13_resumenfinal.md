@@ -1,7 +1,7 @@
 # 13 — Resumen final del torneo 🎉
 
 **Fecha:** 2026-07-16
-**Estado:** 🚧 En implementación — RF1, RF2 y RF3 completados (2026-07-16). Pendiente: RF4–RF8 y confirmar preguntas abiertas.
+**Estado:** 🚧 En implementación — RF1, RF2, RF3 y RF4 completados (2026-07-16). Pendiente: RF5–RF8 y confirmar preguntas abiertas.
 **Contexto:** Página post-Final por sala (`/pools/{poolId}/final-summary`), el "cierre" del proyecto. Se desbloquea para todos cuando el partido de la Final queda Finalizado; antes de eso solo el admin puede verla (vista previa). Muestra: campeón de la quiniela con podio grande y reveal ceremonial, vitrina definitiva de insignias, stats curiosas de la sala, "Tu participación en números", gráfica de evolución completa, e imagen descargable para compartir en redes. Queda como recuerdo permanente.
 
 ---
@@ -48,7 +48,7 @@ public async Task<bool> IsUnlockedAsync()
 | RF1 | `FinalSummaryService` + gate de visibilidad + botón en Pool Detail | — | ✅ Completado (2026-07-16) |
 | RF2 | Página base + hero con reveal ceremonial + fondo de confeti/fuegos | RF1 | ✅ Completado (2026-07-16) |
 | RF3 | Secciones con scroll-animations: podio, stats de sala, vitrina de insignias | RF1, RF2 | ✅ Completado (2026-07-16) |
-| RF4 | "Tu participación en números" | RF1 | ⏳ Pendiente |
+| RF4 | "Tu participación en números" | RF1 | ✅ Completado (2026-07-16) |
 | RF5 | Gráfica de evolución completa (multi-línea, todos los jugadores) | RF1 | ⏳ Pendiente |
 | RF6 | Notificación **N13** al capturar la Final | RF1 | ⏳ Pendiente |
 | RF7 | Imagen compartible 9:16 (2 variantes) + descarga/compartir | RF3, RF4 | ⏳ Pendiente |
@@ -79,6 +79,19 @@ public async Task<bool> IsUnlockedAsync()
 - [x] **Vitrina definitiva:** reusa el grid de `Achievements/Index.razor` en modo vitrina (tarjeta por jugador, 19 insignias, medallas 🏅) — idealmente extrayendo el grid a un componente compartido si el markup lo permite sin fricción; si no, se replica el CSS con clases `fs-*`. *(Se replicó el CSS con clases `fs-ach-*` — el scoped CSS de Blazor no permite compartir las clases `ach-*` entre componentes sin extraer también el markup + sheet de detalle, fricción que el doc pedía evitar. Solo insignias obtenidas, con conteo N/19 y medallas 🏅.)*
 - [x] Dark mode: tokens `--q-*` en todo; hero navy invariante.
 
+### Ajuste RF3 (2026-07-16) — Vitrina con recorrido horizontal + detalle de insignia
+
+Dos mejoras a la vitrina pedidas tras ver RF3/RF4 en acción:
+
+1. **Recorrido horizontal scroll-driven.** Al llegar a "Vitrina de insignias", seguir bajando desplaza las vitrinas de los jugadores en **horizontal**; al terminar el recorrido, el scroll vertical continúa hacia "Tu participación en números". Sin scroll-jacking:
+   - La sección (`.fs-vit-section`) recibe de JS un alto = alto del contenedor sticky + el ancho horizontal faltante del track. Dentro, `.fs-vit-sticky` queda pegado mientras `quiniela.vitrina.init/destroy` (en `quiniela.js`) traduce el avance del scroll a `translate3d(-y)` del track (mapeo 1:1 px, rAF-throttled; re-mide con `resize` + `ResizeObserver`). Al agotarse el recorrido el sticky se despega solo y la página sigue en vertical — el scroll nunca se secuestra.
+   - **Alto del sticky:** en mobile mide lo de su contenido y se pina arriba (`top: 0`) — con 100dvh quedaban bandas vacías enormes arriba/abajo (feedback 2026-07-16); la siguiente sección se asoma abajo y se acerca conforme avanza el recorrido. En desktop sí ocupa el viewport (`calc(100dvh - 3.5rem)`, debajo del top-row sticky) con el contenido centrado. En vista previa, el banner sticky del admin taparía el título al pinarse: se despeja con `.fs-preview-banner ~ .fs-vit-section .fs-vit-sticky { top: 3.8rem }` (3.5rem en desktop, donde el banner de 1 línea cabe en el hueco del top-row).
+   - En desktop la grilla interna de cada tarjeta vuelve a 2 columnas (la tarjeta es angosta en modo carrusel); tarjetas muy llenas scrollean por dentro (`max-height: calc(100dvh - 170px)` + `overflow-y: auto`, **sin** `overscroll-behavior: contain` — bloqueaba el encadenado de la rueda hacia el scroll de página cuando el cursor quedaba sobre una tarjeta).
+   - Fallbacks: con `prefers-reduced-motion`, sin JS, o si el gate deja la sección sin renderizar, queda la pila vertical original (la clase `fs-vit-on` solo la agrega JS). Si todo cabe a lo ancho (pocas tarjetas en desktop) no hay recorrido y el hint "Sigue bajando — la vitrina avanza en horizontal ⟶" se oculta (`fs-vit-noscroll`).
+2. **Detalle de insignia al tocar.** Las celdas de la vitrina ahora abren el mismo bottom-sheet de Logros (icono, nombre, descripción del criterio, medallas 🏅) — markup/estado replicado de `Achievements/Index.razor` con clases `fs-sheet-*` (mismo motivo de scoped CSS que las `fs-ach-*`), incluidos el overlay con blur, offset de sidebar en desktop y cierre por overlay o botón.
+
+*Verificado con Playwright (2026-07-16), admin/sala 1, mobile 390 dark y desktop 1280 light: track recorre exactamente su `extra` (0 → −340px en 390px), RF4 aparece al agotar el recorrido, el sheet abre con la descripción correcta del catálogo y cierra, y con 2 jugadores en desktop (sin recorrido) el hint queda oculto y el layout cae al modo estático.*
+
 ## RF4 — "Tu participación en números"
 
 Sección personal (datos del usuario actual). Ver lista completa en "Catálogo — personal"; propuesta de las **10 por defecto** (las demás opcionales):
@@ -94,7 +107,7 @@ Sección personal (datos del usuario actual). Ver lista completa en "Catálogo �
 9. Tu equipo talismán (más puntos te dio) y tu equipo maldito (más te falló)
 10. Tu mejor posición y tu peor posición en el torneo (+ días como líder, si aplica)
 
-- [ ] Todas calculables con `Predictions`/`PredictionHistories`/`StandingsSnapshots`/`ChampionPredictions` — reusa `PlayerStatsService` para lo ya existente y agrega el resto en `FinalSummaryService`.
+- [x] Todas calculables con `Predictions`/`PredictionHistories`/`StandingsSnapshots`/`ChampionPredictions` — reusa `PlayerStatsService` para lo ya existente y agrega el resto en `FinalSummaryService`. *(Implementado en `FinalSummaryService.GetPersonalStatsAsync(poolId, userId)`: las 10 por defecto + las 8 opcionales marcadas del catálogo personal, en 13 tarjetas (algunas agrupan 2 stats: mejor/peor día, talismán/maldición, paso por la tabla + días líder/podio, grupos vs KO, primer pronóstico + hora habitual). Sección insertada entre la vitrina y el footer, con las mismas clases `fs-stat-card`/`fs-reveal`/count-up de RF3. Posición tie-aware (`ComputePositions`, consistente con el hero); promedio de la sala calculado solo sobre partidos finalizados; tarjetas de lobo solitario/penales/pick de campeón se ocultan si no aplican. Los "días como líder / en podio" se cuentan por posición al cierre de cada día local CDMX con snapshot.)*
 
 ## RF5 — Gráfica de evolución completa
 
@@ -233,7 +246,8 @@ Ordenadas por relación valor/esfuerzo:
 - [x] Todas las secciones hacen reveal al scroll (IntersectionObserver + CSS), números con count-up, gráfica se dibuja al entrar al viewport. Sin librerías de scroll/animación (solo canvas-confetti y html2canvas, ambas self-hosted). *(Verificado con Playwright 2026-07-16: 27 reveals, 0 visibles fuera de viewport antes del scroll y 27/27 tras el scroll, 13 count-ups llegando a su valor exacto, `prefers-reduced-motion` muestra todo sin animar. La parte de "gráfica se dibuja al entrar al viewport" queda pendiente hasta RF5 — la sección de gráfica aún no existe.)*
 - [ ] Gráfica de evolución: todos los jugadores en un solo chart, leyenda interactiva, línea del campeón destacada.
 - [x] Vitrina: 19 insignias + medallas por jugador, mismo tratamiento visual que Achievements. *(Verificado en navegador real 2026-07-16: tarjeta por jugador ordenada por insignias, celdas con color por categoría, filas de medallas 🏅, conteo N/19, dark/light OK.)*
-- [ ] "Tu participación en números" muestra las stats personales acordadas, correctas contra la BD.
+- [x] Vitrina — recorrido horizontal: el scroll vertical desplaza las vitrinas en horizontal mientras la sección está pineada y continúa en vertical al terminar; tocar una insignia abre el sheet con su descripción. Fallback vertical con `prefers-reduced-motion` o si todo cabe a lo ancho. *(Verificado con Playwright 2026-07-16 en mobile 390 dark y desktop 1280 light — ver "Ajuste RF3".)*
+- [x] "Tu participación en números" muestra las stats personales acordadas, correctas contra la BD. *(Verificado en navegador real con Playwright 2026-07-16: 13 tarjetas renderizadas, 14/14 reveals al scroll, 7 count-ups llegando a su valor exacto, 0 errores de consola, light 1280px y dark 390px sin overflow. Cifras cotejadas contra la BD dev con SQL directo: puntos 20 = 18 resultado + 2 instancia + 0 campeón ✓, aciertos 6/13 vs promedio de sala 40% (10/25) ✓, 13 de 95 partidos pronosticados ✓, grupos 9 pts vs KO 11 pts ✓, 0 cambios de pronóstico ✓, primer pronóstico 9-jul 10:01 a.m. CDMX ✓. El gate no-admin sigue intacto.)*
 - [ ] Descargar imagen: ambas variantes generan PNG 1080×1920 legible (banderas emoji, avatar, sin elementos cortados); en móvil `navigator.share` abre el share sheet con la imagen; en desktop descarga directa.
 - [ ] Corrección posterior del marcador de la Final: la página se auto-corrige (on-demand), sin re-notificación N13.
 - [ ] Dark/light mode OK en toda la página; mobile 390px y desktop 1280px OK; 0 errores de consola.

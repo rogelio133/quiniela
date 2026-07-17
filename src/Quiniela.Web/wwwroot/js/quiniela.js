@@ -132,6 +132,76 @@ window.quiniela = {
         try { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
         catch { return false; }
     },
+    // Vitrina de insignias (Resumen final): mientras la sección está en
+    // pantalla, el scroll vertical desplaza las tarjetas en horizontal.
+    // Técnica: la sección se estira (alto = alto del sticky + recorrido
+    // horizontal faltante), un contenedor sticky queda fijo y el track se
+    // traslada en X según el avance del scroll — al agotar el recorrido el
+    // sticky se despega y la página sigue en vertical, sin scroll-jacking.
+    // Con prefers-reduced-motion no se activa (queda la pila vertical).
+    vitrina: {
+        _s: null,
+        init: (section) => {
+            const q = window.quiniela;
+            q.vitrina.destroy();
+            // Un ElementReference sin capturar llega como objeto plano
+            // ({__internalId: null}), truthy pero sin métodos de DOM.
+            if (!(section instanceof Element) || q.prefersReducedMotion()) return;
+            const sticky = section.querySelector('.fs-vit-sticky');
+            const track = section.querySelector('.fs-vit-track');
+            if (!sticky || !track) return;
+
+            section.classList.add('fs-vit-on');
+            const s = { section, sticky, track, extra: 0, top: 0, raf: 0 };
+
+            const update = () => {
+                if (s.extra <= 0) return;
+                const gone = s.top - section.getBoundingClientRect().top;
+                const y = Math.min(Math.max(gone, 0), s.extra);
+                track.style.transform = `translate3d(${-y}px,0,0)`;
+            };
+            const measure = () => {
+                s.top = parseFloat(getComputedStyle(sticky).top) || 0;
+                s.extra = Math.max(0, track.scrollWidth - track.clientWidth);
+                // Sin recorrido (todo cabe a lo ancho) el hint de "avanza en
+                // horizontal" mentiría — ocultarlo vía clase.
+                section.classList.toggle('fs-vit-noscroll', s.extra <= 0);
+                if (s.extra > 0) {
+                    section.style.height = (sticky.offsetHeight + s.extra) + 'px';
+                } else {
+                    // Todo cabe a lo ancho: sin recorrido, la sección mide lo del sticky.
+                    section.style.height = '';
+                    track.style.transform = '';
+                }
+                update();
+            };
+            s.onScroll = () => {
+                if (s.raf) return;
+                s.raf = requestAnimationFrame(() => { s.raf = 0; update(); });
+            };
+            s.measure = measure;
+            window.addEventListener('scroll', s.onScroll, { passive: true });
+            window.addEventListener('resize', s.measure);
+            if ('ResizeObserver' in window) {
+                s.ro = new ResizeObserver(() => measure());
+                s.ro.observe(track);
+            }
+            q.vitrina._s = s;
+            measure();
+        },
+        destroy: () => {
+            const s = window.quiniela.vitrina._s;
+            if (!s) return;
+            window.removeEventListener('scroll', s.onScroll);
+            window.removeEventListener('resize', s.measure);
+            if (s.ro) s.ro.disconnect();
+            if (s.raf) cancelAnimationFrame(s.raf);
+            s.section.classList.remove('fs-vit-on', 'fs-vit-noscroll');
+            s.section.style.height = '';
+            s.track.style.transform = '';
+            window.quiniela.vitrina._s = null;
+        }
+    },
     // Confeti/fuegos del Resumen final (canvas-confetti self-hosted, global `confetti`)
     finalCeremony: {
         _rain: null,
@@ -155,7 +225,9 @@ window.quiniela = {
         startRain: (canvas) => {
             const fc = window.quiniela.finalCeremony;
             fc.stopRain();
-            if (typeof confetti !== 'function' || !canvas) return;
+            // canvas debe ser un elemento real: un ElementReference sin capturar
+            // llega como objeto plano truthy y confetti truena en cada frame.
+            if (typeof confetti !== 'function' || !(canvas instanceof HTMLCanvasElement)) return;
             if (window.quiniela.prefersReducedMotion()) return;
             const inst = confetti.create(canvas, { resize: true });
             let last = 0, raf = 0;
@@ -163,11 +235,15 @@ window.quiniela = {
                 raf = requestAnimationFrame(loop);
                 if (document.hidden || now - last < 350) return;
                 last = now;
-                inst({
-                    particleCount: 2, startVelocity: 4, gravity: 0.4, spread: 70,
-                    ticks: 350, scalar: 0.8, drift: Math.random() - 0.5,
-                    origin: { x: Math.random(), y: -0.1 }
-                });
+                try {
+                    inst({
+                        particleCount: 2, startVelocity: 4, gravity: 0.4, spread: 70,
+                        ticks: 350, scalar: 0.8, drift: Math.random() - 0.5,
+                        origin: { x: Math.random(), y: -0.1 }
+                    });
+                } catch {
+                    cancelAnimationFrame(raf); // canvas inservible: cortar el loop, no spamear
+                }
             };
             raf = requestAnimationFrame(loop);
             fc._rain = { stop: () => { cancelAnimationFrame(raf); inst.reset(); } };

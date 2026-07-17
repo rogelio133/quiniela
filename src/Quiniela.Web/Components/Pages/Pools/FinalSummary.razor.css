@@ -1018,6 +1018,86 @@
     to   { opacity: 1; transform: translate(-50%, -58%) scale(1); }
 }
 
+/* ── X2: Rewind de la tabla ────────────────────────────────────
+   "▶ Revivir el torneo" re-dispara el wipe de RF5 con duración larga.
+   El restart lo da el cambio de animation-name (fsEvoWipe → *Replay):
+   al entrar fs-evo-replay se descarta la animación base (el clip-path
+   vuelve al estado oculto) y la réplica arranca de cero. fs-evo-done
+   fija la gráfica completa al terminar: sin ella, quitar la clase de
+   replay re-dispararía el wipe corto del reveal. */
+.fs-evo-replay-row {
+    margin-top: 0.7rem;
+    text-align: center;
+}
+
+/* Al cambiar el estado del replay, el diff de Blazor reescribe el atributo
+   class de la tarjeta y se lleva el .fs-visible que observeReveals había
+   agregado por JS (y no vuelve: el observer hace unobserve al primer
+   disparo). Estas clases reponen el estado "revelado" por sí mismas. */
+.fs-reveal.fs-evo-replay,
+.fs-reveal.fs-evo-done {
+    opacity: 1;
+    transform: none;
+}
+
+.fs-evo-replay-btn {
+    border: 1px solid var(--q-border);
+    background: var(--q-surface-2);
+    color: var(--q-text);
+    border-radius: 999px;
+    padding: 0.45rem 1.2rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fs-evo-replay-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--q-sh-sm);
+}
+
+.fs-evo-card.fs-evo-replay .fs-evo-svg {
+    animation: fsEvoWipeReplay 10s linear 0.2s forwards;
+}
+
+/* Mismo reparto que el reveal (15ms por %) escalado al wipe de 10s */
+.fs-evo-card.fs-evo-replay .fs-evo-pt {
+    animation: fsEvoPtInReplay 0.3s ease backwards;
+    animation-delay: calc(0.2s + var(--evo-x, 100) * 100ms);
+}
+
+.fs-evo-card.fs-evo-replay .fs-evo-cup {
+    animation: fsEvoCupInReplay 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+    animation-delay: 10.4s;
+}
+
+.fs-evo-card.fs-evo-done .fs-evo-svg {
+    animation: none;
+    clip-path: none;
+}
+
+.fs-evo-card.fs-evo-done .fs-evo-pt,
+.fs-evo-card.fs-evo-done .fs-evo-cup {
+    animation: none;
+}
+
+/* Duplicados exactos de fsEvoWipe/fsEvoPtIn/fsEvoCupIn: reusar el mismo
+   nombre no re-dispara la animación ya completada, cambiar el nombre sí */
+@keyframes fsEvoWipeReplay {
+    from { clip-path: inset(-6px 100% -6px -6px); }
+    to   { clip-path: inset(-6px -6px -6px -6px); }
+}
+
+@keyframes fsEvoPtInReplay {
+    from { opacity: 0; transform: scale(0.2); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fsEvoCupInReplay {
+    from { opacity: 0; transform: translate(-50%, -58%) scale(0.2); }
+    to   { opacity: 1; transform: translate(-50%, -58%) scale(1); }
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .fs-footer {
     display: flex;
@@ -1134,6 +1214,10 @@
     }
 
     .fs-evo-pt, .fs-evo-cup { animation: none !important; }
+
+    /* X2: sin animación de dibujo no hay nada que revivir (el markup también
+       lo omite vía reducedMotion; esto cubre el primer render pre-JS) */
+    .fs-evo-replay-row { display: none; }
 
     .fs-hero::before {
         content: "";

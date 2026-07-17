@@ -600,7 +600,7 @@ else
                 <h2 class="fs-sec-title">La evolución de la tabla</h2>
             </div>
 
-            <div class="fs-evo-card fs-reveal">
+            <div class="fs-evo-card fs-reveal @EvoReplayClass">
                 <div class="fs-evo-legend">
                     @foreach (var (series, ci) in evolution.Players.Select((s, i) => (s, i)))
                     {
@@ -665,6 +665,14 @@ else
                 <div class="fs-evo-note">
                     Los puntos marcan los cambios de líder · toca un nombre para resaltar su línea
                 </div>
+                @if (!reducedMotion)
+                {
+                    <div class="fs-evo-replay-row">
+                        <button type="button" class="fs-evo-replay-btn" @onclick="ToggleEvoReplayAsync">
+                            @(evoReplay == EvoReplayState.Playing ? "⏹ Detener" : "▶ Revivir el torneo")
+                        </button>
+                    </div>
+                }
             </div>
         </section>
     }
@@ -1192,6 +1200,41 @@ else
         ? 50
         : (position - 1) / (double)(evolution.MemberCount - 1) * 100;
 
+    // ── X2: Rewind de la tabla ──
+    // El replay es 100% CSS: fs-evo-replay re-dispara el wipe de RF5 con
+    // duración larga (el restart lo da el cambio de animation-name) y
+    // fs-evo-done deja la gráfica fija al terminar — sin ella, volver al
+    // estado base re-dispararía el wipe corto del reveal.
+    private enum EvoReplayState { Idle, Playing, Done }
+    private EvoReplayState evoReplay;
+    private CancellationTokenSource? evoReplayCts;
+
+    // Wipe de 10s + 0.2s de arranque + remate del 🏆 (10.4s + 0.45s) ≈ 10.9s
+    private const int EvoReplayMs = 11000;
+
+    private string EvoReplayClass => evoReplay switch
+    {
+        EvoReplayState.Playing => "fs-evo-replay",
+        EvoReplayState.Done => "fs-evo-done",
+        _ => "",
+    };
+
+    private async Task ToggleEvoReplayAsync()
+    {
+        if (evoReplay == EvoReplayState.Playing)
+        {
+            evoReplayCts?.Cancel();   // ⏹: salta directo al estado final
+            return;
+        }
+
+        evoReplay = EvoReplayState.Playing;
+        evoReplayCts?.Dispose();
+        evoReplayCts = new CancellationTokenSource();
+        try { await Task.Delay(EvoReplayMs, evoReplayCts.Token); }
+        catch (TaskCanceledException) { }
+        evoReplay = EvoReplayState.Done;
+    }
+
     private static RenderFragment EvoAvatar(FinalSummaryService.MemberRef member) => __builder =>
     {
         if (!string.IsNullOrEmpty(member.ProfilePicturePath))
@@ -1308,6 +1351,7 @@ else
     public async ValueTask DisposeAsync()
     {
         ceremonyCts?.Cancel();
+        evoReplayCts?.Cancel();
         try
         {
             await StopRainAsync();

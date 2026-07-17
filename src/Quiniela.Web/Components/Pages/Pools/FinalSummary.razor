@@ -655,6 +655,32 @@ else
                                 }
                             }
                         }
+                        @* X2: durante el replay, la foto de cada jugador recorre su
+                           línea. Keyframes por jugador generados inline: el eje X del
+                           wipe es tiempo lineal, así que cada stop (left/top en %)
+                           coincide con el frente del dibujo. Al terminar (o detener)
+                           el avatar se queda en su punto final vía left/top inline —
+                           quitar el animation-name corta la animación al instante y
+                           deja listo el restart del siguiente replay (none → nombre). *@
+                        @if (evoReplay != EvoReplayState.Idle)
+                        {
+                            @if (evoReplay == EvoReplayState.Playing)
+                            {
+                                <style>@((MarkupString)EvoRunnerKeyframes())</style>
+                            }
+                            @foreach (var (series, ci) in evolution.Players.Select((s, i) => (s, i)))
+                            {
+                                if (series.Points.Count == 0) { continue; }
+                                var last = series.Points[^1];
+                                var runStyle = evoReplay == EvoReplayState.Playing
+                                    ? $"animation-name: fsEvoRun{series.Member.UserId}"
+                                    : $"left:{EvoX(last.MatchIndex).ToString("0.##", CultureInfo.InvariantCulture)}%; top:{EvoY(last.Position).ToString("0.##", CultureInfo.InvariantCulture)}%";
+                                <div class="fs-evo-runner @EvoDim(series.Member.UserId)"
+                                     style="--evo-c: var(--q-viz-@(ci % 8 + 1)); @runStyle">
+                                    @EvoAvatar(series.Member)
+                                </div>
+                            }
+                        }
                     </div>
                 </div>
 
@@ -1233,6 +1259,34 @@ else
         try { await Task.Delay(EvoReplayMs, evoReplayCts.Token); }
         catch (TaskCanceledException) { }
         evoReplay = EvoReplayState.Done;
+    }
+
+    // Un @keyframes por jugador con un stop por partido: el wipe avanza lineal
+    // en X (= tiempo), así que left/top interpolados entre stops siguen
+    // exactamente el punto donde su línea se está dibujando.
+    private string EvoRunnerKeyframes()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var series in evolution!.Players)
+        {
+            if (series.Points.Count == 0) { continue; }
+
+            sb.Append("@keyframes fsEvoRun").Append(series.Member.UserId).Append('{');
+            void Stop(double pct, double x, double y) => sb
+                .Append(pct.ToString("0.##", CultureInfo.InvariantCulture)).Append("%{left:")
+                .Append(x.ToString("0.##", CultureInfo.InvariantCulture)).Append("%;top:")
+                .Append(y.ToString("0.##", CultureInfo.InvariantCulture)).Append("%}");
+
+            var first = series.Points[0];
+            var last = series.Points[^1];
+            // Si la serie no arranca en el partido 1 (o no llega al último), el
+            // avatar espera quieto en su primer/último punto
+            if (EvoX(first.MatchIndex) > 0) { Stop(0, EvoX(first.MatchIndex), EvoY(first.Position)); }
+            foreach (var p in series.Points) { Stop(EvoX(p.MatchIndex), EvoX(p.MatchIndex), EvoY(p.Position)); }
+            if (EvoX(last.MatchIndex) < 100) { Stop(100, EvoX(last.MatchIndex), EvoY(last.Position)); }
+            sb.Append('}');
+        }
+        return sb.ToString();
     }
 
     private static RenderFragment EvoAvatar(FinalSummaryService.MemberRef member) => __builder =>

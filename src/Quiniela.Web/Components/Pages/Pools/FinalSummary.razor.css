@@ -376,17 +376,31 @@
     text-align: left;
 }
 
+.fs-faith-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
 .fs-faith-team { font-weight: 700; color: var(--q-text); }
 
 .fs-faith-name {
-    flex: 1;
     color: var(--q-muted);
+    font-size: 0.92em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.fs-faith-mark { font-weight: 700; color: var(--q-muted); white-space: nowrap; }
+.fs-faith-mark {
+    font-weight: 700;
+    color: var(--q-muted);
+    white-space: nowrap;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+}
 
 .fs-faith-hit {
     border-color: var(--q-gold);
@@ -518,6 +532,17 @@
     border: 2px solid var(--q-border);
     border-radius: var(--q-r-sm);
     background: var(--q-surface);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.fs-ach-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--q-sh-sm);
+}
+
+.fs-ach-cell:active {
+    transform: scale(0.97);
 }
 
 .fs-ach-cell-icon {
@@ -556,6 +581,133 @@
     background: linear-gradient(180deg, rgba(100, 116, 139, 0.10), var(--q-surface) 65%);
 }
 
+/* ── Vitrina en modo horizontal (scroll-driven) ────────────────
+   quiniela.vitrina.init agrega .fs-vit-on a la sección y le fija un alto
+   igual al alto del sticky + el recorrido horizontal faltante del track;
+   el sticky queda pegado mientras el scroll vertical traslada el track en X.
+   Sin .fs-vit-on (reduced-motion, sin JS o todo cabe) aplica el layout
+   vertical de .fs-vitrina de siempre. */
+.fs-vit-hint {
+    display: none;
+    margin-top: 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--q-muted);
+}
+
+.fs-vit-on .fs-vit-hint { display: block; }
+.fs-vit-on.fs-vit-noscroll .fs-vit-hint { visibility: hidden; }
+
+/* En mobile el sticky mide lo que su contenido (pegado arriba) para no dejar
+   bandas vacías; en desktop (media query abajo) ocupa el viewport y centra. */
+.fs-vit-on .fs-vit-sticky {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0.75rem 0 1rem;
+}
+
+/* En vista previa (admin) el banner sticky taparía el título al pinarse:
+   despejar su alto (2 líneas en mobile) */
+.fs-preview-banner ~ .fs-vit-section .fs-vit-sticky { top: 3.8rem; }
+
+.fs-vit-on .fs-sec-head { flex: 0 0 auto; }
+
+.fs-vit-on .fs-vit-track {
+    flex: 0 1 auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: stretch;
+    will-change: transform;
+}
+
+.fs-vit-on .fs-ach-card {
+    flex: 0 0 auto;
+    width: min(86vw, 420px);
+    /* Tarjetas muy llenas scrollean por dentro (el tope deja aire para el
+       header de la sección); sin overscroll-behavior para que la rueda siga
+       encadenando al scroll de la página (que mueve el track). */
+    max-height: calc(100vh - 170px);
+    max-height: calc(100dvh - 170px);
+    overflow-y: auto;
+}
+
+/* ── Sheet de detalle de insignia (mismo trato que en Logros,
+      clases fs-* por el aislamiento de scoped CSS) ── */
+.fs-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1050;
+    animation: fsFadeIn 0.2s ease;
+}
+
+.fs-sheet-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--q-navy);
+    border-radius: 24px 24px 0 0;
+    z-index: 1051;
+    animation: fsSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
+}
+
+.fs-sheet-handle {
+    width: 44px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+    margin: 14px auto 18px;
+}
+
+.fs-sheet-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.fs-sheet-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.fs-sheet-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.fs-sheet-desc {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.fs-sheet-medals {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    margin-top: 4px;
+}
+
+.fs-sheet-close {
+    width: 100%;
+    margin-bottom: 18px;
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .fs-footer {
     display: flex;
@@ -588,6 +740,16 @@
 @keyframes fsPulse {
     0%, 100% { opacity: 0.45; }
     50%      { opacity: 1; }
+}
+
+@keyframes fsFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fsSheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
 }
 
 /* ── prefers-reduced-motion: sin ceremonia ni confeti animado ─
@@ -637,4 +799,23 @@
     .fs-stat-main { font-size: 1.65rem; }
     .fs-totals-grid { grid-template-columns: repeat(3, 1fr); }
     .fs-ach-grid { grid-template-columns: repeat(4, 1fr); }
+
+    /* El top-row es sticky (3.5rem) en desktop: la vitrina se pega debajo,
+       ocupa el viewport y centra su contenido */
+    .fs-vit-on .fs-vit-sticky {
+        top: 3.5rem;
+        height: calc(100vh - 3.5rem);
+        height: calc(100dvh - 3.5rem);
+        justify-content: center;
+    }
+
+    /* El banner de vista previa (1 línea en desktop) cabe en el hueco del
+       top-row: basta el mismo top */
+    .fs-preview-banner ~ .fs-vit-section .fs-vit-sticky { top: 3.5rem; }
+
+    /* En horizontal, la grilla de insignias de cada tarjeta vuelve a 2 col
+       (la tarjeta es angosta, 4 columnas quedan ilegibles) */
+    .fs-vit-on .fs-ach-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .fs-sheet-overlay, .fs-sheet-panel { left: 250px; }
 }

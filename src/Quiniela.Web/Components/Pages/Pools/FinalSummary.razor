@@ -449,8 +449,10 @@ else
                             {
                                 <div class="fs-faith-row @(row.Hit ? "fs-faith-hit" : row.Eliminated ? "fs-faith-broken" : "")">
                                     <span class="fi fi-@row.FlagCode fs-flag"></span>
-                                    <span class="fs-faith-team">@row.TeamName</span>
-                                    <span class="fs-faith-name">@row.Member.DisplayName</span>
+                                    <span class="fs-faith-info">
+                                        <span class="fs-faith-team">@row.TeamName</span>
+                                        <span class="fs-faith-name">@row.Member.DisplayName</span>
+                                    </span>
                                     <span class="fs-faith-mark">
                                         @if (row.Hit) { <span>👑 ¡Acertó!</span> }
                                         else if (row.Eliminated) { <span>💔 @(row.HeartbrokenOn is { } hb ? Day(hb) : "eliminado")</span> }
@@ -476,59 +478,70 @@ else
             </div>
         </section>
 
-        @* ── RF3: Vitrina definitiva de insignias ── *@
-        <section class="fs-section">
-            <div class="fs-sec-head fs-reveal">
-                <div class="fs-sec-kicker">Para la posteridad</div>
-                <h2 class="fs-sec-title">Vitrina de insignias</h2>
-            </div>
+        @* ── RF3: Vitrina definitiva de insignias ──
+           En pantallas con motion habilitado, quiniela.vitrina.init convierte
+           el scroll vertical en desplazamiento horizontal de las tarjetas
+           (sección alta + contenedor sticky); al terminar el recorrido, el
+           scroll vertical continúa. Sin JS o con reduced-motion queda la
+           pila vertical de siempre. *@
+        <section class="fs-section fs-vit-section" @ref="vitrinaSection">
+            <div class="fs-vit-sticky">
+                <div class="fs-sec-head fs-reveal">
+                    <div class="fs-sec-kicker">Para la posteridad</div>
+                    <h2 class="fs-sec-title">Vitrina de insignias</h2>
+                    <div class="fs-vit-hint">Sigue bajando — la vitrina avanza en horizontal ⟶</div>
+                </div>
 
-            <div class="fs-vitrina">
-                @{ int vi = 0; }
-                @foreach (var entry in stats.Showcase)
-                {
-                    var earnedBadges = entry.Badges.OrderBy(b => IndexInCatalog(b.Badge.Key)).ToList();
-                    int totalMedals = entry.Badges.Sum(b => b.Medals);
-                    <div class="fs-ach-card fs-reveal" style="--fs-i:@(vi++ % 2)" @key="entry.Member.UserId">
-                        <div class="fs-ach-header">
-                            @AvatarShowcase(entry.Member)
-                            <div class="fs-ach-name-block">
-                                <span class="fs-ach-name">
-                                    @entry.Member.DisplayName
-                                    @if (entry.Member.UserId == currentUserId)
-                                    {
-                                        <span class="badge bg-primary fs-ach-me">TÚ</span>
-                                    }
-                                </span>
-                                <span class="fs-ach-count">
-                                    @entry.Badges.Count / @AchievementCatalog.All.Count insignias@(totalMedals > 0 ? $" · {totalMedals} 🏅" : "")
-                                </span>
-                            </div>
-                        </div>
-                        @if (earnedBadges.Count == 0)
-                        {
-                            <p class="fs-ach-empty">Se fue en blanco… ni una insignia. 😅</p>
-                        }
-                        else
-                        {
-                            <div class="fs-ach-grid">
-                                @foreach (var earned in earnedBadges)
-                                {
-                                    <div class="fs-ach-cell fs-ach-cat-@earned.Badge.Category.ToString().ToLower()" @key="earned.Badge.Key">
-                                        <span class="fs-ach-cell-icon">@earned.Badge.Icon</span>
-                                        <span class="fs-ach-cell-name">@earned.Badge.Name</span>
-                                        @if (earned.Medals > 0)
+                <div class="fs-vitrina fs-vit-track">
+                    @{ int vi = 0; }
+                    @foreach (var entry in stats.Showcase)
+                    {
+                        var earnedBadges = entry.Badges.OrderBy(b => IndexInCatalog(b.Badge.Key)).ToList();
+                        int totalMedals = entry.Badges.Sum(b => b.Medals);
+                        <div class="fs-ach-card fs-reveal" style="--fs-i:@(vi++ % 2)" @key="entry.Member.UserId">
+                            <div class="fs-ach-header">
+                                @AvatarShowcase(entry.Member)
+                                <div class="fs-ach-name-block">
+                                    <span class="fs-ach-name">
+                                        @entry.Member.DisplayName
+                                        @if (entry.Member.UserId == currentUserId)
                                         {
-                                            <span class="fs-ach-cell-medals">
-                                                @for (int i = 0; i < earned.Medals; i++) { <span>🏅</span> }
-                                            </span>
+                                            <span class="badge bg-primary fs-ach-me">TÚ</span>
                                         }
-                                    </div>
-                                }
+                                    </span>
+                                    <span class="fs-ach-count">
+                                        @entry.Badges.Count / @AchievementCatalog.All.Count insignias@(totalMedals > 0 ? $" · {totalMedals} 🏅" : "")
+                                    </span>
+                                </div>
                             </div>
-                        }
-                    </div>
-                }
+                            @if (earnedBadges.Count == 0)
+                            {
+                                <p class="fs-ach-empty">Se fue en blanco… ni una insignia. 😅</p>
+                            }
+                            else
+                            {
+                                <div class="fs-ach-grid">
+                                    @foreach (var earned in earnedBadges)
+                                    {
+                                        <div class="fs-ach-cell fs-ach-cat-@earned.Badge.Category.ToString().ToLower()"
+                                             @key="earned.Badge.Key"
+                                             role="button"
+                                             @onclick="() => OpenBadge(earned.Badge, earned.Medals)">
+                                            <span class="fs-ach-cell-icon">@earned.Badge.Icon</span>
+                                            <span class="fs-ach-cell-name">@earned.Badge.Name</span>
+                                            @if (earned.Medals > 0)
+                                            {
+                                                <span class="fs-ach-cell-medals">
+                                                    @for (int i = 0; i < earned.Medals; i++) { <span>🏅</span> }
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
         </section>
     }
@@ -791,6 +804,28 @@ else
             <a href="/pools/@PoolId" class="btn btn-outline-secondary btn-sm">← Volver a la sala</a>
         </div>
     </footer>
+
+    @* ── Detalle de insignia (mismo bottom-sheet que la página de Logros) ── *@
+    @if (badgeSheetOpen && selectedBadge is not null)
+    {
+        <div class="fs-sheet-overlay" @onclick="CloseBadge">
+            <div class="fs-sheet-panel" @onclick:stopPropagation="true">
+                <div class="fs-sheet-handle"></div>
+                <div class="fs-sheet-body">
+                    <div class="fs-sheet-icon">@selectedBadge.Icon</div>
+                    <div class="fs-sheet-name">@selectedBadge.Name</div>
+                    <div class="fs-sheet-desc">@selectedBadge.Description</div>
+                    @if (selectedBadgeMedals > 0)
+                    {
+                        <div class="fs-sheet-medals">
+                            @for (int i = 0; i < selectedBadgeMedals; i++) { <span>🏅</span> }
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-light btn-sm fs-sheet-close" @onclick="CloseBadge">Cerrar</button>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -818,6 +853,12 @@ else
     private bool rainRunning;
     private CancellationTokenSource? ceremonyCts;
     private ElementReference rainCanvas;
+    private ElementReference vitrinaSection;
+
+    // Detalle de insignia (mismo comportamiento que en Logros)
+    private bool badgeSheetOpen;
+    private Achievement? selectedBadge;
+    private int selectedBadgeMedals;
 
     private FinalSummaryService.PodiumEntry? ChampionEntry => podium?.Top.ElementAtOrDefault(0);
     private FinalSummaryService.PodiumEntry? SecondEntry => podium?.Top.ElementAtOrDefault(1);
@@ -863,37 +904,52 @@ else
         // No se usa firstRender: el primer render ocurre con isLoading=true (podium
         // aún null, por el await de OnInitializedAsync) — se decide una sola vez
         // en cuanto los datos estén cargados y la página realmente se muestre.
-        if (!revealsInit && stats is not null)
-        {
-            // RF3: las secciones ya están en el DOM — activar los scroll-reveals.
-            revealsInit = true;
-            await JS.InvokeVoidAsync("quiniela.observeReveals");
-        }
+        // isLoading: podium/stats se asignan antes de isLoading=false; un render
+        // intermedio en esa ventana aún muestra el skeleton y los @ref (canvas,
+        // vitrina) no existen — pasarían a JS como ElementReference sin capturar.
+        if (isLoading) return;
 
-        if (startDecided || podium is null || ChampionEntry is null) return;
-        startDecided = true;
+        try
+        {
+            if (!revealsInit && stats is not null)
+            {
+                // RF3: las secciones ya están en el DOM — activar los scroll-reveals
+                // y el recorrido horizontal de la vitrina.
+                revealsInit = true;
+                await JS.InvokeVoidAsync("quiniela.observeReveals");
+                await JS.InvokeVoidAsync("quiniela.vitrina.init", vitrinaSection);
+            }
 
-        reducedMotion = await JS.InvokeAsync<bool>("quiniela.prefersReducedMotion");
-        var seenList = await JS.InvokeAsync<List<string>>("quiniela.getStoredList", SeenKey);
-        bool alreadySeen = seenList.Count > 0;
+            if (startDecided || podium is null || ChampionEntry is null) return;
+            startDecided = true;
 
-        if (reducedMotion)
-        {
-            // Sin ceremonia ni confeti animado: podio directo (confeti estático en CSS)
-            phase = Phase.Podium;
-            revealStep = 3;
-            StateHasChanged();
+            reducedMotion = await JS.InvokeAsync<bool>("quiniela.prefersReducedMotion");
+            var seenList = await JS.InvokeAsync<List<string>>("quiniela.getStoredList", SeenKey);
+            bool alreadySeen = seenList.Count > 0;
+
+            if (reducedMotion)
+            {
+                // Sin ceremonia ni confeti animado: podio directo (confeti estático en CSS)
+                phase = Phase.Podium;
+                revealStep = 3;
+                StateHasChanged();
+            }
+            else if (alreadySeen)
+            {
+                phase = Phase.Podium;
+                revealStep = 3;
+                StateHasChanged();
+                await StartRainAsync();
+            }
+            else
+            {
+                await RunCeremonyAsync();
+            }
         }
-        else if (alreadySeen)
+        catch (JSDisconnectedException)
         {
-            phase = Phase.Podium;
-            revealStep = 3;
-            StateHasChanged();
-            await StartRainAsync();
-        }
-        else
-        {
-            await RunCeremonyAsync();
+            // Navegó a otra página / cerró la pestaña a mitad del interop:
+            // sin esto la excepción tumba el circuito completo.
         }
     }
 
@@ -923,6 +979,7 @@ else
             await MarkSeenAsync();
         }
         catch (TaskCanceledException) { /* saltada o página desechada */ }
+        catch (JSDisconnectedException) { /* circuito desconectado a mitad de la ceremonia */ }
     }
 
     private async Task SkipCeremony()
@@ -942,7 +999,9 @@ else
 
     private async Task StartRainAsync()
     {
-        if (reducedMotion) return;
+        // Id null = el canvas no ha pasado por ningún render: la referencia
+        // llegaría a JS como objeto plano sin métodos de DOM.
+        if (reducedMotion || rainCanvas.Id is null) return;
         await JS.InvokeVoidAsync("quiniela.finalCeremony.startRain", rainCanvas);
         rainRunning = true;
     }
@@ -956,6 +1015,15 @@ else
 
     private async Task MarkSeenAsync()
         => await JS.InvokeVoidAsync("quiniela.setStoredList", SeenKey, new[] { "seen" });
+
+    private void OpenBadge(Achievement badge, int medals)
+    {
+        selectedBadge = badge;
+        selectedBadgeMedals = medals;
+        badgeSheetOpen = true;
+    }
+
+    private void CloseBadge() => badgeSheetOpen = false;
 
     // ── Helpers de formato para las tarjetas de stats (RF3) ──
     private static string Names(List<FinalSummaryService.MemberRef> members)
@@ -1014,7 +1082,11 @@ else
     public async ValueTask DisposeAsync()
     {
         ceremonyCts?.Cancel();
-        try { await StopRainAsync(); }
+        try
+        {
+            await StopRainAsync();
+            await JS.InvokeVoidAsync("quiniela.vitrina.destroy");
+        }
         catch { /* circuito ya cerrado */ }
     }
 }

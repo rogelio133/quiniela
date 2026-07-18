@@ -278,6 +278,15 @@
     margin: 0;
 }
 
+/* Los textos que viven directo sobre el fondo de la página cruzan el balón
+   fijo del layout al hacer scroll: halo del color del fondo para que sigan
+   legibles encima de la imagen (funciona en ambos temas vía --q-bg). */
+.fs-sec-kicker,
+.fs-sec-title,
+.fs-farewell {
+    text-shadow: 0 0 3px var(--q-bg), 0 0 6px var(--q-bg), 0 0 14px var(--q-bg), 0 0 24px var(--q-bg), 0 0 34px var(--q-bg);
+}
+
 /* ── Tarjetas de stats ─────────────────────────────────────── */
 .fs-stats-grid {
     display: grid;
@@ -354,6 +363,111 @@
     font-size: 1.05em;
     vertical-align: -0.1em;
 }
+
+/* ── X1: Los Quiniela Awards (tarjetas de premio) ────────────
+   Misma data que las stats de sala; solo cambia la presentación:
+   emoji grande + nombre del premio (tipografía display) + ganador
+   con avatar + el dato como subtítulo. */
+.fs-award-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--q-surface);
+    border: 1px solid var(--q-border);
+    border-radius: var(--q-r-lg);
+    box-shadow: var(--q-sh-sm);
+    padding: 1.7rem 1.3rem 1.5rem;
+    text-align: center;
+}
+
+/* Cinta dorada superior: el toque ceremonial */
+.fs-award-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--q-g-gold);
+}
+
+.fs-award-emoji {
+    font-size: 2.6rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.fs-award-name {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--q-text);
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+}
+
+.fs-award-winners {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.8rem;
+    margin-bottom: 0.6rem;
+}
+
+.fs-award-winner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--q-surface-2);
+    border: 1px solid var(--q-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+}
+
+.fs-award-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.fs-award-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--q-bg);
+    border: 1px solid var(--q-border);
+    font-size: 0.9rem;
+}
+
+.fs-award-winner-name {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--q-text);
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fs-award-sub {
+    font-size: 0.84rem;
+    color: var(--q-muted);
+    line-height: 1.45;
+}
+
+.fs-award-sub .fs-num { font-weight: 800; color: var(--q-gold); }
+
+/* Premios dobles (Consentido/Ancla, Madrugador/Último minuto, Reyes):
+   auto-fit para que con una sola mitad la tarjeta no quede descentrada */
+.fs-award-halves {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.5rem 1.2rem;
+}
+
+/* La lista de fe en el campeón dentro del premio Profeta/Corazones */
+.fs-award-card .fs-faith-list { margin-top: 0.8rem; }
 
 /* Fe en el campeón */
 .fs-faith-list {
@@ -870,6 +984,8 @@
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
     pointer-events: none;
     transition: opacity 0.25s ease;
+    /* Encima del runner (X2): el campeón "porta" el 🏆 sobre su avatar */
+    z-index: 3;
 }
 
 .fs-reveal.fs-visible .fs-evo-cup {
@@ -913,6 +1029,115 @@
     to   { opacity: 1; transform: translate(-50%, -58%) scale(1); }
 }
 
+/* ── X2: Rewind de la tabla ────────────────────────────────────
+   "▶ Revivir el torneo" re-dispara el wipe de RF5 con duración larga.
+   El restart lo da el cambio de animation-name (fsEvoWipe → *Replay):
+   al entrar fs-evo-replay se descarta la animación base (el clip-path
+   vuelve al estado oculto) y la réplica arranca de cero. fs-evo-done
+   fija la gráfica completa al terminar: sin ella, quitar la clase de
+   replay re-dispararía el wipe corto del reveal. */
+.fs-evo-replay-row {
+    margin-top: 0.7rem;
+    text-align: center;
+}
+
+/* Al cambiar el estado del replay, el diff de Blazor reescribe el atributo
+   class de la tarjeta y se lleva el .fs-visible que observeReveals había
+   agregado por JS (y no vuelve: el observer hace unobserve al primer
+   disparo). Estas clases reponen el estado "revelado" por sí mismas. */
+.fs-reveal.fs-evo-replay,
+.fs-reveal.fs-evo-done {
+    opacity: 1;
+    transform: none;
+}
+
+.fs-evo-replay-btn {
+    border: 1px solid var(--q-border);
+    background: var(--q-surface-2);
+    color: var(--q-text);
+    border-radius: 999px;
+    padding: 0.45rem 1.2rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fs-evo-replay-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--q-sh-sm);
+}
+
+.fs-evo-card.fs-evo-replay .fs-evo-svg {
+    animation: fsEvoWipeReplay 10s linear 0.2s forwards;
+}
+
+/* Mismo reparto que el reveal (15ms por %) escalado al wipe de 10s */
+.fs-evo-card.fs-evo-replay .fs-evo-pt {
+    animation: fsEvoPtInReplay 0.3s ease backwards;
+    animation-delay: calc(0.2s + var(--evo-x, 100) * 100ms);
+}
+
+.fs-evo-card.fs-evo-replay .fs-evo-cup {
+    animation: fsEvoCupInReplay 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+    animation-delay: 10.4s;
+}
+
+.fs-evo-card.fs-evo-done .fs-evo-svg {
+    animation: none;
+    clip-path: none;
+}
+
+.fs-evo-card.fs-evo-done .fs-evo-pt,
+.fs-evo-card.fs-evo-done .fs-evo-cup {
+    animation: none;
+}
+
+/* Avatar de cada jugador recorriendo su línea durante el replay. Solo existe
+   en el DOM mientras evoReplay == Playing; el animation-name (fsEvoRun{userId},
+   keyframes generados inline por Blazor) va en el style del elemento y estos
+   longhands completan la animación con la misma duración/delay del wipe. */
+.fs-evo-runner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    border-radius: 50%;
+    border: 2px solid var(--evo-c);
+    background: var(--q-surface);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+    animation-duration: 10s;
+    animation-timing-function: linear;
+    animation-delay: 0.2s;
+    animation-fill-mode: both;
+    transition: opacity 0.25s ease;
+}
+
+.fs-evo-runner .fs-evo-avatar {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Duplicados exactos de fsEvoWipe/fsEvoPtIn/fsEvoCupIn: reusar el mismo
+   nombre no re-dispara la animación ya completada, cambiar el nombre sí */
+@keyframes fsEvoWipeReplay {
+    from { clip-path: inset(-6px 100% -6px -6px); }
+    to   { clip-path: inset(-6px -6px -6px -6px); }
+}
+
+@keyframes fsEvoPtInReplay {
+    from { opacity: 0; transform: scale(0.2); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fsEvoCupInReplay {
+    from { opacity: 0; transform: translate(-50%, -58%) scale(0.2); }
+    to   { opacity: 1; transform: translate(-50%, -58%) scale(1); }
+}
+
 /* ── Footer ────────────────────────────────────────────────── */
 .fs-footer {
     display: flex;
@@ -934,6 +1159,11 @@
     display: flex;
     justify-content: center;
     gap: 0.6rem;
+}
+
+/* Botones outline (fondo transparente) sobre el balón del layout */
+.fs-footer-btns .btn {
+    background-color: var(--q-bg);
 }
 
 /* ── RF7: Compartir (imagen 9:16) ──────────────────────────── */
@@ -1030,6 +1260,10 @@
 
     .fs-evo-pt, .fs-evo-cup { animation: none !important; }
 
+    /* X2: sin animación de dibujo no hay nada que revivir (el markup también
+       lo omite vía reducedMotion; esto cubre el primer render pre-JS) */
+    .fs-evo-replay-row { display: none; }
+
     .fs-hero::before {
         content: "";
         position: absolute;
@@ -1062,6 +1296,7 @@
     .fs-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .fs-card-wide { grid-column: 1 / -1; }
     .fs-stat-main { font-size: 1.65rem; }
+    .fs-award-name { font-size: 1.45rem; }
     .fs-totals-grid { grid-template-columns: repeat(3, 1fr); }
     .fs-ach-grid { grid-template-columns: repeat(4, 1fr); }
 

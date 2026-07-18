@@ -52,7 +52,7 @@ public async Task<bool> IsUnlockedAsync()
 | RF5 | Gráfica de evolución completa (multi-línea, todos los jugadores) | RF1 | ✅ Completado (2026-07-17) |
 | RF6 | Notificación **N13** al capturar la Final | RF1 | ✅ Completado (2026-07-17) |
 | RF7 | Imagen compartible 9:16 (2 variantes) + descarga/compartir | RF3, RF4 | ✅ Completado (2026-07-17) |
-| RF8 | Extras seleccionados (ver "Funcionalidad extra") | según elección | ⏳ Pendiente |
+| RF8 | Extras seleccionados (ver "Funcionalidad extra") | según elección | 🚧 En implementación — ver `docs/14_extras.md` (X1, X2 y X5 ✅ 2026-07-17) |
 
 ---
 
@@ -252,7 +252,7 @@ Ordenadas por relación valor/esfuerzo:
 - [x] "Tu participación en números" muestra las stats personales acordadas, correctas contra la BD. *(Verificado en navegador real con Playwright 2026-07-16: 13 tarjetas renderizadas, 14/14 reveals al scroll, 7 count-ups llegando a su valor exacto, 0 errores de consola, light 1280px y dark 390px sin overflow. Cifras cotejadas contra la BD dev con SQL directo: puntos 20 = 18 resultado + 2 instancia + 0 campeón ✓, aciertos 6/13 vs promedio de sala 40% (10/25) ✓, 13 de 95 partidos pronosticados ✓, grupos 9 pts vs KO 11 pts ✓, 0 cambios de pronóstico ✓, primer pronóstico 9-jul 10:01 a.m. CDMX ✓. El gate no-admin sigue intacto.)*
 - [x] Descargar imagen: ambas variantes generan PNG 1080×1920 legible (banderas emoji, avatar, sin elementos cortados); en móvil `navigator.share` abre el share sheet con la imagen; en desktop descarga directa. *(Verificado con Playwright 2026-07-17, admin/sala 1, desktop 1280 light y mobile 390 dark: ambas variantes descargan PNG de exactamente 1080×1920 (header PNG inspeccionado), inspección visual de ambas imágenes — avatares, tipografía grande, tiles y confeti decorativo sin encimarse al contenido, nada cortado; sección "Comparte tu Mundial" con reveal al scroll, 0 errores de consola, sin overflow horizontal. La píldora del pick de campeón no se ejercitó visualmente porque la sala 1 de la BD dev no tiene `ChampionPredictions` (la tarjeta la oculta correctamente); la conversión bandera→emoji es la estándar de indicadores regionales. El share sheet nativo no es automatizable en Playwright (Chromium headless no expone `navigator.share`): se verificó que el fallback `<a download>` corre en ese caso — la rama `canShare({files})` queda validada por revisión de código.)*
 - [x] Corrección posterior del marcador de la Final: la página se auto-corrige (on-demand), sin re-notificación N13. *(Verificado con Playwright 2026-07-17 en la misma prueba: el admin corrigió la Final de 2-1/90' a 1-3/penales vía "Corregir resultado" → `NotificationLogs` siguió con exactamente 2 filas `FinalSummary` y 0 notificaciones nuevas de cualquier tipo (dedup dura ✓), y el resumen final recargado como jugador1 renderizó sin errores de consola con los datos recalculados on-demand.)*
-- [ ] Dark/light mode OK en toda la página; mobile 390px y desktop 1280px OK; 0 errores de consola.
+- [x] Dark/light mode OK en toda la página; mobile 390px y desktop 1280px OK; 0 errores de consola. *(Verificado 2026-07-17 en el pase X5 de `docs/14_extras.md`: 16/16 checks en 4 combinaciones, sin overflow horizontal; incluyó el fix de legibilidad de títulos sobre el balón de fondo y el scroll-al-inicio de "Repetir ceremonia".)*
 - [x] Se agrega `PageVisitLogger` a la página (aparece en el Log del owner). *(PageName "Resumen final"; filas de prueba borradas de la BD dev.)*
 
 ---

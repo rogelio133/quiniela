@@ -587,7 +587,7 @@ public class FinalSummaryService(
         }
         championFaith = [.. championFaith
             .OrderByDescending(r => r.Hit)
-            .ThenBy(r => r.Eliminated)
+            .ThenBy(r => r.HeartbrokenOn ?? DateOnly.MaxValue)
             .ThenBy(r => r.Member.DisplayName)];
 
         // #23 🕐 Rey de grupos vs rey del KO

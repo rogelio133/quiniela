@@ -1189,6 +1189,7 @@ else
     private async Task ReplayCeremony()
     {
         await StopRainAsync();
+        await JS.InvokeVoidAsync("quiniela.finalCeremony.scrollTop", !reducedMotion);
         await RunCeremonyAsync();
     }
 

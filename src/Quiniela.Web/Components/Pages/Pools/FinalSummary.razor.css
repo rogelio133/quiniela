@@ -278,6 +278,15 @@
     margin: 0;
 }
 
+/* Los textos que viven directo sobre el fondo de la página cruzan el balón
+   fijo del layout al hacer scroll: halo del color del fondo para que sigan
+   legibles encima de la imagen (funciona en ambos temas vía --q-bg). */
+.fs-sec-kicker,
+.fs-sec-title,
+.fs-farewell {
+    text-shadow: 0 0 3px var(--q-bg), 0 0 6px var(--q-bg), 0 0 14px var(--q-bg), 0 0 24px var(--q-bg), 0 0 34px var(--q-bg);
+}
+
 /* ── Tarjetas de stats ─────────────────────────────────────── */
 .fs-stats-grid {
     display: grid;
@@ -1150,6 +1159,11 @@
     display: flex;
     justify-content: center;
     gap: 0.6rem;
+}
+
+/* Botones outline (fondo transparente) sobre el balón del layout */
+.fs-footer-btns .btn {
+    background-color: var(--q-bg);
 }
 
 /* ── RF7: Compartir (imagen 9:16) ──────────────────────────── */

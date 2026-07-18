@@ -251,7 +251,9 @@ window.quiniela = {
         stopRain: () => {
             const fc = window.quiniela.finalCeremony;
             if (fc._rain) { fc._rain.stop(); fc._rain = null; }
-        }
+        },
+        // La ceremonia vive en el hero y "Repetir" está en el footer: subir para verla
+        scrollTop: (smooth) => window.scrollTo({ top: 0, left: 0, behavior: smooth ? 'smooth' : 'auto' })
     },
     // Imagen compartible del Resumen final (RF7): re-renderiza la tarjeta oculta
     // 1080×1920 a PNG con html2canvas (self-hosted, lazy — solo se carga al pulsar
